@@ -531,25 +531,22 @@
         // 1. ADDED "Popular" as the first category
         const CATEGORIES = [
             { name: "Popular",japanese: "人気", image: "categories/fire.png" },
-            { name: "Agemono", japanese: "揚げ物", image: "categories/agemono.png" },
-            // { name: "Appetizer", image: "images/CEASAR SALAD.png" },
-            { name: "Chahan-Kare Rice ETC",japanese: "チャーハン・カレーライス等", image: "categories/rice.jpg" },
-            // { name: "Chinese Dishes", image: "images/MABOTOHU.png" },
-            { name: "Drinks/Dessert",japanese: "飲み物・デザート", image: "images/DRINKS.png" },
             { name: "Donburi",japanese: "丼物", image: "categories/donburi.png" },
-            { name: "Grilled Fish",japanese: "焼き魚", image: "categories/grilled-fish.png" },
-            { name: "Ippin-Ryouri",japanese: "一品料理", image: "categories/ippin-ryouri.jpg" },
-            { name: "Lunch Set",japanese: "ランチセット", image: "images/MIX FURAI LUNCH SET.png" },
-            { name: "Makimono",japanese: "巻物", image: "categories/makimono.png" },
-            // { name: "Osusume", imgae: "images/.png"},
+            { name: "Agemono", japanese: "揚げ物", image: "categories/agemono.png" },
+            { name: "Tempura",japanese: "天ぷら", image: "categories/tenpura.png" },
             { name: "Ramen",japanese: "ラーメン", image: "categories/ramen.png" },
             { name: "Salad",japanese: "サラダ", image: "categories/salad.png" },
             { name: "Soba-Udon",japanese: "そば・うどん", image: "categories/udon.jpg" },
-            { name: "Sashimi",japanese: "刺身", image: "categories/shahimi.jpg" },
-            { name: "Snacks",japanese: "スナック", image: "images/UME SUISHOU.png" },
-            { name: "Tempura",japanese: "天ぷら", image: "categories/tenpura.png" },
+            { name: "Grilled Fish",japanese: "焼き魚", image: "categories/grilled-fish.png" },
+            { name: "Makimono",japanese: "巻物", image: "categories/makimono.png" },
             { name: "Yakisoba/Takoyaki",japanese: "焼きそば・たこ焼き", image: "categories/takoyaki.jpg" },
+            { name: "Ippin-Ryouri",japanese: "一品料理", image: "categories/ippin-ryouri.jpg" },
+            { name: "Chahan-Kare Rice ETC",japanese: "チャーハン・カレーライス等", image: "categories/rice.jpg" },
+            { name: "Sashimi",japanese: "刺身", image: "categories/shahimi.jpg" },
+            { name: "Lunch Set",japanese: "ランチセット", image: "images/MIX FURAI LUNCH SET.png" },
             { name: "Yakitori",japanese: "焼き鳥", image: "images/UZURA BACON.png"},
+            { name: "Drinks/Dessert",japanese: "飲み物・デザート", image: "images/DRINKS.png" },
+            { name: "Snacks",japanese: "スナック", image: "images/UME SUISHOU.png" },
             { name: "Add-ons",japanese: "アドオン", image: "images/PLAIN RICE.png"},
             
 
@@ -561,8 +558,8 @@
             // Donburi
             { id: 1, jname: "カツ丼", name: "KATSU-DON", price: 380,cost: 83.40, cat: "Donburi", img: "images/KATSUDON.png", desc: "Crispy breaded pork cutlet served over rice with egg and savory-sweet sauce.", isBestSeller: true,
              addons: [
-            { name: "Extra Rice", price: 50, cost: 60},
-            { name: "Extra Egg", price: 30, cost: 20 }
+            { name: "Extra Rice", jname: "ご飯追加", price: 50, cost: 60},
+            { name: "Extra Egg", jname: "追加卵", price: 30, cost: 20 }
         ]},
             { id: 2, jname: "ソースカツ丼", name: "SOSUKATSUDON", price: 420,cost: 82.09, cat: "Donburi", img: "images/SOSUKATSUDON.png", desc: "Crispy pork cutlet over rice, topped with rich Japanese-style sauce..", isBestSeller: false },
             { id: 3, jname: "エビカツ丼", name: "EBIKATSU-DON", price: 400,cost: 83.40, cat: "Donburi", img: "images/EBIKATSU-DON.png", desc: "Crispy breaded shrimp served over rice with savory sauce.", isBestSeller: false },
@@ -1389,6 +1386,34 @@
             }
         }
 
+        const ADDON_LABELS = {
+            "GYOZA": "餃子",
+            "HAN-CHAHAN": "半チャーハン",
+            "YASAI-ITAME": "野菜炒め",
+            "CHASYU": "チャーシュー",
+            "TAMAGO": "玉子",
+            "PIRIKARA-NEGI": "ピリ辛ネギ",
+            "OMORI": "大盛り"
+        };
+
+        const OPTION_LABELS = {
+            "5PCS STICKS": "5本セット",
+            "10PCS STICKS": "10本セット",
+            "16pcs": "16個",
+            "8pcs": "8個",
+            "1-Bottle": "1本",
+            "100ML": "100ml",
+            "1 PUMP": "1ポンプ",
+            "2 PUMP": "2ポンプ",
+            "3 PUMP": "3ポンプ",
+            "HOT": "ホット",
+            "COLD": "コールド",
+            "REGULAR": "レギュラー",
+            "ZERO": "ゼロ",
+            "RED WINE": "赤ワイン",
+            "WHITE WINE": "白ワイン"
+        };
+
         function openItemModal(id) {
     selectedItem = MENU.find(m => m.id === id);
     tempQty = 1;
@@ -1400,15 +1425,18 @@
         optionsHtml = `
         <div style="text-align: left; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px;">
             <p style="color: var(--gold); font-weight: bold; margin-bottom: 10px; font-size: 0.9rem;">OPTIONS:</p>
-            ${selectedItem.options.map(opt => `
+            ${selectedItem.options.map(opt => {
+                const optLabel = opt.name + (opt.jname ? ` / ${opt.jname}` : (OPTION_LABELS[opt.name] ? ` / ${OPTION_LABELS[opt.name]}` : ''));
+                return `
                 <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: pointer; color: white;">
                     <span style="font-size: 0.9rem;">
                         <input type="radio" name="size" class="item-option" value="${opt.name}" data-price="${opt.price}" data-cost="${opt.cost || 0}" style="margin-right: 10px; accent-color: var(--gold);">
-                        ${opt.name}
+                        ${optLabel}
                     </span>
                     <span style="font-size: 0.8rem;">₱${opt.price}</span>
                 </label>
-            `).join('')}
+            `;
+            }).join('')}
         </div>`;
     }
 
@@ -1418,16 +1446,19 @@
         addonsHtml = `
         <div style="text-al
         ign: left; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px;">
-            <p style="color: var(--gold); font-weight: bold; margin-bottom: 10px; font-size: 0.9rem;">EXTRA ADD-ONS:</p>
-            ${selectedItem.addons.map(add => `
+            <p style="color: var(--gold); font-weight: bold; margin-bottom: 10px; font-size: 0.9rem;">EXTRA ADD-ONS / 追加オプション:</p>
+            ${selectedItem.addons.map(add => {
+                const addonLabel = add.name + (add.jname ? ` / ${add.jname}` : (ADDON_LABELS[add.name] ? ` / ${ADDON_LABELS[add.name]}` : ''));
+                return `
                 <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: pointer; color: white;">
                     <span style="font-size: 0.9rem;">
                         <input type="checkbox" class="addon-checkbox" data-name="${add.name}" data-price="${add.price}" data-cost="${add.cost || 0}" style="margin-right: 10px; accent-color: var(--gold);">
-                        ${add.name}
+                        ${addonLabel}
                     </span>
                     <span style="font-size: 0.8rem;">+₱${add.price}</span>
                 </label>
-            `).join('')}
+            `;
+            }).join('')}
         </div>`;
     }
 
