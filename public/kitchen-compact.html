@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Kagaribi | Split Kitchen Monitor</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #000; color: white; margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        .main-container { display: flex; flex: 1; overflow: hidden; gap: 5px; background: #333; transition: all 0.3s ease; }
+        
+        .column { 
+            flex: 1; 
+            min-width: 0; 
+            display: flex; 
+            flex-direction: column; 
+            background: #121212; 
+            padding: 8px; 
+            transition: flex 0.3s ease;
+        }
+        
+        .column-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            padding: 4px; 
+            font-size: 1.2rem; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            border-bottom: 2px solid #444; 
+            margin-bottom: 6px; 
+        }
+        .header-spacer { width: 100px; }
+        .header-title { flex: 1; text-align: center; }
+        
+        .pending-header .header-title { color: #FFC107; }
+        .preparing-header .header-title { color: #27ae60; }
+
+        .pagination-controls { 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            font-size: 0.9rem; 
+            color: #ccc; 
+            width: 100px; 
+            justify-content: flex-end;
+            font-weight: bold;
+        }
+        .page-btn { 
+            background: #444; 
+            border: none; 
+            color: white; 
+            border-radius: 4px; 
+            width: 28px; 
+            height: 28px; 
+            font-size: 1rem; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .page-btn:hover:not(:disabled) { background: #666; }
+        .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .ticket-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
+            gap: 10px; 
+            align-content: start;
+            overflow-y: hidden; 
+            transition: all 0.3s ease;
+        }
+
+        .mini-ticket { background: white; color: black; border-radius: 4px; padding: 12px; font-size: 1.15rem; border-left: 8px solid #666; transition: all 0.3s ease; }
+        .dine-in { border-left-color: #D30F0F; }
+        .take-out { border-left-color: #333; }
+
+        .wide-ticket { grid-column: span 2; } 
+        .wide-ticket .items-container { 
+            column-count: 2; 
+            column-gap: 15px; 
+        }
+
+        .ticket-top { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.3rem; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin-bottom: 8px; transition: all 0.3s ease; }
+        .timer { font-family: monospace; color: #666; }
+        
+        .item-row { display: flex; gap: 5px; border-bottom: 1px solid #f0f0f0; padding: 2px 0; break-inside: avoid; page-break-inside: avoid; }
+        .qty { font-weight: 900; color: #D30F0F; font-size: 1.25rem; transition: all 0.3s ease; }
+        
+        .item-subtitle { font-size: 0.9rem; color: #666; display: block; font-weight: normal; margin-top: 1px; transition: all 0.3s ease; }
+        .notes { font-size: 1rem; background: #fff3cd; display: block; padding: 4px; margin-top: 4px; transition: all 0.3s ease; }
+        
+        /* ADJUSTED: Flex properties layout to accommodate the inline batch clock */
+        .additional-order-divider {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: #e67e22; 
+            border-top: 2px dashed #ccc;
+            margin: 12px 0 6px 0;
+            padding-top: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-transform: uppercase;
+            break-inside: avoid;
+        }
+        .additional-timer-clock {
+            font-family: monospace;
+            color: #e67e22;
+            font-size: 0.95rem;
+        }
+
+        .urgent { color: red !important; font-weight: bold; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.4; } }
+
+        .prep-summary-bar {
+            display: flex;
+            flex-wrap: nowrap; 
+            overflow-x: auto;  
+            gap: 6px;
+            margin-bottom: 6px; 
+            padding-bottom: 6px; 
+            border-bottom: 1px solid #333;
+            max-width: 100%; 
+            transition: all 0.3s ease;
+        }
+        
+        .prep-summary-bar::-webkit-scrollbar { height: 8px; }
+        .prep-summary-bar::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+
+        .prep-summary-badge {
+            background: #27ae60; 
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-shrink: 0; 
+            transition: all 0.3s ease;
+        }
+        .prep-summary-badge span {
+            background: white;
+            color: #27ae60;
+            padding: 0 4px;
+            border-radius: 2px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        /* Zoomed Mode Styles */
+        .main-container.zoomed .column:first-child { flex: 0.35; } 
+        .main-container.zoomed .column:last-child { flex: 0.65; }  
+        
+        .main-container.zoomed .ticket-grid { grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); } 
+        
+        .main-container.zoomed .mini-ticket { font-size: 1.15rem; padding: 12px; } 
+        .main-container.zoomed .ticket-top { font-size: 1.3rem; padding-bottom: 8px; margin-bottom: 8px; }
+        .main-container.zoomed .qty { font-size: 1.25rem; } 
+        .main-container.zoomed .item-subtitle { font-size: 0.9rem; }
+        .main-container.zoomed .notes { font-size: 1rem; padding: 4px; margin-top: 4px; }
+        
+        .main-container.zoomed .prep-summary-badge { font-size: 0.85rem; padding: 4px 8px; gap: 5px; }
+        .main-container.zoomed .prep-summary-badge span { font-size: 0.9rem; padding: 0 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="main-container" id="main-container">
+        <div class="column">
+            <div class="column-header pending-header">
+                <div class="header-spacer"></div>
+                <div class="header-title">📥 Pending</div>
+                <div class="pagination-controls" id="pending-pagination"></div>
+            </div>
+            <div class="ticket-grid" id="grid-pending"></div>
+        </div>
+
+        <div class="column">
+            <div class="column-header preparing-header">
+                <div class="header-spacer"></div>
+                <div class="header-title">🔥 Preparing</div>
+                <div class="pagination-controls" id="preparing-pagination"></div>
+            </div>
+            <div id="prep-summary-bar" class="prep-summary-bar" style="display: none;"></div>
+            <div class="ticket-grid" id="grid-preparing"></div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQZQYmI5pfNSKbuv368nwuRAs1PrtusV4",
+            authDomain: "kagaribi-order.firebaseapp.com",
+            projectId: "kagaribi-order",
+            storageBucket: "kagaribi-order.firebasestorage.app",
+            messagingSenderId: "724955593450",
+            appId: "1:724955593450:web:45fd894a5281906cdef593"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const TICKETS_PER_PAGE = 8; 
+        let currentPagePending = 1;
+        let currentPagePreparing = 1;
+
+        let activeTimers = [];
+        let latestSnapshotData = []; 
+        const mainContainer = document.getElementById('main-container');
+
+        if (localStorage.getItem('compact_zoomed') === 'true') {
+            mainContainer.classList.add('zoomed');
+        }
+
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'compact_zoomed') {
+                if (event.newValue === 'true') {
+                    mainContainer.classList.add('zoomed');
+                } else {
+                    mainContainer.classList.remove('zoomed');
+                }
+            }
+            if (event.key && event.key.startsWith('processing_')) {
+                renderTickets(); 
+            }
+        });
+
+        window.changePage = function(type, direction) {
+            if (type === 'pending') {
+                currentPagePending += direction;
+            } else if (type === 'preparing') {
+                currentPagePreparing += direction;
+            }
+            renderTickets(); 
+        };
+
+        function renderPaginationUI(containerId, current, total, type) {
+            const container = document.getElementById(containerId);
+            if (total <= 1) {
+                container.innerHTML = ''; 
+                return;
+            }
+            container.innerHTML = `
+                <button class="page-btn" onclick="changePage('${type}', -1)" ${current === 1 ? 'disabled' : ''}>◀</button>
+                <span>${current}/${total}</span>
+                <button class="page-btn" onclick="changePage('${type}', 1)" ${current === total ? 'disabled' : ''}>▶</button>
+            `;
+        }
+
+        function renderTickets() {
+            const pendingGrid = document.getElementById('grid-pending');
+            const preparingGrid = document.getElementById('grid-preparing');
+            const summaryBar = document.getElementById('prep-summary-bar'); 
+            
+            pendingGrid.innerHTML = "";
+            preparingGrid.innerHTML = "";
+            activeTimers = [];
+
+            let tableGroups = {};
+            let itemTotals = {}; 
+
+            latestSnapshotData.forEach(doc => {
+                const data = doc.data();
+                const table = data.table || "Take Out";
+                
+                const customerName = data.customerName || data.customer || ""; 
+                
+                if (!tableGroups[table]) {
+                    tableGroups[table] = { 
+                        items: [], 
+                        time: data.timestamp?.toDate() || new Date(), 
+                        step: data.processStep || "Pending",
+                        docIds: [],
+                        customerNames: [] 
+                    };
+                } else {
+                    if (data.processStep === "Preparing") {
+                        tableGroups[table].step = "Preparing";
+                    }
+                    const orderTime = data.timestamp?.toDate() || new Date();
+                    if (orderTime < tableGroups[table].time) {
+                        tableGroups[table].time = orderTime;
+                    }
+                }
+
+                if (customerName && !tableGroups[table].customerNames.includes(customerName)) {
+                    tableGroups[table].customerNames.push(customerName);
+                }
+
+                const currentOrderTime = data.timestamp?.toDate() || new Date();
+                const itemsWithDocInfo = data.items.map(item => ({
+                    ...item,
+                    docId: doc.id,
+                    docTime: currentOrderTime
+                }));
+
+                tableGroups[table].items.push(...itemsWithDocInfo);
+                tableGroups[table].docIds.push(doc.id); 
+            });
+
+            let pendingTicketsArray = [];
+            let preparingTicketsArray = [];
+
+            const sortedTables = Object.keys(tableGroups).map(key => {
+                return { tableName: key, ...tableGroups[key] };
+            }).sort((a, b) => a.time - b.time);
+
+            sortedTables.forEach(group => {
+                const table = group.tableName;
+                group.items.sort((a, b) => a.docTime - b.docTime);
+
+                let mergedTicketItems = {};
+
+                group.items.forEach(i => {
+                    if (i.isDone) return;
+
+                    const addOnsText = i.addons ? (Array.isArray(i.addons) ? i.addons.map(a => a.name || a).join(', ') : i.addons) : "";
+                    const trackKey = i.docId + "|" + i.name + "|" + (i.notes || "") + "|" + addOnsText;
+                    
+                    let remainingQty = (Number(i.qty) || 1) - (Number(i.completedQty) || 0);
+
+                    if (localStorage.getItem('processing_' + trackKey)) {
+                        remainingQty -= 1;
+                    }
+
+                    if (remainingQty <= 0) return;
+
+                    const itemName = i.jname ? i.jname : i.name; 
+                    const itemNotes = i.notes || "";
+                    const mergeKey = i.docId + "|||" + itemName + "|||" + itemNotes; 
+
+                    if (!mergedTicketItems[mergeKey]) {
+                        mergedTicketItems[mergeKey] = { ...i, qty: remainingQty };
+                    } else {
+                        mergedTicketItems[mergeKey].qty += remainingQty;
+                    }
+
+                    if (!itemTotals[itemName]) itemTotals[itemName] = 0;
+                    itemTotals[itemName] += remainingQty;
+                });
+
+                const displayItems = Object.values(mergedTicketItems);
+                if (displayItems.length === 0) return; 
+
+                const isWide = displayItems.length > 5;
+                const ticket = document.createElement('div');
+                ticket.className = `mini-ticket ${table.includes("Table") ? 'dine-in' : 'take-out'} ${isWide ? 'wide-ticket' : ''}`;
+                
+                const tableId = table.replace(/\s+/g, '');
+                activeTimers.push({ id: tableId, start: group.time });
+
+                const namesDisplay = group.customerNames.length > 0 
+                    ? `<br><span style="font-size: 0.9rem; font-weight: normal; color: #666;">👤 ${group.customerNames.join(', ')}</span>` 
+                    : '';
+
+                ticket.innerHTML = `
+                    <div class="ticket-top">
+                        <div><span>${table}</span>${namesDisplay}</div>
+                        <span class="timer" id="timer-${tableId}">0:00</span>
+                    </div>
+                    <div class="items-container">
+                        ${displayItems.map((i, idx) => {
+                            let additionalHeader = "";
+                            if (idx > 0 && i.docId !== displayItems[idx - 1].docId) {
+                                // ADJUSTED: Register an independent timer item for this separate docId batch
+                                activeTimers.push({ id: i.docId, start: i.docTime });
+                                
+                                additionalHeader = `
+                                    <div class="additional-order-divider">
+                                        <span>Additional Order</span>
+                                        <span class="additional-timer-clock" id="timer-${i.docId}">0:00</span>
+                                    </div>
+                                `;
+                            }
+                            
+                            return `
+                                ${additionalHeader}
+                                <div class="item-row">
+                                    <span class="qty">${i.qty}x</span>
+                                    <div>
+                                        <strong>${i.name ? i.name : i.jname}</strong>
+                                        ${(i.name && i.jname && i.name !== i.jname) ? `<span class="item-subtitle">${i.jname}</span>` : ''}
+                                        ${i.notes ? `<span class="notes">${i.notes}</span>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+
+                if (group.step === "Preparing") {
+                    preparingTicketsArray.push(ticket);
+                } else {
+                    pendingTicketsArray.push(ticket);
+                }
+            });
+
+            let totalPagesPending = Math.ceil(pendingTicketsArray.length / TICKETS_PER_PAGE) || 1;
+            if (currentPagePending > totalPagesPending) currentPagePending = totalPagesPending;
+            const slicedPending = pendingTicketsArray.slice((currentPagePending - 1) * TICKETS_PER_PAGE, currentPagePending * TICKETS_PER_PAGE);
+            slicedPending.forEach(el => pendingGrid.appendChild(el));
+            renderPaginationUI('pending-pagination', currentPagePending, totalPagesPending, 'pending');
+
+            let totalPagesPreparing = Math.ceil(preparingTicketsArray.length / TICKETS_PER_PAGE) || 1;
+            if (currentPagePreparing > totalPagesPreparing) currentPagePreparing = totalPagesPreparing;
+            const slicedPreparing = preparingTicketsArray.slice((currentPagePreparing - 1) * TICKETS_PER_PAGE, currentPagePreparing * TICKETS_PER_PAGE);
+            slicedPreparing.forEach(el => preparingGrid.appendChild(el));
+            renderPaginationUI('preparing-pagination', currentPagePreparing, totalPagesPreparing, 'preparing');
+
+            const sortedItems = Object.keys(itemTotals).sort((a, b) => itemTotals[b] - itemTotals[a]);
+            if (sortedItems.length > 0) {
+                summaryBar.innerHTML = sortedItems.map(name => `
+                    <div class="prep-summary-badge">
+                        <span>${itemTotals[name]}x</span> ${name}
+                    </div>
+                `).join('');
+                summaryBar.style.display = 'flex'; 
+            } else {
+                summaryBar.innerHTML = '';
+                summaryBar.style.display = 'none'; 
+            }
+        }
+
+        db.collection("orders").where("status", "==", "Pending").onSnapshot(snap => {
+            latestSnapshotData = snap.docs;
+            renderTickets();
+        });
+
+        setInterval(() => {
+            const now = new Date();
+            activeTimers.forEach(t => {
+                const diff = Math.floor((now - t.start) / 1000);
+                const m = Math.floor(diff / 60);
+                const s = diff % 60;
+                const el = document.getElementById(`timer-${t.id}`);
+                if (el) {
+                    el.innerText = `${m}:${s.toString().padStart(2, '0')}`;
+                    if (m >= 5) el.classList.add('urgent');
+                }
+            });
+        }, 1000);
+    </script>
+</body>
+</html>

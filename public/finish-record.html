@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finished Records | Kagaribi Admin</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+
+    <script>
+        // Your Firebase Config (Retained from your source)
+        const firebaseConfig = { 
+            apiKey: "AIzaSyAQZQYmI5pfNSKbuv368nwuRAs1PrtusV4",
+            authDomain: "kagaribi-order.firebaseapp.com",
+            projectId: "kagaribi-order",
+            storageBucket: "kagaribi-order.firebasestorage.app",
+            messagingSenderId: "724955593450",
+            appId: "1:724955593450:web:45fd894a5281906cdef593"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth(); // ADDED: Initialize Auth
+    </script>
+
+    <style>
+        
+        :root {
+            --primary: #D30F0F;
+            --success: #28a745;
+            --sidebar-bg: #1e1e2d;
+            --sidebar-hover: #2b2b40;
+            --bg-color: #f3f6f9;
+            --card-bg: #ffffff;
+            --text-main: #3f4254;
+            --text-muted: #a1a5b7;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg-color); 
+            color: var(--text-main); 
+            margin: 0; 
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .sidebar-header h2 { margin: 0; font-size: 1.2rem; color: #fff; letter-spacing: 1px; }
+        .sidebar-header span { color: var(--primary); }
+        
+        .nav-menu { list-style: none; padding: 20px 0; margin: 0; flex-grow: 1; }
+        .nav-menu li { padding: 5px 20px; }
+        .nav-menu a {
+            display: flex; align-items: center; padding: 12px 15px; color: #9899ac;
+            text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 0.95rem; transition: 0.3s;
+        }
+        .nav-menu a:hover, .nav-menu li.active a { background: var(--sidebar-hover); color: white; }
+        .nav-menu li.active a { border-left: 4px solid var(--primary); background: rgba(211, 15, 15, 0.1); color: var(--primary); }
+
+        /* Main Content */
+        .main-content { flex-grow: 1; overflow-y: auto; padding: 30px 40px; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header-top h1 { margin: 0; font-size: 1.8rem; font-weight: 700; color: #181c32; }
+
+        /* Stats Row */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+        .stat-card { padding: 25px; border-radius: 12px; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .card-green { background: linear-gradient(135deg, #28a745, #34ce57); }
+        .card-blue { background: linear-gradient(135deg, #009ef7, #00b2ff); }
+        .stat-card small { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; opacity: 0.9; display: block; margin-bottom: 5px; }
+        .stat-card .value { font-size: 2rem; font-weight: 800; }
+
+        /* Controls Area */
+        .controls-bar { 
+            background: var(--card-bg); 
+            padding: 20px; 
+            border-radius: 12px; 
+            display: flex; 
+            gap: 15px; 
+            align-items: center;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            border: 1px solid #eff2f5;
+        }
+        .controls-bar input {
+            padding: 10px 15px; border: 1px solid #e4e6ef; border-radius: 8px; outline: none; font-family: inherit;
+        }
+        .search-input { flex-grow: 1; }
+        .btn-refresh { background: #f3f6f9; color: var(--text-main); border: 1px solid #e4e6ef; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .btn-back { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+
+        /* Record Cards */
+        .records-container { display: flex; flex-direction: column; gap: 12px; }
+        .record-card {
+            background: white;
+            border-radius: 12px;
+            padding: 18px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 5px solid var(--success);
+            border-top: 1px solid #eff2f5;
+            border-right: 1px solid #eff2f5;
+            border-bottom: 1px solid #eff2f5;
+        }
+        
+        .guest-info h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: #181c32; }
+        .date-badge { color: var(--success); font-weight: 700; font-size: 0.85rem; }
+        .details-text { font-size: 0.9rem; color: var(--text-muted); }
+        .completion-time { font-size: 0.75rem; color: #a1a5b7; font-style: italic; }
+
+        .no-data { text-align: center; padding: 60px; color: var(--text-muted); background: white; border-radius: 12px; border: 1px dashed #e4e6ef; }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>KAGARIBI <span>ADMIN</span></h2>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="history.html">📊 Daily Sales</a></li>
+            <li><a href="monthly-report.html">📅 Monthly Report</a></li>
+            <li><a href="inventory.html">📦 Inventory</a></li> 
+            <li><a href="banquet-inventory.html">📦Banquet Inventory</a></li>
+            <li><a href="reservations.html">📝 Reservation</a></li>
+            <li class="active"><a href="#">📄 Reservation Record </a></li>
+        </ul>
+        <div class="sidebar-footer" style="padding: 20px;">
+            <button style="width:100%; background:transparent; border:1px solid rgba(255,255,255,0.2); color:white; padding:12px; border-radius:8px; cursor:pointer;" onclick="logoutUser()">🚪 Logout</button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="header-top">
+            <h1>Finished Records</h1>
+            <button class="btn-back" onclick="window.location.href='records.html'">← Back to Monitor</button>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card card-green">
+                <small>Total Finished</small>
+                <div class="value" id="totalFinished">0</div>
+            </div>
+            <div class="stat-card card-blue">
+                <small>Total Guests Served</small>
+                <div class="value" id="totalGuests">0</div>
+            </div>
+        </div>
+
+        <div class="controls-bar">
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <small style="font-weight:700; color:var(--text-muted); font-size:0.7rem; text-transform:uppercase;">Filter Date</small>
+                <input type="date" id="dateFilter" onchange="filterFinished()">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 5px; flex-grow: 1;">
+                <small style="font-weight:700; color:var(--text-muted); font-size:0.7rem; text-transform:uppercase;">Search Name</small>
+                <input type="text" id="nameSearch" class="search-input" placeholder="Search customer name..." oninput="filterFinished()">
+            </div>
+            <button class="btn-refresh" onclick="loadFinished()">Refresh</button>
+        </div>
+
+        <div id="finishedList" class="records-container">
+            <div class="no-data">Loading finished records...</div>
+        </div>
+    </main>
+
+    <script>
+        // --- ADDED: Check Authentication Status ---
+        auth.onAuthStateChanged((user) => {
+            if (!user) {
+                // Not logged in? Redirect to login page immediately!
+                window.location.href = "login.html";
+            }
+        });
+
+        // --- ADDED: Logout Function ---
+        function logoutUser() {
+            auth.signOut().then(() => {
+                window.location.href = "login.html";
+            }).catch((error) => {
+                console.error("Error signing out: ", error);
+            });
+        }
+
+        let finishedData = [];
+
+        async function loadFinished() {
+            const list = document.getElementById('finishedList');
+            try {
+                const snap = await db.collection("finished_reservations").orderBy("completedAt", "desc").get();
+                
+                finishedData = [];
+                // FIXED HERE: Added "id: doc.id" so it captures the main document ID in case your reservation number relies on it
+                snap.forEach(doc => finishedData.push({ id: doc.id, ...doc.data() }));
+                
+                updateStats();
+                
+                // CHANGED: Instead of just rendering everything, we filter it first
+                // so the automatic today's date applies immediately!
+                filterFinished(); 
+            } catch (error) {
+                console.error("Error loading records:", error);
+                list.innerHTML = '<div class="no-data">Error loading data. Check console.</div>';
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('totalFinished').textContent = finishedData.length;
+            const totalG = finishedData.reduce((sum, res) => sum + parseInt(res.guests || 0), 0);
+            document.getElementById('totalGuests').textContent = totalG;
+        }
+
+        function filterFinished() {
+            const search = document.getElementById('nameSearch').value.toLowerCase();
+            const date = document.getElementById('dateFilter').value;
+
+            const filtered = finishedData.filter(res => {
+                const matchesName = (res.name || "").toLowerCase().includes(search);
+                const matchesDate = date ? res.formattedDate === date : true;
+                return matchesName && matchesDate;
+            });
+            render(filtered);
+        }
+
+        function render(data) {
+            const list = document.getElementById('finishedList');
+            if (data.length === 0) { 
+                list.innerHTML = '<div class="no-data">No finished records found for this selection.</div>'; 
+                return; 
+            }
+            
+            list.innerHTML = data.map(d => `
+                <div class="record-card">
+                    <div class="guest-info">
+                        <h3>${d.name}</h3>
+                        <div class="details-text">
+                            <span class="date-badge">📅 ${d.formattedDate}</span> at <strong>${d.time}</strong> 
+                            &nbsp;|&nbsp; 👥 <strong>${d.guests} Guests</strong>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="completion-time">
+                            Completed: ${d.completedAt ? d.completedAt.toDate().toLocaleDateString() : 'N/A'}
+                        </div>
+                        <div style="font-size: 0.7rem; color: #ccc; margin-top:5px;">ID: ${d.reservationNumber || d.resNumber || d.code || d.id || '---'}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // --- ADDED: Set Today's Date Function ---
+        function setTodayDate() {
+            const today = new Date();
+            const year = today.getFullYear();
+            // PadStart ensures numbers like '3' become '03' so the HTML date input can read it
+            const month = String(today.getMonth() + 1).padStart(2, '0'); 
+            const day = String(today.getDate()).padStart(2, '0');
+            
+            // Set the HTML input to today's date
+            document.getElementById('dateFilter').value = `${year}-${month}-${day}`;
+        }
+
+        // Initialize
+        setTodayDate(); // 1. Set the date picker to today
+        loadFinished(); // 2. Load the data from Firebase (which will now auto-filter!)
+    </script>
+</body>
+</html>

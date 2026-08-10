@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Kitchen Controller - Restored Layout & History</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: white; margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        .zoom-btn {
+            position: fixed;
+            top: 6px;
+            right: 10px;
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            transition: background 0.2s;
+        }
+        .zoom-btn:hover { background: #2980b9; }
+
+        .main-layout { display: flex; flex: 1; overflow: hidden; gap: 2px; background: #333; }
+        .column { flex: 1; display: flex; flex-direction: column; background: #121212; overflow: hidden; }
+        .column-header { padding: 10px; text-align: center; font-weight: 800; font-size: 1.2rem; text-transform: uppercase; border-bottom: 2px solid #333; }
+        .pending-header { color: #FFC107; background: #1a1500; }
+        .preparing-header { color: #27ae60; background: #0d1a10; }
+
+        .rack { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 10px; 
+            display: block; 
+            column-width: 260px; 
+            column-gap: 10px; 
+        }
+
+        .ticket { 
+            background: white; color: black; padding: 12px; border-radius: 8px; 
+            display: flex; flex-direction: column; min-height: 220px; position: relative;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            height: max-content; 
+            break-inside: avoid;
+            -webkit-column-break-inside: avoid;
+            margin-bottom: 10px;
+            transition: opacity 0.2s ease;
+        }
+        
+        .ticket.locked {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .time-meta { position: absolute; top: 10px; right: 10px; text-align: right; }
+        .order-timestamp-label { font-weight: bold; font-size: 0.85rem; color: #777; display: block; }
+        .timer-container { font-family: monospace; font-size: 1.1rem; font-weight: bold; color: #999; display: block; transition: color 0.3s ease; }
+        
+        .timer-warning { color: #FFC107 !important; }
+        .timer-urgent { color: #D30F0F !important; animation: blink 1s infinite; }
+
+        .ticket h2 { margin: 0; font-size: 1.4rem; font-weight: 800; width: 60%; }
+        
+        .badge-row { display: flex; gap: 4px; margin: 5px 0; flex-wrap: wrap; }
+        .badge { padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 0.65rem; text-transform: uppercase; }
+        .label-dinein { background: #D30F0F; color: white; }
+        .label-takeout { background: #333; color: white; }
+
+        .item-list { margin: 10px 0; padding: 0; list-style: none; border-top: 1px solid #eee; flex: 1 1 auto; }
+        .item-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid #f9f9f9; }
+        .item-text { flex: 1; font-size: 0.95rem; font-weight: 700; line-height: 1.1; }
+        .qty-badge { color: #D30F0F; font-weight: 900; margin-right: 5px; }
+        .item-subtitle { display: block; font-size: 0.75rem; color: #D30F0F; margin-top: 2px; }
+        .notes-box { font-size: 0.75rem; background: #fff3cd; padding: 4px; border-radius: 4px; margin-top: 4px; border-left: 3px solid #ffc107; }
+        
+        .addon-box { font-size: 0.8rem; color: #2980b9; font-weight: 800; margin-top: 4px; display: block; }
+
+        .check-btn { background: #27ae60; color: white; border: 1px solid #ddd; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .btn-prepare { width: 100%; padding: 10px; background: #FFC107; color: black; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .btn-done { width: 100%; padding: 10px; background: #27ae60; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; }
+
+        .footer-system { background: #000; padding: 5px 15px; border-top: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+        #debug-log { font-family: monospace; font-size: 0.7rem; color: #0f0; height: 40px; overflow-y: auto; flex: 1; }
+        #conn-status { font-weight: bold; font-size: 0.8rem; margin-left: 20px; }
+
+        #audio-unlock { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+
+    <div id="audio-unlock">
+        <button style="padding: 20px 40px; background: #D30F0F; color: white; border: none; border-radius: 50px; cursor: pointer; font-weight: bold;" onclick="unlockAudio()">👨‍🍳 START KITCHEN CONTROL</button>
+    </div>
+
+    <button id="remote-zoom-btn" class="zoom-btn">🔍 Zoom Out Compact</button>
+
+    <div class="main-layout">
+        <div class="column">
+            <div class="column-header pending-header">Pending</div>
+            <div class="rack" id="rack-pending"></div>
+        </div>
+        <div class="column">
+            <div class="column-header preparing-header"> Preparing</div>
+            <div class="rack" id="rack-preparing"></div>
+        </div>
+    </div>
+
+    <div class="footer-system">
+        <div id="debug-log">System Initializing...</div>
+        <div id="conn-status">🟡 Connecting...</div>
+    </div>
+
+    <audio id="ding" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"></audio>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQZQYmI5pfNSKbuv368nwuRAs1PrtusV4",
+            authDomain: "kagaribi-order.firebaseapp.com",
+            projectId: "kagaribi-order",
+            storageBucket: "kagaribi-order.firebasestorage.app",
+            messagingSenderId: "724955593450",
+            appId: "1:724955593450:web:45fd894a5281906cdef593"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const sound = document.getElementById('ding');
+        const debug = document.getElementById('debug-log');
+        
+        let activeOrders = [];
+        let lastCount = 0;
+        
+        const processingItems = new Set();
+
+        function log(msg) { 
+            const t = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            debug.innerHTML += `<div>[${t}] > ${msg}</div>`; 
+            debug.scrollTop = debug.scrollHeight; 
+        }
+
+        function unlockAudio() {
+            document.getElementById('audio-unlock').style.display = 'none';
+            sound.play().catch(() => {});
+            log("Audio Unlocked. Waiting for orders...");
+        }
+
+        const remoteZoomBtn = document.getElementById('remote-zoom-btn');
+        let isZoomedOut = localStorage.getItem('compact_zoomed') === 'true';
+        
+        remoteZoomBtn.innerHTML = isZoomedOut ? " Zoom In" : "Zoom Out";
+
+        remoteZoomBtn.addEventListener('click', () => {
+            isZoomedOut = !isZoomedOut;
+            localStorage.setItem('compact_zoomed', isZoomedOut ? 'true' : 'false');
+            remoteZoomBtn.innerHTML = isZoomedOut ? " Zoom In" : "Zoom Out";
+            log(isZoomedOut ? "Sent zoom-out signal to Compact Monitor" : "Sent reset signal to Compact Monitor");
+        });
+
+        // CHANGED: Rolling 24-Hour Reset window
+        // This calculates exactly 24 hours ago from right now. Old tickets drop off, but remain in DB.
+        const dynamicThreshold = new Date();
+        dynamicThreshold.setHours(dynamicThreshold.getHours() - 24);
+
+        db.collection("orders")
+          .where("status", "==", "Pending")
+          .where("timestamp", ">=", dynamicThreshold)
+          .onSnapshot(snap => {
+            document.getElementById('conn-status').innerHTML = "🟢 Live";
+            const rackPending = document.getElementById('rack-pending');
+            const rackPreparing = document.getElementById('rack-preparing');
+            if (snap.size > lastCount) { sound.play().catch(()=>{}); }
+            lastCount = snap.size;
+            rackPending.innerHTML = "";
+            rackPreparing.innerHTML = "";
+            activeOrders = [];
+            let tableGroups = {}; 
+
+            const sortedDocs = [];
+            snap.forEach(doc => sortedDocs.push(doc));
+
+            sortedDocs.sort((a, b) => {
+                const timeA = a.data().timestamp?.toDate() || new Date(0);
+                const timeB = b.data().timestamp?.toDate() || new Date(0);
+                return timeA - timeB;
+            });
+
+            sortedDocs.forEach(doc => {
+                const order = doc.data();
+                const tableName = order.table || "Take Out";
+                const orderTime = order.timestamp?.toDate() || new Date();
+
+                if (!tableGroups[tableName]) {
+                    tableGroups[tableName] = { 
+                        items: [], 
+                        earliestTime: orderTime, 
+                        docIds: [], 
+                        processStep: order.processStep || "Pending" 
+                    };
+                } else {
+                    if (orderTime < tableGroups[tableName].earliestTime) {
+                        tableGroups[tableName].earliestTime = orderTime;
+                    }
+                }
+
+                if (order.processStep === "Preparing") tableGroups[tableName].processStep = "Preparing";
+                
+                const itemsWithDocId = order.items.map(i => ({ ...i, _docId: doc.id }));
+                tableGroups[tableName].items.push(...itemsWithDocId);
+                
+                if (!tableGroups[tableName].docIds.includes(doc.id)) {
+                    tableGroups[tableName].docIds.push(doc.id);
+                }
+            });
+
+            const sortedTables = Object.keys(tableGroups).map(key => {
+                return { tableName: key, ...tableGroups[key] };
+            }).sort((a, b) => a.earliestTime - b.earliestTime);
+
+            sortedTables.forEach(group => {
+                const tableName = group.tableName;
+                const itemCounts = {};
+                
+                group.items.forEach(item => {
+                    if (item.isDone) return;
+                    
+                    const addOnsText = item.addons ? (Array.isArray(item.addons) ? item.addons.map(a => a.name || a).join(', ') : item.addons) : "";
+                    
+                    const trackKey = item._docId + "|" + item.name + "|" + (item.notes || "") + "|" + addOnsText;
+                    if (processingItems.has(trackKey)) return; 
+
+                    const key = item._docId + "|" + item.name + "|" + (item.notes || "") + "|" + addOnsText;
+                    if (!itemCounts[key]) itemCounts[key] = { ...item, qty: 0, _addOnsText: addOnsText, _docId: item._docId };
+                    
+                    const remainingQty = (item.qty || 1) - (item.completedQty || 0);
+                    itemCounts[key].qty += remainingQty;
+                });
+                
+                const activeItems = Object.values(itemCounts);
+                
+                if (activeItems.length === 0) return; 
+
+                const tableId = tableName.replace(/\s+/g, '');
+                activeOrders.push({ id: tableId, time: group.earliestTime });
+
+                const ticket = document.createElement('div');
+                ticket.className = "ticket";
+                ticket.id = `ticket-${tableId}`;
+                
+                ticket.innerHTML = `
+                    <div class="time-meta">
+                        <span class="timer-container" id="timer-${tableId}">0:00</span>
+                    </div>
+                    <h2>${tableName}</h2>
+                    <div class="badge-row">
+                        <span class="badge ${tableName.includes("Table") ? 'label-dinein' : 'label-takeout'}">${tableName.includes("Table") ? "DINE IN" : "TAKE OUT"}</span>
+                    </div>
+                    <ul class="item-list">
+                        ${activeItems.map((i, index) => {
+                            const itemId = `item-${tableId}-${index}`;
+                            const notesStr = (i.notes || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                            const nameStr = i.name.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                            const addonsParam = i._addOnsText.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                            
+                            return `
+                            <li class="item-row" id="row-${itemId}">
+                                <div class="item-text" id="text-${itemId}">
+                                    <span class="qty-badge">${i.qty}x</span> ${i.name}
+                                    ${i.jname ? `<span class="item-subtitle">${i.jname}</span>` : ''}
+                                    ${i._addOnsText ? `<span class="addon-box">➕ ADD: ${i._addOnsText}</span>` : ''}
+                                    ${i.notes ? `<div class="notes-box">NOTE: ${i.notes}</div>` : ''}
+                                </div>
+                                <button class="check-btn" onclick="toggleItemDone('${itemId}', '${i._docId}', '${nameStr}', '${notesStr}', ${i.qty}, '${addonsParam}')">✓</button>
+                            </li>
+                            `;
+                        }).join('')}
+                    </ul>
+                    ${group.processStep === 'Pending' ? `<button class="btn-prepare" onclick="startPrep('${group.docIds.join(',')}')">👨‍🍳 START PREPARING</button>` : ''}
+                `;
+                (group.processStep === "Preparing" ? rackPreparing : rackPending).appendChild(ticket);
+            });
+        }, error => {
+            console.error("Firebase Snapshot Error (Check if Index is missing):", error);
+            log("⚠️ Filter applied. If history is broken, please check F12 Console to generate the Google Index link.");
+        });
+
+        async function toggleItemDone(itemId, targetDocId, itemName, itemNotes, itemQty, itemAddons = "") {
+            const rowElement = document.getElementById(`row-${itemId}`);
+            const parentTicket = rowElement ? rowElement.closest('.ticket') : null;
+            
+            if (parentTicket) parentTicket.classList.add('locked');
+
+            log(`Checking 1x ${itemName} (Remaining: ${itemQty - 1})...`);
+
+            const trackKey = targetDocId + "|" + itemName + "|" + itemNotes + "|" + itemAddons;
+            processingItems.add(trackKey);
+            localStorage.setItem('processing_' + trackKey, 'true'); 
+
+            if (itemQty > 1) {
+                const qtyBadge = rowElement.querySelector('.qty-badge');
+                if (qtyBadge) {
+                    qtyBadge.innerText = `${itemQty - 1}x`;
+                }
+            } else {
+                if (rowElement) {
+                    rowElement.style.display = 'none'; 
+                    rowElement.classList.add('processing-hide'); 
+                }
+                if (parentTicket) {
+                    const visibleRows = parentTicket.querySelectorAll('.item-row:not(.processing-hide)');
+                    if (visibleRows.length === 0) parentTicket.style.display = 'none';
+                }
+            }
+
+            const docIds = [targetDocId]; 
+
+            try {
+                const safeRecipeName = itemName.replace(/\//g, '-'); 
+                const recipeRef = db.collection('recipes').doc(safeRecipeName);
+                const recipeSnap = await recipeRef.get();
+                let ingredientsList = [];
+                if (recipeSnap.exists && Array.isArray(recipeSnap.data().ingredients)) {
+                    ingredientsList = recipeSnap.data().ingredients;
+                }
+
+                await db.runTransaction(async (transaction) => {
+                    const orderPromises = docIds.map(id => {
+                        const ref = db.collection("orders").doc(id);
+                        return transaction.get(ref).then(doc => ({ ref, data: doc.data(), id, exists: doc.exists }));
+                    });
+
+                    const invPromises = ingredientsList.map(ing => {
+                        const ref = db.collection('inventory').doc(ing.name);
+                        return transaction.get(ref).then(doc => ({ ref, data: doc.data(), name: ing.name, amount: ing.amount, exists: doc.exists }));
+                    });
+
+                    const [orderResults, inventoryResults] = await Promise.all([
+                        Promise.all(orderPromises),
+                        Promise.all(invPromises)
+                    ]);
+
+                    const orderDocs = orderResults.filter(o => o.exists);
+                    const inventoryReads = inventoryResults.filter(i => i.exists);
+
+                    for (const inv of inventoryReads) {
+                        const amountNeeded = (Number(inv.amount) || 0) * 1; 
+                        let bulk = Number(inv.data.quantity) || 0;
+                        let inUse = Number(inv.data.activeVol) || 0;
+                        let cap = Number(inv.data.capacity) || 700; 
+                        let unit = inv.data.unit || ""; 
+
+                        let totalVolume = (bulk * cap) + inUse;
+                        
+                        if (totalVolume >= amountNeeded) {
+                            let newTotal = totalVolume - amountNeeded;
+                            let newBulk = Math.floor(newTotal / cap);
+                            let newInUse = newTotal % cap;
+
+                            if (newInUse === 0 && newBulk > 0) {
+                                newBulk -= 1;
+                                newInUse = cap;
+                            }
+
+                            transaction.update(inv.ref, { quantity: newBulk, activeVol: newInUse });
+
+                            const logRef = db.collection('logs').doc();
+                            transaction.set(logRef, {
+                                action: 'Recipe Deduction',
+                                ingredient: inv.name,
+                                details: `${inv.name}: -${amountNeeded} (Result: ${newBulk} Qty / ${newInUse} In-Use)`,
+                                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                                user: 'System (Kitchen)'
+                            });
+                            log(`Deducted ${amountNeeded}${unit} of ${inv.name}`);
+                        }
+                    }
+
+                    for (const order of orderDocs) {
+                        let updated = false;
+                        let activeItemCount = 0;
+                        let deductedOneItem = false;
+
+                        const updatedItems = order.data.items.map(item => {
+                            const currentAddonsText = item.addons ? (Array.isArray(item.addons) ? item.addons.map(a => a.name || a).join(', ') : item.addons) : "";
+                            
+                            if (!deductedOneItem && item.isDone !== true && item.name === itemName && (item.notes || "") === itemNotes && currentAddonsText === itemAddons) {
+                                updated = true;
+                                deductedOneItem = true;
+                                
+                                const currentQty = item.qty || 1;
+                                const completed = (item.completedQty || 0) + 1;
+
+                                if (completed >= currentQty) {
+                                    return { ...item, completedQty: completed, isDone: true };
+                                } else {
+                                    activeItemCount++; 
+                                    return { ...item, completedQty: completed };
+                                }
+                            }
+                            if (item.isDone !== true) {
+                                activeItemCount++; 
+                            }
+                            return item;
+                        });
+
+                        if (updated) {
+                            const payload = { items: updatedItems };
+                            if (activeItemCount === 0) {
+                                payload.status = "Served";
+                                payload.servedAt = firebase.firestore.FieldValue.serverTimestamp();
+                            }
+                            transaction.update(order.ref, payload);
+                        }
+                    }
+                });
+
+                processingItems.delete(trackKey);
+                setTimeout(() => localStorage.removeItem('processing_' + trackKey), 3000); 
+                log(`✅ Successfully checked off 1x ${itemName}`);
+                if (parentTicket) parentTicket.classList.remove('locked');
+
+            } catch (e) {
+                console.error("Transaction error:", e);
+                log(`❌ Failed to process ${itemName}`);
+                processingItems.delete(trackKey);
+                localStorage.removeItem('processing_' + trackKey); 
+                
+                if (rowElement) {
+                    rowElement.style.display = 'flex'; 
+                    rowElement.classList.remove('processing-hide');
+                }
+                if (parentTicket) {
+                    parentTicket.style.display = 'block';
+                    parentTicket.classList.remove('locked');
+                }
+            }
+        }
+
+        async function startPrep(ids) {
+            const batch = db.batch();
+            ids.split(',').forEach(id => batch.update(db.collection("orders").doc(id), { processStep: "Preparing" }));
+            await batch.commit();
+        }
+
+        setInterval(() => {
+            const now = new Date();
+            activeOrders.forEach(o => {
+                const diff = Math.floor((now - o.time) / 1000); 
+                const el = document.getElementById(`timer-${o.id}`);
+                
+                if (el) {
+                    el.innerText = `${Math.floor(diff/60)}:${(diff%60).toString().padStart(2,'0')}`;
+                    
+                    if (diff >= 600) { 
+                        el.classList.add('timer-urgent');
+                        el.classList.remove('timer-warning');
+                    } else if (diff >= 300) { 
+                        el.classList.add('timer-warning');
+                        el.classList.remove('timer-urgent');
+                    } else {
+                        el.classList.remove('timer-warning');
+                        el.classList.remove('timer-urgent');
+                    }
+                }
+            });
+        }, 1000);
+    </script>
+</body>
+</html>

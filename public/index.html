@@ -1,0 +1,1952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="google-site-verification" content="0zC3FfybV_8OXbcH8KL_r1yCflzQKsPQ7vFuSO6js7E" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kagaribi - Mobile Kiosk</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        :root { 
+            --gold: #FFC107; 
+            --deep-red: #ce1126; 
+            --dark-bg: #121212;
+            --card-bg: #1e1e1e;
+            --shadow: 0 10px 30px rgba(0,0,0,0.1)
+        }
+        
+        body { 
+            margin: 0; font-family: 'Noto Sans JP', sans-serif; 
+            background-color: #f1f5f9; color: white; overflow-x: hidden;
+        }
+
+        @keyframes blinker { 50% { opacity: 0.3; } }
+        .blink-text { animation: blinker 1s linear infinite; text-shadow: 0 0 8px currentColor; }
+        .glow-text { text-shadow: 0 0 5px currentColor; }
+
+        .modal-overlay { 
+            display: none; position: fixed; top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            /* background: rgba(0,0,0,0.9); */
+            z-index: 2000; justify-content: center; align-items: center; 
+            backdrop-filter: blur(8px);
+        }
+
+        .modal-box { 
+            /* Semi-transparent black */
+            background: rgba(18, 18, 18, 0.55); 
+            
+            /* The "Glass" blur effect */
+            backdrop-filter: blur(15px); 
+            -webkit-backdrop-filter: blur(15px); 
+            
+            /* Border and Shadow for depth */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+            
+            width: 70%; 
+            max-width: 400px;
+            padding-left: 25px; 
+            padding-right: 25px;
+            padding-top: 15px;
+            padding-bottom: 15px;
+            border-radius: 25px; 
+            text-align: center; 
+
+            
+            max-height: 90vh;    /* Never taller than 90% of the screen */
+            overflow-y: auto;    /* Show a scrollbar if the content is too long */
+            
+            /* Smooth scrolling for iPhones */
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #splash, #dining { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            z-index: 500; text-align: center;
+        }
+        #splash { background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url("photo_2026-01-25_02-48-26.jpg") center/cover; }
+        #dining { display: none; background: #1a1a1a; gap: 20px; }
+
+        .choice-btn { width: 80%; padding: 40px 20px; border: 2px solid #444; border-radius: 20px; background: var(--card-bg); }
+
+        #app { display: none; flex-direction: column; min-height: 100vh; }
+        
+        .mobile-header {
+            position: sticky;
+            top: 0;
+            background: #ffffff;
+            z-index: 1000;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        #mode-title { letter-spacing: 1px; margin-top: -2px; }
+
+        .category-scroll { 
+            display: flex; overflow-x: auto; gap: 10px; padding: 15px 10px; 
+            scrollbar-width: none; -webkit-overflow-scrolling: touch;
+            position: relative; 
+        }
+        .category-scroll::-webkit-scrollbar { display: none; }
+        
+        #cat-highlight {
+            position: absolute;
+            background: rgba(28, 27, 25, 0.1); 
+            border-radius: 15px;
+            z-index: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+        }
+
+        .cat-btn { 
+            flex: 0 0 auto; 
+            display: flex;
+            flex-direction: column; 
+            align-items: center;
+            gap: 8px;
+            padding: 10px; 
+            border-radius: 15px; 
+            background: transparent !important; 
+            border: 1px solid transparent; 
+            color: black; 
+            font-size: 1rem;
+            min-width: 80px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cat-btn.active { color: var(--gold); font-weight: bold; }
+
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .menu-anim { animation: slideUpFade 0.4s ease forwards; }
+
+        .menu-container { padding: 15px; padding-bottom: 120px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        
+        /* The Card itself */
+.card {
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    height: 100%; /* Makes sure all cards in a row are the same height */
+}
+        /* The Image Box */
+.card-img {
+    width: 100%;
+    aspect-ratio: 16 / 11; /* Standard "Landscape" food photography ratio */
+    overflow: hidden;
+    position: relative;
+}
+
+.card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* This is what prevents the 'shrinking' look */
+    display: block;
+}
+
+/* The Text Area */
+.card-info {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex-grow: 1; /* Pushes the 'Add' button to the bottom */
+}
+        /* Responsive Image inside the Modal */
+.modal-food-img {
+    width: 100%;
+    aspect-ratio: 1 / 1;  /* Square ratio is best to see the WHOLE bowl */
+    max-height: 300px;     /* Prevents it from taking over the whole screen on tablets */
+    object-fit: cover;
+    border-radius: 20px;
+}
+/* Special adjustment for very small "mini" phones (like iPhone SE/Mini) */
+@media (max-width: 350px) {
+    .modal-box {
+        padding: 12px;     /* Less padding so buttons have room */
+    }
+    .modal-food-img {
+        aspect-ratio: 16 / 10; /* Shorter image so we can see the 'Add' button */
+    }
+}
+        .qty-controls { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 15px; }
+        .qty-btn { width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--gold); background: transparent; color: var(--gold); font-size: 1.5rem; line-height: 1; }
+
+        .special-notes-input { 
+            width: 90%; 
+            
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            color: gray; 
+            border-radius: 12px; 
+            padding: 12px; 
+            resize: none; 
+        }
+        .cart-bar { 
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    width: 90%; max-width: 480px; background: #27ae60; color: white; 
+    border-radius: 15px; display: none; justify-content: space-between; 
+    align-items: center; padding: 15px 20px; z-index: 200; 
+    font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); cursor: pointer;
+    box-sizing: border-box;
+    /* Removed fixed height so it stays clean */
+    height: 60px; 
+}
+
+        .cart-qty-pill {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #fff; border: 1.5px solid var(--gold); border-radius: 20px;
+            padding: 2px 8px; width: 80px; height: 30px;
+        }
+
+        .cart-qty-btn { background: none; border: none; color: var(--gold); font-size: 1.2rem; font-weight: bold; cursor: pointer; padding: 0 5px; }
+        .cart-qty-val { font-size: 0.9rem; font-weight: bold; color: #333; }
+
+        #cart-overlay { position: fixed; bottom: 0; left: 0; width: 100%; height: 85%; background: white; color: black; border-top-left-radius: 25px; border-top-right-radius: 25px; z-index: 1100; display: none; flex-direction: column; }
+        .cart-header { padding: 20px; text-align: center; border-bottom: 1px solid #eee; font-weight: bold; font-size: 1.2rem; }
+        .cart-items { flex: 1; overflow-y: auto; padding: 20px; }
+        .cart-footer { padding: 20px; background: #f9f9f9; border-top: 1px solid #eee; }
+
+        .pay-btn {
+            width: 100%; padding: 10px; background: #27ae60; color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
+
+        .logo-wrapper { width: 90px; height: 90px; margin: 0 auto; border-radius: 50%; padding: 5px; background: white; border: 4px solid var(--gold); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .loading-bar { width: 100%; height: 6px; background: #eee; border-radius: 3px; margin-top: 15px; overflow: hidden; }
+        .progress { height: 100%; background: var(--gold); width: 0%; animation: fillBar 5s linear forwards; }
+        
+        .star-rating { margin: 15px 0; display: flex; justify-content: center; gap: 10px; direction: rtl; }
+        .star-rating input { display: none; }
+        .star-rating label { font-size: 2.5rem; color: #444; cursor: pointer; transition: 0.2s; }
+        .star-rating label:hover, .star-rating label:hover ~ label, .star-rating input:checked ~ label { color: #FFC107; }
+
+        .cat-img-slot {
+            width: 50px; height: 50px; border-radius: 50%; 
+            background: #333; overflow: hidden; border: 2px solid transparent;
+        }
+
+        .cat-btn.active .cat-img-slot { border-color: var(--gold); }
+        .cat-img-slot img { width: 100%; height: 100%; object-fit: cover; }
+
+        .fly-to-cart {
+            position: fixed;
+            z-index: 9999;
+            pointer-events: none;
+            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 50px; 
+            opacity: 1;
+            object-fit: cover;
+        }
+
+        @keyframes cartBounce {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.1); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+        .cart-bounce { animation: cartBounce 0.3s ease-out; }
+
+        .card { 
+            display: flex;
+            flex-direction: column; /* Stacks image and info vertically */
+            height: 100%; /* Ensures all cards in a row have the same height */
+        }
+
+        .card-info {
+            flex-grow: 1; /* This pushes the info area to fill space */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* This pushes the button to the very bottom */
+            padding: 15px;
+            background: white;
+        }
+        /* Container for the pill */
+        .modal-qty-pill {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f1f5f9; /* Light center background */
+            border-radius: 50px;
+            overflow: hidden;
+            width: auto; /* Slightly wider for the modal */
+            height: 40px;
+            margin: 5px auto 10px; /* Centers the pill */
+            border: none;
+        }
+
+        /* Dark end buttons */
+        .modal-qty-btn {
+            background: lightyellow; /* Dark navy */
+            color: black;
+            border: none;
+            width: 45px;
+            height: 100%;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Number in the middle */
+        .modal-qty-val {
+            flex: 1;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #121a2d;
+        }
+
+        @keyframes fillBar { to { width: 100%; } }
+        /* Add this to your style block */
+
+
+/* This class will be added once the image is loaded */
+.card-img img.loaded {
+    opacity: 1;
+}
+    </style>
+</head>
+<body>
+    
+    <div id="splash" onclick="showDining()">
+        <div style="font-size: 5rem;">🏮</div>
+        <h2 style="letter-spacing: 2px;">KAGARIBI</h2>
+        <div style="background: var(--gold); color: black; padding: 12px 25px; border-radius: 30px; font-weight: bold; margin-top: 20px; box-shadow: 0 4px 10px rgba(255,193,7,0.3);">TOUCH TO START</div>
+        <div onclick="window.location.href='reservation.html'" style="background: var(--gold); color: black; padding: 12px 38px; border-radius: 30px; font-weight: bold; margin-top: 20px; box-shadow: 0 4px 10px rgba(255,193,7,0.3);">
+            RESERVATION
+        </div>      
+    </div>
+    
+
+    <div id="dining">
+        <h2 style="color: var(--gold); font-family: 'Fredoka';">Order Type</h2>
+        <div class="choice-btn" onclick="startApp('Dine In')"><span style="font-size:3rem;">🍽️</span><br><h3>DINE IN</h3></div>
+        <div class="choice-btn" onclick="startApp('Take Out')"><span style="font-size:3rem;">🥡</span><br><h3>TAKE OUT</h3></div>
+    </div>
+
+    <div id="table-entry" class="modal-overlay">
+        <div class="modal-box">
+            <h3 style="margin-top:0">Table Number</h3>
+            <input type="number" id="table-input" placeholder="0" pattern="\d*" style="width: 100px; height: 60px; font-size: 2rem; text-align: center; margin: 15px 0; border: 2px solid var(--gold); border-radius: 10px; background: #333; color: white;">
+            <button class="pay-btn" onclick="saveTableAndStart()" style="background: var(--deep-red);">CONTINUE</button>
+            <p onclick="goBackToOrderType()" style="color: #888; cursor: pointer; margin-top: 15px; font-size: 0.9rem; text-decoration: underline;">Change Order Type</p>
+        </div>
+    </div>
+
+    <div id="app">
+        <header class="mobile-header">
+            <div style="display:flex; justify-content:space-between; align-items: flex-start; padding: 12px 15px 8px 15px;">
+                <div style="display:flex; flex-direction: column; gap: 4px;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="font-size: 1.1rem;">🏮</span>
+                        <b style="color:var(--gold); font-size: 1.3rem; letter-spacing: 1px; font-family: 'Fredoka'; line-height: 1;">KAGARIBI</b>
+                    </div>
+                    <div style="padding-left: 22px; display: flex; flex-direction: column; gap: 2px;">
+                        <span id="mode-title" style="color:#1b1a1a; font-size: 0.8rem; font-weight: bold; text-transform: uppercase;"></span>
+                        <span id="dining-type-display" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;"></span>
+                    </div>
+                </div>
+                <button onclick="location.reload()" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color:#777; font-size:0.6rem; padding: 4px 8px; border-radius: 6px;">RESTART</button>
+            </div>
+
+            <div class="search-container" style="padding: 6px 15px 12px 15px; background: transparent;">
+                <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                    
+                    <span style="position: absolute; left: 14px; display: flex; align-items: center; pointer-events: none; z-index: 2;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="11" cy="11" r="7" stroke="#555555" stroke-width="2.5" stroke-linecap="round"/>
+                            <path d="M11 14A3 3 0 0 1 8 11" stroke="#cccccc" stroke-width="1.2" stroke-linecap="round"/>
+                            <path d="M16 16L22 22" stroke="#333333" stroke-width="3" stroke-linecap="round"/>
+                        </svg>
+                    </span>
+
+                    <input type="text" id="menu-search-input" oninput="handleSearch(this.value)" placeholder="Search food items..." 
+                           style="width: 100%; padding: 10px 14px 10px 42px; border: 1.5px solid #e2e8f0; border-radius: 25px; font-size: 0.95rem; outline: none; box-sizing: border-box; background: #ffffff; color: #1a1a1a; font-family: sans-serif; box-shadow: inset 0 2px 4px rgba(0,0,0,0.04), 0 4px 10px -2px rgba(0,0,0,0.05); transition: all 0.2s ease;">
+                    
+                    <button id="clear-search-btn" onclick="clearSearch()" style="position: absolute; right: 14px; background: #e2e8f0; border: none; color: #4a5568; font-size: 0.95rem; width: 22px; height: 22px; border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; padding: 0; font-weight: bold; line-height: 1; z-index: 2;">&times;</button>
+                </div>
+            </div>
+
+            <div class="category-scroll" id="cat-scroll"></div>
+        </header>
+
+        <main class="menu-container">
+            <div id="best-seller-section" style="margin-bottom: 20px;">
+                <h2 id="best-seller-text" style="color: #1a1a1a; font-size: 1.4rem; border-left: 4px solid #ce1126; padding-left: 10px; display: flex; align-items: center; gap: 8px;">
+                    🔥 Best Sellers
+                </h2>
+            </div>
+            <div class="grid" id="grid"></div>
+        </main>
+        
+        <div class="cart-bar" id="cart-bar" onclick="toggleCart(true)">
+            <span>View Order (<span id="cart-count">0</span>)</span>
+            <span id="cart-total-bar">₱0.00</span>
+        </div>
+    </div>
+
+    <div id="item-modal" class="modal-overlay">
+        <div class="modal-box" >
+            <div id="modal-content"></div>
+            <textarea id="special-notes" class="special-notes-input" placeholder="Notes: (e.g. No ice, extra spicy, no sauce)"></textarea>
+            <div style="margin-top: 20px;">
+                <button class="pay-btn" onclick="addToCartFinal()">ADD TO CART</button>
+                <button class="pay-btn" onclick="closeModals()" style="background:gray; border:1px solid #444; color:white;">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="cart-overlay">
+<div class="cart-header">
+    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <span>YOUR SELECTION</span>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <button onclick="confirmClearCart()" style="background: #ce1126; color: white; border: none; padding: 8px 12px; border-radius: 8px; display: flex; align-items: center; gap: 5px; font-size: 0.8rem; cursor: pointer;">
+                <span>🗑️</span> Clear
+            </button>
+            <span onclick="toggleCart(false)" style="font-size:1.8rem; color:#888; cursor: pointer;">&times;</span>
+        </div>
+    </div>
+</div>  
+        <div class="cart-items" id="cart-list"></div>
+        <div class="cart-footer">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-size:1.3rem;">
+                <b>Total:</b><b id="total" style="color:var(--deep-red)">₱0.00</b>
+            </div>
+            <button class="pay-btn" onclick="openMethodSelection()">CHECKOUT</button>
+        </div>
+    </div>
+
+    <div id="method-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 style="margin-top:0">Payment Method</h3>
+            <button class="pay-btn" onclick="processOrder('GCASH')" style="background:#2071e8;">GCASH</button>
+            <button class="pay-btn" onclick="processOrder('MAYA')" style="background:#1abc9c;">CARD</button>
+            <button class="pay-btn" onclick="processOrder('CASH')" style="background:#555;">CASH AT COUNTER</button>
+            <p onclick="closeModals()" style="color:#aaa; cursor:pointer; margin-top:15px;">Back</p>
+        </div>
+    </div>
+
+    <div id="success-modal" class="modal-overlay"></div>
+
+    <div id="delete-modal" class="modal-overlay">
+        <div class="modal-box" style="background: #1a1a1a; border: 1.5px solid var(--gold);">
+            <div style="font-size: 3rem; margin-bottom: 10px;">🗑️</div>
+            <h3 style="color: white; margin-bottom: 10px;">Remove Item?</h3>
+            <p id="delete-msg" style="color: #aaa; font-size: 0.9rem; margin-bottom: 20px;"></p>
+            <div style="display: flex; gap: 10px;">
+                <button id="confirm-delete-btn" class="pay-btn" style="background: var(--deep-red); flex: 1;">REMOVE</button>
+                <button class="pay-btn" onclick="closeDeleteModal()" style="background: transparent; border: 1px solid #444; color: #888; flex: 1;">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. CONFIGURATION
+    const DURATION = 60 * 60 * 1000; // 5 minutes
+    const urlParams = new URLSearchParams(window.location.search);
+    const tableFromUrl = urlParams.get('table');
+
+    // 2. THE GATEKEEPER: Check expiry IMMEDIATELY on load
+    function checkSession() {
+        const expiry = localStorage.getItem('expiryTimestamp');
+        const now = new Date().getTime();
+
+        // If expiry exists and time is up
+        if (expiry && now > parseInt(expiry)) {
+            document.body.innerHTML = `
+                <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; width:100vw; text-align:center; background:linear-gradient(135deg, #1a1a1a 0%, #000000 100%); color:#ffffff; font-family:sans-serif; padding:20px; box-sizing:border-box;">
+                    <div style="font-size: 80px; margin-bottom: 20px;">⚠️</div>
+                    <h1 style="font-size: 28px; font-weight: 600; margin-bottom: 10px; color: #ffcc00;">Session Expired</h1>
+                    <p style="font-size: 16px; color: #b3b3b3; max-width: 300px; line-height: 1.5;">
+                        Your session has ended due to inactivity. Please scan the QR code to start a new order.
+                    </p>
+                </div>`;
+            return true; // Return true to indicate it is expired
+        }
+        return false;
+    }
+
+    // 3. INITIALIZE SESSION
+    // Only set a NEW timestamp if it's a start-scan or if one doesn't exist at all
+    if (urlParams.has('start') || !localStorage.getItem('expiryTimestamp')) {
+        const now = new Date().getTime();
+        localStorage.setItem('expiryTimestamp', now + DURATION);
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // 4. RUN CHECK IMMEDIATELY
+    if (checkSession()) {
+        // If expired, stop here.
+    } else {
+        // 5. ACTIVITY RESET & MONITORING
+        function extendSession() {
+            const now = new Date().getTime();
+            localStorage.setItem('expiryTimestamp', now + DURATION);
+        }
+
+        document.addEventListener('touchstart', extendSession);
+        document.addEventListener('mousedown', extendSession);
+        
+        // Monitor every 10 seconds
+        setInterval(checkSession, 10000);
+    }
+    // 4. START THE TIMER (Only runs if they are NOT expired)
+    // We use 60000ms for your 1-minute test
+    
+
+        let orderType = ""; 
+        
+        
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQZQYmI5pfNSKbuv368nwuRAs1PrtusV4",
+            authDomain: "kagaribi-order.firebaseapp.com",
+            projectId: "kagaribi-order",
+            storageBucket: "kagaribi-order.firebasestorage.app",
+            messagingSenderId: "724955593450",
+            appId: "1:724955593450:web:45fd894a5281906cdef593"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // 1. ADDED "Popular" as the first category
+        const CATEGORIES = [
+            { name: "Popular",japanese: "人気", image: "categories/fire.png" },
+            { name: "Agemono", japanese: "揚げ物", image: "categories/agemono.png" },
+            // { name: "Appetizer", image: "images/CEASAR SALAD.png" },
+            { name: "Chahan-Kare Rice ETC",japanese: "チャーハン・カレーライス等", image: "categories/rice.jpg" },
+            // { name: "Chinese Dishes", image: "images/MABOTOHU.png" },
+            { name: "Drinks/Dessert",japanese: "飲み物・デザート", image: "images/DRINKS.png" },
+            { name: "Donburi",japanese: "丼物", image: "categories/donburi.png" },
+            { name: "Grilled Fish",japanese: "焼き魚", image: "categories/grilled-fish.png" },
+            { name: "Ippin-Ryouri",japanese: "一品料理", image: "categories/ippin-ryouri.jpg" },
+            { name: "Lunch Set",japanese: "ランチセット", image: "images/MIX FURAI LUNCH SET.png" },
+            { name: "Makimono",japanese: "巻物", image: "categories/makimono.png" },
+            // { name: "Osusume", imgae: "images/.png"},
+            { name: "Ramen",japanese: "ラーメン", image: "categories/ramen.png" },
+            { name: "Salad",japanese: "サラダ", image: "categories/salad.png" },
+            { name: "Soba-Udon",japanese: "そば・うどん", image: "categories/udon.jpg" },
+            { name: "Sashimi",japanese: "刺身", image: "categories/shahimi.jpg" },
+            { name: "Snacks",japanese: "スナック", image: "images/UME SUISHOU.png" },
+            { name: "Tempura",japanese: "天ぷら", image: "categories/tenpura.png" },
+            { name: "Yakisoba/Takoyaki",japanese: "焼きそば・たこ焼き", image: "categories/takoyaki.jpg" },
+            { name: "Yakitori",japanese: "焼き鳥", image: "images/UZURA BACON.png"},
+            { name: "Add-ons",japanese: "アドオン", image: "images/PLAIN RICE.png"},
+            
+
+
+        ];
+
+        // 2. MARKED specific items with isBestSeller: true
+        const MENU = [
+            // Donburi
+            { id: 1, jname: "カツ丼", name: "KATSU-DON", price: 380,cost: 83.40, cat: "Donburi", img: "images/KATSUDON.png", desc: "Crispy breaded pork cutlet served over rice with egg and savory-sweet sauce.", isBestSeller: true,
+             addons: [
+            { name: "Extra Rice", price: 50, cost: 60},
+            { name: "Extra Egg", price: 30, cost: 20 }
+        ]},
+            { id: 2, jname: "ソースカツ丼", name: "SOSUKATSUDON", price: 420,cost: 82.09, cat: "Donburi", img: "images/SOSUKATSUDON.png", desc: "Crispy pork cutlet over rice, topped with rich Japanese-style sauce..", isBestSeller: false },
+            { id: 3, jname: "エビカツ丼", name: "EBIKATSU-DON", price: 400,cost: 83.40, cat: "Donburi", img: "images/EBIKATSU-DON.png", desc: "Crispy breaded shrimp served over rice with savory sauce.", isBestSeller: false },
+            { id: 4, jname: "かき揚げ丼", name: "KAKIAGE-DON", price: 280,cost: 64.61, cat: "Donburi", img: "images/KAKIAGEDON.png", desc: "Crispy mixed vegetable tempura served over rice with savory sauce.", isBestSeller: false },
+            { id: 5, jname: "天丼", name: "TEN-DON", price: 400,cost: 99.60, cat: "Donburi", img: "images/TEN-DON.png", desc: "Assorted tempura over rice, drizzled with savory sauce.", isBestSeller: false },
+            { id: 6, jname: "牛丼", name: "GYU-DON", price: 380,cost: 119.93, cat: "Donburi", img: "images/GYU-DON.png", desc: "Thinly sliced beef and onions simmered in savory-sweet sauce over rice.", isBestSeller: true },
+            { id: 7, jname: "親子丼", name: "OYAKO-DON", price: 360,cost: 90.77, cat: "Donburi", img: "images/OYAKO-DON.png", desc: "Chicken and egg simmered in savory-sweet sauce over rice.", isBestSeller: false },
+            { id: 8, jname: "鶏照り焼き丼", name: "TORITERIYAKI-DON", price: 350,cost: 96.50, cat: "Donburi", img: "images/TORITEYAKI-DON.png", desc: "Grilled chicken glazed with sweet soy sauce over rice.", isBestSeller: false },
+            { id: 9, jname: "そぼろ丼", name: "SOBORO-DON", price: 280,cost: 77.01, cat: "Donburi", img: "images/SOBORO-DON.png", desc: "Seasoned ground chicken served over rice with savory-sweet flavor.", isBestSeller: false },
+            { id: 10, jname: "鉄火丼", name: "TEKKA-DON", price: 380, cost: 108.01,cat: "Donburi", img: "images/TEKKA-DON.png", desc: "Fresh sliced tuna served over rice.", isBestSeller: false },
+            { id: 11, jname: "マグロ漬け丼", name: "MAGUROZUKE-DON",cost: 80.29, price: 380, cat: "Donburi", img: "images/MAGUROZUKE-DON.png", desc: "Soy-marinated tuna slices served over rice.", isBestSeller: false },
+            { id: 12, jname: "海鮮丼", name: "KAISEN-DON", price: 420,cost: 143.79, cat: "Donburi", img: "images/KAISEN-DON.png", desc: "Fresh assorted sashimi served over rice.", isBestSeller: true },
+            { id: 342, jname: "チャーシュー丼", name: "CHASU-DON", price: 250,cost: 99.60, cat: "Donburi", img: "images/CHASU DON.png", desc: "Tender sliced chashu pork served over rice.", isBestSeller: false },
+            { id: 341, jname: "サーモン照り焼き丼", name: "SALMON TERIYAKI DON", price: 390,cost: 99.60, cat: "Donburi", img: "images/SALMON TERIYAKI DON.png", desc: "Teriyaki salmon served over rice.", isBestSeller: false },
+            { id: 350, jname: "ちきんかつどん", name: "CHICKEN KATSUDON", price: 380,cost: 82.09, cat: "Donburi", img: "images/CHICKEN KATSUDON.png", desc: "Crispy breaded chicken cutlet served over rice with egg and savory-sweet sauce.", isBestSeller: false },
+            { id: 352, jname: "えびてんどん", name: "EBI TENDON", price: 470,cost: 82.09, cat: "Donburi", img: "images/EBI TENDON.png", desc: "Crispy shrimp tempura served over rice with savory tempura sauce.", isBestSeller: false },
+            { id: 360, jname: "サーモン丼", name: "SALMON DON", price: 450,cost: 82.09, cat: "Donburi", img: "images/SALMON DON.png", desc: "Fresh salmon slices served over rice.", isBestSeller: false },
+            { id: 362, jname: "ユニドン", name: "UNI DON", price: 450,cost: 82.09, cat: "Donburi", img: "images/UNI DON.png", desc: "Fresh sea urchin served over rice with rich, creamy flavor.", isBestSeller: false },
+            { id: 580, jname: "中トロ丼", name: "CHUTORO DON", price: 750,cost: 82.09, cat: "Donburi", img: "images/CHUTORO DON.png", desc: "Premium medium-fatty tuna served over rice with a rich, buttery flavor.", isBestSeller: false },
+            { id: 558, jname: "ネギトロ丼", name: "NEGITORO DON", price: 480,cost: 82.09, cat: "Donburi", img: "images/NEGITORO DON.png", desc: "Minced fatty tuna with green onions served over rice.", isBestSeller: false },
+            
+
+            // Agemono
+            { id: 13, jname: "エビフライ", name: "EBI-FRY", price: 380,cost: 142.14, cat: "Agemono", img: "images/EBI-FRY.png", desc: "Crispy breaded deep-fried shrimp served with sauce.", isBestSeller: false },
+            { id: 14, jname: "とんかつ", name: "TONKATSU", price: 280,cost: 74.05, cat: "Agemono", img: "images/TONKATSU.png", desc: "Crispy breaded pork cutlet served with sauce.", isBestSeller: true },
+            { id: 15, jname: "チキンカツ", name: "CHIKENKATSU", price: 280,cost: 93.55, cat: "Agemono", img: "images/CHICKENKATSU.png", desc: "Crispy breaded chicken cutlet served with sauce.", isBestSeller: true },
+            { id: 16, jname: "鶏唐揚げ", name: "TORI-KARAAGE", price: 280,cost: 101.84, cat: "Agemono", img: "images/TORI-KARAAGE.png", desc: "Japanese-style fried chicken pieces, crispy and juicy.", isBestSeller: true },
+            { id: 17, jname: "ねぎ塩唐揚げ", name: "NEGISHIO-KARAAGE", price: 280,cost: 90.48, cat: "Agemono", img: "images/NEGISIO-KARAAGI.png", desc: "Fried chicken seasoned with salt and green onions.", isBestSeller: false },
+            { id: 18, jname: "川エビ唐揚げ", name: "KAWAEBI-KARAAGE", price: 250,cost: 74.17, cat: "Agemono", img: "images/KAWAEBI-KARAAGE.png", desc: "Crispy fried shrimp with shell.", isBestSeller: true },
+            { id: 19, jname: "イカフライ", name: "IKA FRY", price: 280,cost: 158.61, cat: "Agemono", img: "images/IKA-FRY.png", desc: "Breaded deep-fried squid.", isBestSeller: false },
+            { id: 20, jname: "アジフライ", name: "AJI FRY", price: 280,cost: 168.46, cat: "Agemono", img: "images/AZI-FRY.png", desc: "Crispy breaded fried horse mackerel.", isBestSeller: true },
+            { id: 21, jname: "キスフライ", name: "KISU FRY", price: 250,cost: 156.16, cat: "Agemono", img: "images/KISU-FRY.png", desc: "Lightly breaded fried whiting fish.", isBestSeller: true },
+            { id: 22, jname: "ハムカツ", name: "HAMU KATSU", price: 250,cost: 105.13, cat: "Agemono", img: "images/HAMU KATSU.png", desc: "Breaded fried ham cutlet.", isBestSeller: false },
+            { id: 23, jname: "メンチカツ", name: "MENCHI KATSU", price: 250, cost: 49.67,cat: "Agemono", img: "images/MENCI.png", desc: "Crispy fried minced meat patty.", isBestSeller: false },
+            { id: 24, jname: "コロッケ", name: "KOROKKE", price: 230,cost: 50.23, cat: "Agemono", img: "images/KOROKKE.png", desc: "Japanese-style fried potato croquette.", isBestSeller: false },
+            { id: 25, jname: "ミックスフライ", name: "MIX FRY", price: 320,cost: 113.30, cat: "Agemono", img: "images/MIXED FRY.png", desc: "Assorted fried items served together.", isBestSeller: true },
+            { id: 26, jname: "ヒレカツ", name: "HIRE KATSU", price: 380,cost: 113.30, cat: "Agemono", img: "images/HIRE KATSU.png", desc: "Tender and lean premium pork tenderloin cutlet.", isBestSeller: true },
+            // { id: 26, jname: "串カツ", name: "KUSHI-KATSU", price: 420,cost: 84.90, cat: "Agemono", img: "images/KUSHI-KATSU.png", desc: "Skewered deep-fried meat and vegetables.", isBestSeller: false, 
+            //     addons: [
+            //             { name: "EBI", price: 180, cost: 60},
+            //             { name: "KISU", price: 110, cost: 60},
+            //             { name: "BUTABARA", price: 120, cost: 60},
+            //             { name: "TORIMONO", price: 120, cost: 60},
+            //             { name: "ONION", price: 100, cost: 60}]
+            // },
+            
+            { id: 32, jname: "串カツ盛り合わせ", name: "KUSHI AGE MORIAWASE", price: 580,cost: 111.92, cat: "Agemono", img: "images/KUSHI-KATSU.png", desc: "Assorted skewered deep-fried items.", isBestSeller: false,
+                addons: [
+                        { name: "EBI", price: 180, cost: 60},
+                        { name: "KISU", price: 110, cost: 60},
+                        { name: "BUTABARA", price: 120, cost: 60},
+                        { name: "TORIMONO", price: 120, cost: 60},
+                        { name: "ONION", price: 100, cost: 60}]
+             },
+            
+            // Tenpura cost: 60,
+            { id: 33, jname: "エビ天ぷら", name: "EBI-TEMPURA", price: 420,cost: 129.13, cat: "Tempura", img: "images/KISU-TENPURA.png", desc: "Light and crispy battered shrimp tempura.", isBestSeller: true },
+            { id: 34, jname: "キス天ぷら", name: "KISU-TEMPURA", price: 350,cost: 125.04, cat: "Tempura", img: "images/EBI-TENPURA.png", desc: "Delicately fried whiting fish in light tempura batter.", isBestSeller: true },
+            { id: 35, jname: "イカ天ぷら", name: "IKA-TEMPURA", price: 310,cost: 112.73, cat: "Tempura", img: "images/IKA-TENPURA.png", desc: "Crispy deep-fried squid in light batter.", isBestSeller: false },
+            { id: 36, jname: "アジ天ぷら", name: "AJI-TEMPURA", price: 310, cost: 117.69,cat: "Tempura", img: "images/AJI-TENPURA.png", desc: "Lightly battered fried horse mackerel.", isBestSeller: false },
+            { id: 37, jname: "野菜天ぷら", name: "YASAI-TEMPURA", price: 280,cost: 69.91, cat: "Tempura", img: "images/YASAI-TENPURA.png", desc: "Assorted crispy fried vegetable tempura.", isBestSeller: false },
+            { id: 38, jname: "天ぷら盛り合わせ", name: "MORIAWASE-TEMPURA", price: 400,cost: 148.07, cat: "Tempura", img: "images/MORIAWASE-TENPURA.png", desc: "Mixed selection of assorted tempura items.", isBestSeller: false },
+            
+
+            // Ramen
+            { id: 39, jname: "醤油ラーメン", name: "SHOYU-RAMEN", price: 310,cost: 88.47, cat: "Ramen", img: "images/SYOU-RAMEN.png", desc: "Soy sauce-based ramen with a savory, light broth.", isBestSeller: false,
+                addons: [
+            { name: "GYOZA", price: 120},{ name: "HAN-CHAHAN", price: 120},{ name: "YASAI-ITAME", price: 120},
+            { name: "CHASYU", price: 100},{ name: "TAMAGO", price: 50},{ name: "PIRIKARA-NEGI", price: 50},{ name: "OMORI", price: 50}
+            ]},
+            { id: 40, jname: "味噌ラーメン", name: "MISO-RAMEN", price: 310, cost: 57.13,cat: "Ramen", img: "images/MISO-RAMEN.png", desc: "Rich ramen with hearty miso-flavored broth.", isBestSeller: false,
+                addons: [
+            { name: "GYOZA", price: 120},{ name: "HAN-CHAHAN", price: 120},{ name: "YASAI-ITAME", price: 120},
+            { name: "CHASYU", price: 100},{ name: "TAMAGO", price: 50},{ name: "PIRIKARA-NEGI", price: 50},{ name: "OMORI", price: 50}
+            ]
+             },
+            { id: 41, jname: "タンメン", name: "TAN-MEN", price: 290,cost: 92.74, cat: "Ramen", img: "images/TAN-MEN.png", desc: "Stir-fried vegetable ramen in light savory broth.", isBestSeller: false,
+                addons: [
+            { name: "GYOZA", price: 120},{ name: "HAN-CHAHAN", price: 120},{ name: "YASAI-ITAME", price: 120},
+            { name: "CHASYU", price: 100},{ name: "TAMAGO", price: 50},{ name: "PIRIKARA-NEGI", price: 50},{ name: "OMORI", price: 50}
+            ]
+             },
+            { id: 42, jname: "豚骨ラーメン", name: "TONKOTSU-RAMEN", price: 350,cost: 115.29, cat: "Ramen", img: "images/TONKOTSU-RAMEN.png", desc: "Creamy pork bone broth ramen with rich flavor.", isBestSeller: true,
+                addons: [
+            { name: "GYOZA", price: 120},{ name: "HAN-CHAHAN", price: 120},{ name: "YASAI-ITAME", price: 120},
+            { name: "CHASYU", price: 100},{ name: "TAMAGO", price: 50},{ name: "PIRIKARA-NEGI", price: 50},{ name: "OMORI", price: 50}
+            ]
+             },
+            { id: 43, jname: "担々麺", name: "TANTAN-MEN", price: 390,cost: 140.92, cat: "Ramen", img: "images/TANTAN-MEN.png", desc: "Spicy sesame ramen with minced meat and chili oil.", isBestSeller: true,
+                addons: [
+            { name: "GYOZA", price: 120},{ name: "HAN-CHAHAN", price: 120},{ name: "YASAI-ITAME", price: 120},
+            { name: "CHASYU", price: 100},{ name: "TAMAGO", price: 50},{ name: "PIRIKARA-NEGI", price: 50},{ name: "OMORI", price: 50}
+            ]
+             },
+            { id: 44, jname: "ミルキー担々麺", name: "MILKY-TANTANMEN", price: 410,cost: 135.16, cat: "Ramen", img: "images/MILKEYTANTAN-MEN.png", desc: "Creamy sesame ramen with a mild spicy flavor.", isBestSeller: false,
+                addons: [
+            { name: "GYOZA", price: 120},{ name: "HAN-CHAHAN", price: 120},{ name: "YASAI-ITAME", price: 120},
+            { name: "CHASYU", price: 100},{ name: "TAMAGO", price: 50},{ name: "PIRIKARA-NEGI", price: 50},{ name: "OMORI", price: 50}
+            ]
+             },
+            { id: 45, jname: "あんかけラーメン", name: "ANKAKE-RAMEN", price: 410,cost: 107.85, cat: "Ramen", img: "images/ANKAKE-MEN.png", desc: "Thick starchy sauce ramen with vegetables and meat.", isBestSeller: true,
+                addons: [
+            { name: "GYOZA", price: 120},{ name: "HAN-CHAHAN", price: 120},{ name: "YASAI-ITAME", price: 120},
+            { name: "CHASYU", price: 100},{ name: "TAMAGO", price: 50},{ name: "PIRIKARA-NEGI", price: 50},{ name: "OMORI", price: 50}
+            ]
+             },
+            { id: 46, jname: "天津麺", name: "TENSHIN-MEN", price: 370,cost: 132.70, cat: "Ramen", img: "images/TENSHIN-MEN.png", desc: "Crab omelet-style topping over ramen in light broth.", isBestSeller: false,
+                addons: [
+            { name: "GYOZA", price: 120},{ name: "HAN-CHAHAN", price: 120},{ name: "YASAI-ITAME", price: 120},
+            { name: "CHASYU", price: 100},{ name: "TAMAGO", price: 50},{ name: "PIRIKARA-NEGI", price: 50},{ name: "OMORI", price: 50}
+            ]
+             },
+            { id: 47, jname: "麻婆ラーメン", name: "MABO-RAMEN", price: 370,cost: 109.50, cat: "Ramen", img: "images/MABO-RAMEN.png", desc: "Spicy tofu and minced meat ramen in savory sauce.", isBestSeller: false,
+                addons: [
+            { name: "GYOZA", price: 120},{ name: "HAN-CHAHAN", price: 120},{ name: "YASAI-ITAME", price: 120},
+            { name: "CHASYU", price: 100},{ name: "TAMAGO", price: 50},{ name: "PIRIKARA-NEGI", price: 50},{ name: "OMORI", price: 50}
+            ]
+             },
+            { id: 48, jname: "冷やし中華", name: "HIYASHI-CHUKA", price: 390,cost: 100.49, cat: "Ramen", img: "images/HIYASITYUKA.png", desc: "Cold ramen noodles with assorted toppings and dressing.", isBestSeller: false,
+                addons: [
+            { name: "GYOZA", price: 120},{ name: "HAN-CHAHAN", price: 120},{ name: "YASAI-ITAME", price: 120},
+            { name: "CHASYU", price: 100},{ name: "TAMAGO", price: 50},{ name: "PIRIKARA-NEGI", price: 50},{ name: "OMORI", price: 50}
+            ]
+             },
+            // { id: 49, jname: "餃子", name: "GYOUZA", price: 120,cost: 60, cat: "Ramen", img: "images/GYOUZA.png", desc: "RAMEN SET 1/ラーメンセット 1", isBestSeller: false },
+            // { id: 50, jname: "半チャーハン", name: "HAN-CYAHAN", price: 120,cost: 60, cat: "Ramen", img: "images/HAN-CHAHAN.png", desc: "RAMEN SET 2/ラーメンセット 2", isBestSeller: false },
+            // { id: 51, jname: "野菜炒め", name: "YASAI-ITAME", price: 120,cost: 60, cat: "Ramen", img: "images/YASAIITAME.png", desc: "RAMEN SET 3/ラーメンセット 3", isBestSeller: false },
+            //no price list
+
+            // Salad
+            { id: 151, jname: "シーザーサラダ", name: "CAESAR SALAD", price: 310,cost: 39.56, cat: "Salad", img: "images/CEASAR SALAD.png", desc: "Fresh greens with creamy Caesar dressing.", isBestSeller: false },
+
+
+            { id: 52, jname: "カニサラダ", name: "KANI-SARADA", price: 240,cost: 72.38, cat: "Salad", img: "images/KANI-SARADA.png", desc: "Crab stick salad with fresh vegetables.", isBestSeller: true },
+            { id: 53, jname: "わかめサラダ", name: "WAKAME-SARADA", price: 240,cost: 45.85, cat: "Salad", img: "images/WAKAME-SARADA.png", desc: "Seaweed salad with light sesame dressing.", isBestSeller: false },
+            { id: 54, jname: "海鮮サラダ", name: "KAISEN-SARADA", price: 310,cost: 84.80, cat: "Salad", img: "images/KAISEN-SARADA.png", desc: "Fresh seafood salad with mixed greens.", isBestSeller: true },
+            { id: 55, jname: "ポテトサラダ", name: "POTETO-SARADA", price: 280,cost: 17.40, cat: "Salad", img: "images/POTETO-SARADA.png", desc: "Creamy Japanese-style potato salad.", isBestSeller: false },
+            { id: 56, jname: "サラスパ", name: "SARA-SUPA", price: 280,cost: 75.61, cat: "Salad", img: "images/SARA-SUPA 120.png", desc: "House special mixed salad (small serving).", isBestSeller: false },
+            { id: 57, jname: "きゅうりとわかめ", name: "KYURI TO WAKAME", price: 220,cost: 43.98, cat: "Salad", img: "images/KYURI TO WAKAME.png", desc: "Cucumber and seaweed salad with light dressing.", isBestSeller: true },
+            { id: 58, jname: "たこ酢の物", name: "TAKO-SUNOMONO", price: 280,cost: 68.98, cat: "Salad", img: "images/TAKO-SUNOMONO.png", desc: "Octopus with vinegared cucumber.", isBestSeller: false },
+            { id: 59, jname: "酢の物盛り合わせ", name: "SUNOMONO-MORIAWASE", price: 310,cost: 113.18, cat: "Salad", img: "images/SUNOMONO-MORIAWASE.png", desc: "Assorted Japanese vinegared seafood and vegetables.", isBestSeller: false },
+            
+
+            // Soba/Udon
+            { id: 60, jname: "かけそば-うどん", name: "KAKE-SOBA-UDON", price: 250,cost: 72.10, cat: "Soba-Udon", img: "images/KAKE-SOBA_UDON.png", desc: "Hot plain noodle soup served in light savory broth.", isBestSeller: false,
+                // options: [{ name: "KAKE SOBA", price: 250.00, cost:579.84 },{ name: "KAKE UDON", price: 220, cost: 64.33 }]
+             },
+            { id: 61, jname: "たぬきそば-うどん", name: "TANUKI-SOBA-UDON", price: 290,cost: 73.93, cat: "Soba-Udon", img: "images/TANUKI-SOBA_UDON.png", desc: "Noodles in broth topped with crispy tempura bits.", isBestSeller: false,
+                //    options: [{ name: "TANUKI SOBA", price: 290.00, cost: 73.93 },{ name: "TANUKI UDON", price: 260, cost: 64.33 }]
+             },
+            { id: 62, jname: "きつねそば-うどん", name: "KITSUNE-SOBA-UDON", price: 290,cost: 90.35, cat: "Soba-Udon", img: "images/KITUNE-SOBA_UDON.png", desc: "Noodles in broth topped with sweet fried tofu.", isBestSeller: true,
+                //    options: [{ name: "KITSUNE SOBA", price: 290.00, cost: 90.35 },{ name: "KITSUNE UDON", price: 260, cost: 64.33 }]
+             },
+            { id: 63, jname: "肉そば-うどん", name: "NIKU-SOBA-UDON", price: 330,cost: 79.36, cat: "Soba-Udon", img: "images/NIKU-SOBA_UDON.png", desc: "Noodles with sliced meat in savory broth.", isBestSeller: true,
+                //    options: [{ name: "NIKU SOBA", price: 330.00, cost: 79.36 },{ name: "NIKU UDON", price: 300, cost: 64.33 }]
+             },
+            { id: 64, jname: "かき揚げそば-うどん", name: "KAKIAGE-SOBA-UDON", price: 320,cost: 82.16, cat: "Soba-Udon", img: "images/KAKIAGE-SOBA_UDON.png", desc: "Noodles topped with mixed vegetable tempura fritter.", isBestSeller: true,
+                //    options: [{ name: "KAKIAGE SOBA", price: 320.00, cost: 82.16 },{ name: "KAKIAGE UDON", price: 290, cost: 64.33 }]
+             },
+            { id: 65, jname: "天ぷらそば-うどん", name: "TEMPURA-SOBA-UDON", price: 460,cost: 98.00, cat: "Soba-Udon", img: "images/KAKIAGE-SOBA_UDON (2).png", desc: "Noodles served with assorted tempura.", isBestSeller: true,
+                //    options: [{ name: "TEMPURA SOBA", price: 460.00, cost: 98.00 },{ name: "TEMPURA UDON", price: 430, cost: 64.33 }]
+             },
+            { id: 66, jname: "カレーそば-うどん", name: "KARE-SOBA-UDON", price: 430,cost: 90.62, cat: "Soba-Udon", img: "images/KARE-SOBA_UDON.png", desc: "Noodles in rich Japanese curry sauce.", isBestSeller: true,
+                //    options: [{ name: "KARE SOBA", price: 430.00, cost: 90.62 },{ name: "KARE UDON", price: 400, cost: 64.33 }]
+             },
+            { id: 67, jname: "ざるそば-うどん", name: "ZARU-SOBA-UDON", price: 310,cost: 75.07, cat: "Soba-Udon", img: "images/ZARU-SOBA_UDON.png", desc: "Cold noodles served with dipping sauce.", isBestSeller: false,
+                //    options: [{ name: "ZARU SOBA", price: 310.00, cost: 75.07 },{ name: "ZARU UDON", price: 280, cost: 64.33 }]
+             },
+            { id: 68, jname: "天ざるそば-うどん", name: "TENZARU-SOBA-UDON", price: 490,cost: 94.03, cat: "Soba-Udon", img: "images/TENZARU-SOBA_UDON.png", desc: "Cold noodles with assorted tempura and dipping sauce.", isBestSeller: false,
+                //    options: [{ name: "TENZARU SOBA", price: 490.00, cost: 94.03 },{ name: "TENZARU UDON", price: 460, cost: 64.33 }]
+             },
+            
+            
+            // Grilled Fish
+            { id: 70, jname: "鯖 (さば)", name: "GRILLED SABA", price: "Market Price",cost: 129.95, cat: "Grilled Fish", img: "images/SABA.png", desc: "Grilled mackerel, savory and flavorful.", isBestSeller: true },
+            { id: 71, jname: "サーモン", name: "GRILLED SALMON", price: 280,cost: 104.98, cat: "Grilled Fish", img: "images/SALMON.png", desc: "Grilled salmon, tender and rich in taste.", isBestSeller: true },
+            //{ id: 72, jname: "鯵 (あじ)", name: "GRILLED AJI", price: 280,cost: 109.96, cat: "Grilled Fish", img: "images/AZI.png", desc: "Grilled horse mackerel, simple and delicious.", isBestSeller: false },
+            { id: 73, jname: "秋刀魚 (さんま)", name: "GRILLED SANMA", price: 300,cost: 194.95, cat: "Grilled Fish", img: "images/SANMA.png", desc: "Grilled Pacific saury, lightly salted.", isBestSeller: false },
+            { id: 74, jname: "サーモンカマ", name: "GRILLED SALMON-KAMA", price: 390,cost: 77.19, cat: "Grilled Fish", img: "images/SAMON-KAMA.png", desc: "Grilled salmon collar, juicy and flavorful.", isBestSeller: false },
+            { id: 75, jname: "サーモンハラス", name: "GRILLED SALMON-HARASU", price: 220,cost: 97.22, cat: "Grilled Fish", img: "images/SALMON HARASU.png", desc: "Grilled salmon belly, rich and fatty cut.", isBestSeller: true },
+            { id: 76, jname: "ししゃも", name: "GRILLED SHISHAMO", price: 280,cost: 157.04, cat: "Grilled Fish", img: "images/SISYAMO.png", desc: "Grilled smelt fish, often served whole with roe.", isBestSeller: true },
+            { id: 77, jname: "ホッケ", name: "GRILLED HOKKE", price: 310,cost: 121.50, cat: "Grilled Fish", img: "images/HOKKE.png", desc: "Grilled Atka mackerel, soft and savory.", isBestSeller: false },
+            { id: 78, jname: "イカ焼き", name: "GRILLED IKA-YAKI", price: 350,cost: 203.92, cat: "Grilled Fish", img: "images/IKA-YAKI.png", desc: "Grilled squid with savory glaze.", isBestSeller: true },
+            { id: 354, jname: "味焼き", name: "GRILLED AJI-YAKI", price: 350,cost: 203.92, cat: "Grilled Fish", img: "images/AJI-YAKI.png", desc: "Grilled horse mackerel with a savory, smoky flavor.", isBestSeller: true },
+            
+            // Makimono done part best seller
+            { id: 79, jname: "お稲荷さん", name: "INARI-SUSHI", price: 150,cost: 33.45, cat: "Makimono", img: "images/OINARI 2PCS.png", desc: "Sweet fried tofu sushi filled with seasoned rice.", isBestSeller: false },
+            { id: 80, jname: "かっぱ巻き", name: "KAPPA-MAKI", price: 150,cost: 21.07, cat: "Makimono", img: "images/KAPPA-MAKI.png", desc: "Cucumber sushi roll, light and refreshing.", isBestSeller: false },
+            { id: 81, jname: "たくあん巻き", name: "TAKUAN-MAKI", price: 150,cost: 22.69, cat: "Makimono", img: "images/TAKUAN-MAKI.png", desc: "Pickled radish sushi roll with crunchy texture.", isBestSeller: false },
+            { id: 82, jname: "納豆巻き", name: "NATTO-MAKI", price: 160,cost: 42.40, cat: "Makimono", img: "images/NATTO-MAKI.png", desc: "Fermented soybean sushi roll with strong flavor.", isBestSeller: false },
+            { id: 83, jname: "鉄火巻き", name: "TEKKA-MAKI", price: 250,cost: 48.02, cat: "Makimono", img: "images/TEKKA-MAKI.png", desc: "Tuna sushi roll with fresh flavor.", isBestSeller: false },
+            { id: 84, jname: "ネギトロ", name: "NEGITORO", price: 250,cost: 59.82, cat: "Makimono", img: "images/NEGITORO.png", desc: "Tuna belly and green onion sushi roll, soft and rich.", isBestSeller: false },
+            { id: 85, jname: "サーモン巻き", name: "SALMON-MAKI", price: 360,cost: 87.15, cat: "Makimono", img: "images/SALMON-MAKI.png", desc: "Fresh salmon sushi roll.", isBestSeller: false },
+            { id: 86, jname: "スパイシーサーモン巻き", name: "SPICY-SALMON-MAKI", price: 380,cost: 65.92, cat: "Makimono", img: "images/SPICY SALMON MAKI.png", desc: "Salmon roll with spicy mayo sauce.", isBestSeller: false },
+            { id: 87, jname: "サーモンマヨ巻き", name: "SALMON-MAYO-MAKI", price: 380,cost: 61.44, cat: "Makimono", img: "images/SALMON MAYO MAKI.png", desc: "Salmon roll with creamy mayonnaise.", isBestSeller: false },
+            { id: 88, jname: "マグロマヨ巻き", name: "MAGURO-MAYO-MAKI", price: 380,cost: 85.03, cat: "Makimono", img: "images/MAGURO-MAYO-MAKI.png", desc: "Tuna roll with creamy mayonnaise.", isBestSeller: false },
+            { id: 89, jname: "カリフォルニア巻き", name: "CALIFORNIA-MAKI", price: 380,cost: 44.43, cat: "Makimono", img: "images/CALIFORNIA-MAKI.png", desc: "Crab stick, avocado, and cucumber roll.", isBestSeller: false },
+            { id: 90, jname: "太巻き", name: "FUTO-MAKI", price: 420,cost: 50.32, cat: "Makimono", img: "images/FUTO-MAKI.png", desc: "Thick sushi roll with assorted fillings.", isBestSeller: false },
+            { id: 91, jname: "かがり火巻き", name: "KAGARIBI-MAKI", price: 420,cost: 174.04, cat: "Makimono", img: "images/KAGARIBI-MAKI.png", desc: "Special grilled or seared sushi roll with savory flavor.", isBestSeller: false },
+            
+
+            // Yakisoba/Takoyaki here Im part
+            { id: 92, jname: "焼きそば", name: "YAKISOBA", price: 240,cost: 81.98, cat: "Yakisoba/Takoyaki", img: "images/YAKISOBA.png", desc: "Stir-fried noodles with vegetables and savory sauce.", isBestSeller: false },
+            { id: 93, jname: "海鮮焼きそば", name: "KAISEN-YAKISOBA", price: 310,cost: 114.30, cat: "Yakisoba/Takoyaki", img: "images/KAISEN-YAKISOBA.png", desc: "Stir-fried noodles with mixed seafood.", isBestSeller: false },
+            { id: 94, jname: "肉焼きそば", name: "NIKU-YAKISOBA", price: 310,cost: 111.59, cat: "Yakisoba/Takoyaki", img: "images/NIKU-YAKISOBA.png", desc: "Stir-fried noodles with sliced meat.", isBestSeller: false },
+            { id: 95, jname: "デラックス焼きそば", name: "DELUX-YAKISOBA", price: 420,cost: 163.22, cat: "Yakisoba/Takoyaki", img: "images/DELUX-YAKISOBA (KAISEN+BUTA+NINBUN).png", desc: "Loaded stir-fried noodles with meat and seafood.", isBestSeller: false },
+            { id: 96, jname: "あんかけ焼きそば", name: "ANKAKE-YAKISOBA", price: 380,cost: 60, cat: "Yakisoba/Takoyaki", img: "images/ANKAKE-YAKISOBA.png", desc: "Noodles topped with thick savory sauce.", isBestSeller: false },
+            { id: 97, jname: "たこ焼き", name: "TAKOYAKI", price: 380,cost: 60, cat: "Yakisoba/Takoyaki", img: "images/TAKOYAKI.png", desc: "Soft dough balls filled with octopus and sauce.", isBestSeller: false,
+                options: [{ name: "16pcs", price: 380.00, cost: 79.29 },{ name: "8pcs", price: 190.00, cost: 63.50}]   
+             },
+            { id: 98, jname: "ねぎマヨたこ焼き", name: "NEGIMAYO-TAKOYAKI", price: 400.00, cat: "Yakisoba/Takoyaki", img: "images/NEGIMAYO-TAKOYAKI.png", desc: "Takoyaki topped with green onions and mayo.", isBestSeller: false,
+                options: [{ name: "16pcs", price: 400.00, cost: 84.16 },{ name: "8pcs", price: 200.00, cost: 47.01}]   
+            },
+            { id: 99, jname: "お好み焼き", name: "OKONOMIYAKI", price: 470,cost: 88.33, cat: "Yakisoba/Takoyaki", img: "images/OKONOMIYAKI.png", desc: "Japanese savory pancake with cabbage and toppings.", isBestSeller: false },
+            { id: 100, jname: "デラックスお好み焼き", name: "DELUX-OKONOMIYAKI", price: 390,cost: 120.83, cat: "Yakisoba/Takoyaki", img: "images/DELUX-OKONOMIYAKI (KAISEN+NIKU+NINBUN.png", desc: "Savory pancake with mixed premium toppings.", isBestSeller: false },
+            { id: 69, jname: "焼きうどん", name: "YAKIUDON", price: 310,cost: 80.11, cat: "Yakisoba/Takoyaki", img: "images/YAKIUDON.png", desc: "Stir-fried udon noodles with vegetables and sauce.", isBestSeller: true },
+            
+            // Appetizer
+            
+            { id: 145, jname: "ちゃわんむし", name: "CHAWANMUSHI", price: 170,cost: 31.77, cat: "Ippin-Ryouri", img: "images/CHAWANMUSI.png", desc: "Steamed savory egg custard with fillings.", isBestSeller: false },
+            { id: 551, jname: "マグロ納豆", name: "MAGURO-NATTO", price: 275,cost: 79.37, cat: "Ippin-Ryouri", img: "images/MAGURO-NATTO.png", desc: "Tuna mixed with fermented soybeans.", isBestSeller: false },
+            { id: 552, jname: "いか納豆", name: "IKA-NATTO", price: 260,cost: 51.89, cat: "Ippin-Ryouri", img: "images/IKA-NATTO.png", desc: "Squid mixed with fermented soybeans.", isBestSeller: false },
+            
+            { id: 550, jname: "キムチ納豆", name: "KIMUCI-NATTO", price: 250,cost: 40.02, cat: "Ippin-Ryouri", img: "images/KIMUCI-NATTO.png", desc: "Kimchi mixed with fermented soybeans.", isBestSeller: false },
+            
+            
+            
+            
+            
+            //  Ippin-Ryouri
+            { id: 144, jname: "枝豆", name: "EDAMAME", price: 220,cost: 32.26, cat: "Ippin-Ryouri", img: "images/EDAMAME.png", desc: "Steamed young soybeans lightly salted.", isBestSeller: false },
+            { id: 148, jname: "キムチ", name: "KIMCHI", price: 220,cost: 37.37, cat: "Ippin-Ryouri", img: "images/KIMCHI.png", desc: "Spicy fermented cabbage.", isBestSeller: false },
+            { id: 150, jname: "出汁巻き卵", name: "DASHI-TAMAGO", price: 220,cost: 46.68, cat: "Ippin-Ryouri", img: "images/DASHI-TAMAGO.png", desc: "Japanese rolled omelet with light broth flavor.", isBestSeller: false },
+            { id: 153, jname: "チャンジャ", name: "CHANJA", price: 330,cost: 76.75, cat: "Ippin-Ryouri", img: "images/CHANJA.png", desc: "Spicy seasoned cod innards, rich and flavorful.", isBestSeller: false },
+            { id: 1004, jname: "タコワサビ", name: "TAKOWASABI", price: 290, cat: "Ippin-Ryouri", img: "images/TAKO WASABI.png", desc: "TAKOWASABI.", isBestSeller:false },
+            { id: 154, jname: "梅水晶", name: "UMESUISHO", price: 250,cost: 70.31, cat: "Ippin-Ryouri", img: "images/UME SUISHOU.png", desc: "Crunchy cartilage with tangy plum flavor.", isBestSeller: false },
+            { id: 205, jname: "八宝菜", name: "HAPPOUSAI", price: 360,cost: 124.87, cat: "Ippin-Ryouri", img: "images/HAPPOUSAI.png", desc: "Mixed seafood and vegetables in light sauce.", isBestSeller: false },
+            { id: 207, jname: "麻婆茄子", name: "MABONASU", price: 360, cost: 66.82,cat: "Ippin-Ryouri", img: "images/MABONASU.png", desc: "Eggplant in spicy minced meat sauce.", isBestSeller: false },
+            { id: 201, jname: "麻婆豆腐", name: "MABO-TOFU", price: 360,cost: 118.25, cat: "Ippin-Ryouri", img: "images/MABOTOHU.png", desc: "Spicy tofu with minced meat in rich sauce.", isBestSeller: false },
+            { id: 200, jname: "回鍋肉", name: "HOIKORO", price: 360,cost: 115.29, cat: "Ippin-Ryouri", img: "images/HOIKORO.png", desc: "Stir-fried pork with cabbage in savory sauce.", isBestSeller: false },
+            { id: 203, jname: "エビマヨ", name: "EBIMAYO", price: 360,cost: 125.50, cat: "Ippin-Ryouri", img: "images/EBIMAYO.png", desc: "Crispy shrimp with creamy mayonnaise sauce.", isBestSeller: false },
+            { id: 117, jname: "サイコロステーキ", name: "SAIKORO-STEAK", price: 610,cost: 181.55, cat: "Ippin-Ryouri", img: "images/SAIKORO-STEAK.png", desc: "Diced steak cooked with savory seasoning.", isBestSeller: false },
+            
+            { id: 1006, jname: "ポテトフライ", name: "POTATO FRY", price: 230, cat: "Ippin-Ryouri", img: "images/POTATO-FURAI.png", desc: "Crispy golden potato fries.", isBestSeller:false },
+            { id: 1007, jname: "メガポテトフライ", name: "MEGA POTATO FRY", price: 330, cat: "Ippin-Ryouri", img: "images/MEGA-POTATO-FURAI.png", desc: "Extra-large crispy potato fries.", isBestSeller:false },
+            { id: 1010, jname: "酒おにぎり", name: "SHAKE ONIGIRI", price: 150, cat: "Ippin-Ryouri", img: "images/SHAKE-ONIGIRI.png", desc: "Rice ball filled with salmon.", isBestSeller:false },
+            { id: 1011, jname: "梅おにぎり", name: "UME ONIGIRI", price: 150, cat: "Ippin-Ryouri", img: "images/UME-ONIGIRI.png", desc: "Rice ball with tangy plum filling.", isBestSeller:false },
+            { id: 1012, jname: "焼き おにぎり", name: "YAKI ONIGIRI", price: 150, cat: "Ippin-Ryouri", img: "images/YAKI-ONIGIRI.png", desc: "Grilled rice ball with savory glaze.", isBestSeller:false },
+            { id: 152, jname: "旨塩手羽先", name: "UMAZIO TEBASAKI", price: 310,cost: 146.70, cat: "Ippin-Ryouri", img: "images/UMAZIO TEBASAKI.png", desc: "Salted crispy chicken wings.", isBestSeller: false },
+            { id: 179, jname: "バンバンジー", name: "BANBANZY", price: 330, cost: 95.32,cat: "Ippin-Ryouri", img: "images/BANBANJI.png", desc: "Steamed chicken with sesame sauce.", isBestSeller: false },
+            { id: 180, jname: "チキン照り焼き", name: "CHICKEN-TERIYAKII", price: 330,cost: 77.28, cat: "Ippin-Ryouri", img: "images/CHICKEN TERIYAKI.png", desc: "Grilled chicken with sweet soy glaze.", isBestSeller: false },
+            { id: 181, jname: "やみつき鶏", name: "YAMITUKI-TORI", price: 330,cost: 85.66, cat: "Ippin-Ryouri", img: "images/YAMITSUKI TORI.png", desc: "Addictive seasoned fried chicken.", isBestSeller: false },
+            { id: 182, jname: "油淋鶏", name: "YURINCHI", price: 330,cost: 99.45, cat: "Ippin-Ryouri", img: "images/YURINCHI.png", desc: "Fried chicken with tangy soy sauce.", isBestSeller: false },
+            { id: 183, jname: "鶏チリ", name: "TORI-CHILI SAUCE", price: 330,cost: 96.98, cat: "Ippin-Ryouri", img: "images/TORI CHIRI.png", desc: "Chicken in sweet and spicy chili sauce.", isBestSeller: false },
+            { id: 184, jname: "鶏マヨ", name: "TORI-MAYO", price: 330,cost: 100.11, cat: "Ippin-Ryouri", img: "images/TORI MAYO.png", desc: "Fried chicken with creamy mayo sauce.", isBestSeller: false },
+            { id: 185, jname: "酢鶏", name: "SUDORI", price: 330,cost: 97.70, cat: "Ippin-Ryouri", img: "images/SUDORI.png", desc: "Sweet and sour chicken.", isBestSeller: false },
+            { id: 186, jname: "山賊焼き", name: "SANZOKUYAKI", price: 330,cost: 77.08, cat: "Ippin-Ryouri", img: "images/SANZOKUYAKI.png", desc: "Garlic soy-marinated fried chicken.", isBestSeller: false },
+            { id: 188, jname: "焼き鳥皿", name: "YAKITORI SARA", price: 330,cost: 84.33, cat: "Ippin-Ryouri", img: "images/YAKI TORI SARA.png", desc: "Simple stir-fried chicken dish.", isBestSeller: false },
+            { id: 189, jname: "ガーリックバターチキン", name: "GARLIC BUTTERED CHICKEN", price: 330,cost: 96.20, cat: "Ippin-Ryouri", img: "images/GARLIC BUTTERED CHICKEN.png", desc: "Chicken cooked in rich garlic butter sauce.", isBestSeller: false },
+            { id: 190, jname: "ヤンニョムチキン", name: "YANYOMU-CHICKEN", price: 330,cost: 102.98, cat: "Ippin-Ryouri", img: "images/YANNYOMU CHICKEN.png", desc: "Korean-style sweet and spicy fried chicken.", isBestSeller: false },
+            { id: 206, jname: "酢豚", name: "SUBUTA", price: 360, cost: 104.76,cat: "Ippin-Ryouri", img: "images/SUBUTA.png", desc: "Sweet and sour pork with vegetables.", isBestSeller: false },
+            
+
+            { id: 101, jname: "餃子", name: "GYOUZA", price: 250,cost: 63.60, cat: "Ippin-Ryouri", img: "images/GYOUZA.png", desc: "Pan-fried dumplings filled with meat and vegetables.", isBestSeller: false },
+            { id: 102, jname: "焼売", name: "SHIOMAI", price: 280,cost: 47.13, cat: "Ippin-Ryouri", img: "images/SYUMAI.png", desc: "Steamed dumplings with seasoned meat filling.", isBestSeller: false },
+            { id: 104, jname: "おつまみチャーシュー", name: "OTSUMAMI-CHASHU", price: 260,cost: 42.06, cat: "Ippin-Ryouri", img: "images/OTSUMAMICASHU.png", desc: "Sliced braised pork served as a savory side.", isBestSeller: false },
+            { id: 105, jname: "カニタマ", name: "KANI-TAMA", price: 260,cost: 88.09, cat: "Ippin-Ryouri", img: "images/KANI-TAMA.png", desc: "Crab omelet topped with savory sauce.", isBestSeller: false },
+            { id: 106, jname: "野菜炒め", name: "YASAI-ITAME", price: 220,cost: 62.61, cat: "Ippin-Ryouri", img: "images/YASAIITAME.png", desc: "Stir-fried mixed vegetables.", isBestSeller: false },
+            { id: 107, jname: "肉野菜炒め", name: "NIKU-YASAI-ITAME", price: 310,cost: 95.81, cat: "Ippin-Ryouri", img: "images/NIKUYASAIITAME.png", desc: "Stir-fried meat with vegetables.", isBestSeller: false },
+            { id: 108, jname: "ニラ玉", name: "NIRA-TAMA", price: 260,cost: 74.01, cat: "Ippin-Ryouri", img: "images/NIRA-TAMA.png", desc: "Garlic chives and egg stir-fry.", isBestSeller: false },
+            { id: 300, jname: "韮レバ", name: "REBA NIRA", price: 310,cost: 74.01, cat: "Ippin-Ryouri", img: "images/REBA NIRA.png", desc: "Garlic chives and egg stir-fry.", isBestSeller: false },
+            { id: 109, jname: "豚の生姜焼き", name: "BUTA-SHOUGAYAKI", price: 310,cost: 88.33, cat: "Ippin-Ryouri", img: "images/BUTASYOUGAYAKI.png", desc: "Stir-fried pork with ginger sauce.", isBestSeller: false },
+            { id: 110, jname: "豚キムチ", name: "BUTA-KIMCHI", price: 310,cost: 69.07, cat: "Ippin-Ryouri", img: "images/BUTAKIMCHI.png", desc: "Stir-fried pork with spicy kimchi.", isBestSeller: false },
+            { id: 111, jname: "チキン南蛮", name: "CHICKEN-NAMBAN", price: 310,cost: 95.09, cat: "Ippin-Ryouri", img: "images/CHICKHENNANBAN.png", desc: "Fried chicken with tangy sauce and mayo.", isBestSeller: false },
+            { id: 112, jname: "青椒肉絲", name: "CHINJA-OROSU", price: 360,cost: 104.83, cat: "Ippin-Ryouri", img: "images/CINZYAOROSU.png", desc: "Stir-fried beef with bell peppers.", isBestSeller: false },
+            { id: 113, jname: "五目うま煮", name: "GOMOKU-UMANI", price: 350,cost: 109.77, cat: "Ippin-Ryouri", img: "images/GOMOKU-UMANI.png", desc: "Mixed meat and vegetables in thick savory sauce.", isBestSeller: false },
+            { id: 115, jname: "ナスの中華炒め", name: "NASU-CHUKA-ITAME", price: 310,cost: 73.55, cat: "Ippin-Ryouri", img: "images/NASU-CHUKA-ITAME.png", desc: "Stir-fried eggplant in savory sauce.", isBestSeller: false },
+            { id: 116, jname: "エビチャーハン", name: "EBI-CHILI", price: 350,cost: 119.10, cat: "Ippin-Ryouri", img: "images/EBICHILI.png", desc: "Shrimp in sweet and spicy chili sauce.", isBestSeller: false },
+
+            { id: 332, jname: "サーモン塩焼き", name: "SALMON SHIOYAKI", price: 280,cost: 32.26, cat: "Ippin-Ryouri", img: "images/SALMON SHIOYAKI.png", desc: "Grilled salmon lightly seasoned with salt.", isBestSeller: false },
+            { id: 333, jname: "サーモン照り焼き", name: "SALMON TERIYAKI", price: 350,cost: 32.26, cat: "Ippin-Ryouri", img: "images/SALMON TERIYAKI.png", desc: "Grilled salmon glazed with sweet teriyaki sauce.", isBestSeller: false },
+            { id: 347, jname: "ぶたみそやき", name: "BUTAMISO YAKI", price: 310,cost: 32.26, cat: "Ippin-Ryouri", img: "images/BUTAMISO YAKI.png", desc: "Grilled pork marinated in rich savory miso sauce.", isBestSeller: false },
+            { id: 348, jname: "おでん", name: "ODEN", price: 250,cost: 32.26, cat: "Ippin-Ryouri", img: "images/ODEN.png", desc: "A comforting Japanese stew with assorted ingredients simmered in a light savory broth.", isBestSeller: false },
+            
+            { id: 370, jname: "卵かけご飯", name: "TAMAGO KAKE GOHAN", price: 180,cost: 32.26, cat: "Ippin-Ryouri", img: "images/TAMAGO KAKE GOHAN.png", desc: "Warm rice topped with fresh egg and seasoning.", isBestSeller: false },
+            { id: 353, jname: "長井もバイニクア", name: "NAGAIMO NO BAINIKUAE", price: 200,cost: 32.26, cat: "Ippin-Ryouri", img: "images/NAGAIMO NO BAINIKUAE.png", desc: "Japanese mountain yam mixed with tangy plum sauce.", isBestSeller: false },
+            
+            { id: 515, jname: "セロリ明太子マヨネーズ", name: "CELERY MENTAIKO MAYO", price: 280,cost: 32.26, cat: "Ippin-Ryouri", img: "images/CELERY MENTAIKO MAYO.png", desc: "CELERY MENTAIKO MAYO", isBestSeller: false },
+            { id: 554, jname: "もつ煮込み", name: "MOTSUNIKOMI", price: 380,cost: 32.26, cat: "Ippin-Ryouri", img: "images/MOTSUNIKOMI.png", desc: "Beef or pork offal simmered in rich miso broth.", isBestSeller: false },
+            { id: 584, jname: "味噌モツ煮込みうどん", name: "MISO MOTSUNIKOMI UDON", price: 420,cost: 32.26, cat: "Ippin-Ryouri", img: "images/MISO MOTSUNIKOMI UDON.png", desc: "Thick udon noodles and tender simmered offal (motsu) in a rich, savory miso broth.", isBestSeller: false },
+            { id: 585, jname: "鍋焼きうどん", name: "NABE YAKI UDON", price: 480,cost: 32.26, cat: "Ippin-Ryouri", img: "images/NABE YAKI UDON.png", desc: "Piping hot udon noodles served in a light dashi broth with tempura, egg, and toppings.", isBestSeller: false },
+            
+            { id: 501, jname: "ご飯と味噌汁", name: "RICE & MISO-SOUP", price: 130,cost: 32.26, cat: "Ippin-Ryouri",isOptionHeader: true, img: "images/RICE-MISO.png",isOptionHeader: true, desc: "Rice and Miso-Soup", isBestSeller: false },
+            { id: 502, jname: "ご飯と味噌汁とコーヒー", name: "RICE & MISO-SOUP & COFFEE", price: 190,cost: 32.26, cat: "Ippin-Ryouri", img: "images/RICE-MISO-COFFEE.png", desc: "Rice, Miso-Soup, and Coffee", isBestSeller: false },
+            
+            
+            
+            // Chahan-Kare Rice ETC
+            { id: 118, jname: "半チャーハン", name: "HAN-CHAHAN", price: 170,cost: 51.57, cat: "Chahan-Kare Rice ETC", img: "images/HAN CHAHAN.png", desc: "Half serving of classic fried rice.", isBestSeller: false },
+            { id: 119, jname: "卵チャーハン", name: "TAMAGO-CHAHAN", price: 240,cost: 47.12, cat: "Chahan-Kare Rice ETC", img: "images/TAMAGO-CHAHAN.png", desc: "Fried rice with egg.", isBestSeller: false },
+            { id: 120, jname: "五目チャーハン", name: "GOMOKU-CHAHAN", price: 310,cost: 100.63, cat: "Chahan-Kare Rice ETC", img: "images/GOMOKU-CHAHAN.png", desc: "Fried rice with mixed ingredients.", isBestSeller: false },
+            { id: 121, jname: "コロコロチャーハン", name: "KOROKORO-CHAHAN", price: 350,cost: 82.58, cat: "Chahan-Kare Rice ETC", img: "images/KOROKORO-CHAHAN.png", desc: "Fried rice with diced meat.", isBestSeller: false },
+            { id: 122, jname: "カレーライス", name: "KARE-RICE", price: 310,cost: 49.15, cat: "Chahan-Kare Rice ETC", img: "images/KARE-RICE.png", desc: "Japanese curry served over rice.", isBestSeller: false },
+            { id: 123, jname: "カツカレー", name: "KATSU-KARE", price: 370,cost: 55.55, cat: "Chahan-Kare Rice ETC", img: "images/KATSUU-KARE.png", desc: "Curry rice topped with crispy pork cutlet.", isBestSeller: false },
+            { id: 124, jname: "コロッケカレー", name: "KOROKKE-KARE", price: 330,cost: 92.03, cat: "Chahan-Kare Rice ETC", img: "images/KOROKKE-KARE.png", desc: "Curry rice with crispy potato croquette.", isBestSeller: false },
+            { id: 125, jname: "メンチカツカレー", name: "MENCHI-KARE", price: 350,cost: 117.05, cat: "Chahan-Kare Rice ETC", img: "images/MINCE-KARE.png", desc: "Curry rice with seasoned ground meat.", isBestSeller: false },
+            { id: 126, jname: "唐揚げカレー", name: "KARAAGE-KARE", price: 350,cost: 90.55, cat: "Chahan-Kare Rice ETC", img: "images/KARAAGE-KARE.png", desc: "Curry rice topped with fried chicken.", isBestSeller: false },
+            { id: 127, jname: "野菜カレー", name: "YASAI-KARE", price: 330,cost: 51.59, cat: "Chahan-Kare Rice ETC", img: "images/YASAI-KARE.png", desc: "Curry rice with mixed vegetables.", isBestSeller: false },
+            { id: 128, jname: "オムライス", name: "OMU RICE", price: 310,cost: 48.12, cat: "Chahan-Kare Rice ETC", img: "images/OMU RICE.png", desc: "Fried rice wrapped in soft omelet.", isBestSeller: false },
+            { id: 129, jname: "中華丼", name: "CHUKA-DON", price: 390,cost: 85.49, cat: "Chahan-Kare Rice ETC", img: "images/CHUKA DON.png", desc: "Stir-fried meat and vegetables over rice.", isBestSeller: false },
+            { id: 130, jname: "天津丼", name: "TENSHIN-DON", price: 350,cost: 76.15, cat: "Chahan-Kare Rice ETC", img: "images/TENSIN-DON.png", desc: "Crab omelet served over rice with sauce.", isBestSeller: false },
+            { id: 131, jname: "麻婆丼", name: "MABO-DON", price: 350,cost: 80.56, cat: "Chahan-Kare Rice ETC", img: "images/MABO-DON.png", desc: "Spicy tofu and minced meat over rice.", isBestSeller: false },
+
+            // Sashimi
+            { id: 132, jname: "しめ鯖", name: "SHIMESABA", price: "Market Price",cost: 157.56, cat: "Sashimi", img: "images/SHIMESABA.png", desc: "Vinegared mackerel with rich flavor.", isBestSeller: false },
+            { id: 133, jname: "サーモン", name: "SALMON SASHIMI", price: 420,cost: 114.23, cat: "Sashimi", img: "images/SALMON SASHIMI.png", desc: "Fresh salmon slices, smooth and rich.", isBestSeller: false },
+            { id: 134, jname: "炙りしめ鯖", name: "ABURI-SHIMESABA", price: "Market Price",cost: 137.11, cat: "Sashimi", img: "images/ABURI-SHIMESABA.png", desc: "Lightly seared vinegared mackerel.", isBestSeller: false },
+            { id: 135, jname: "炙りサーモン", name: "ABURI-SALMON", price: 430,cost: 114.23, cat: "Sashimi", img: "images/ABURI-SAMON.png", desc: "Lightly seared salmon with smoky flavor.", isBestSeller: false },
+            { id: 136, jname: "旗魚刺身 / ハタ刺身", name: "HATA-SASHIMI", price: 350,cost: 136.31, cat: "Sashimi", img: "images/HATA-SASHIMI.png", desc: "Fresh grouper slices, clean and delicate.", isBestSeller: false },
+            { id: 137, jname: "マグロぶつ", name: "MAGURO-BUTSU", price: 350,cost: 86.61, cat: "Sashimi", img: "images/MAGUROBUTSU.png", desc: "Cubed fresh tuna sashimi.", isBestSeller: false },
+            { id: 138, jname: "漬けマグロ", name: "ZUKE-MAGURO", price: 410,cost: 99.70, cat: "Sashimi", img: "images/DUKEMAGURO.png", desc: "Soy-marinated tuna sashimi.", isBestSeller: false },
+            { id: 139, jname: "マグロ刺身", name: "MAGURO-SASHIMI", price: 420,cost: 98.41, cat: "Sashimi", img: "images/MAGURO-SASHIMI.png", desc: "Fresh tuna slices.", isBestSeller: false },
+            { id: 140, jname: "アジ刺身", name: "AJI-SASHIMI", price: 310,cost: 128.53, cat: "Sashimi", img: "images/AJI-SASHIMI.png", desc: "Fresh horse mackerel slices.", isBestSeller: false },
+            { id: 142, jname: "イカ刺身", name: "IKA-SASHIMI", price: 280,cost: 67.84, cat: "Sashimi", img: "images/IKA-SASHIMI.png", desc: "Fresh squid slices, soft and slightly sweet.", isBestSeller: false },
+            { id: 143, jname: "タコ刺身", name: "TAKO-SASHIMI", price: 280, cost: 40.86,cat: "Sashimi", img: "images/TAKO SASHIMI.png", desc: "Sliced octopus with firm texture.", isBestSeller: false },
+            { id: 349, jname: "ウニ 刺身", name: "UNI SASHIMI", price: 420,cost: 32.26, cat: "Sashimi", img: "images/UNI SASHIMI.png", desc: "Fresh sea urchin with rich, creamy flavor.", isBestSeller: false },
+            { id: 351, jname: "ちゅうとろ", name: "TUNA BELLY SASHIMI", price: 550,cost: 157.56, cat: "Sashimi", img: "images/CHUTORO.png", desc: "Premium tuna belly slices with a rich, buttery flavor.", isBestSeller: false },
+            { id: 361, jname: "かつおのタタキ", name: "KATSUO TATAKI", price: 450,cost: 157.56, cat: "Sashimi", img: "images/KATSUO TATAKI.png", desc: "Lightly seared bonito with a savory, smoky flavor.", isBestSeller: false },
+            { id: 555, jname: "5点盛り", name: "5 TEN MORI", price: 880,cost: 157.56, cat: "Sashimi", img: "images/5 TEN MORI.png", desc: "Assorted platter of five fresh raw fish pieces.", isBestSeller: false },
+            { id: 556, jname: "3点盛り", name: "3 TEN MORI", price: 550,cost: 157.56, cat: "Sashimi", img: "images/3 TEN MORI.png", desc: "Assorted platter of three fresh raw fish pieces.", isBestSeller: false },
+            //  Snacks
+            
+//            { id: 156, jname: "いかの塩辛", name: "SHIOKARA IKA", price: 100,cost: 37.06, cat: "Snacks", img: "images/SHIOKARA IKA.png", desc: "Fermented squid with salty, rich taste.", isBestSeller: false },
+            { id: 157, jname: "さきいか", name: "SAKI IKA", price: 150,cost: 74.15, cat: "Snacks", img: "images/SAKI IKA.png", desc: "Dried shredded squid, savory and chewy.", isBestSeller: false },
+            // { id: 158, jname: "おつまみ海老", name: "OTSUMAMI EBI", price: 250,cost: 114.76, cat: "Snacks", img: "images/OTSUMAMI EBI.png", desc: "Crispy seasoned shrimp snack.", isBestSeller: false },
+            { id: 161, jname: "ソースカツ", name: "SOSU KATSU", price: 250,cost: 88.27, cat: "Snacks", img: "images/SOSU KATSU.png", desc: "Breaded pork cutlet with rich sauce.", isBestSeller: false },
+            { id: 162, jname: "サクサク胡麻いわし", name: "SAKUSAKUGOMAIWASHI", price: 250,cost: 103.00, cat: "Snacks", img: "images/SAKU SAKU GOMAIWASHI.png", desc: "Crispy sardines coated with sesame.", isBestSeller: false },
+            { id: 163, jname: "サクサク胡麻", name: "SAKUSAKUGOMAIWASHI-SENBEIHONE", price: 250,cost: 103.00, cat: "Snacks", img: "images/GOMAIWASHI HONE SENBEI.png", desc: "Crispy sardine bones with sesame.", isBestSeller: false },
+            { id: 165, jname: "おやつラーメン", name: "OYATSU RAMEN", price: 250,cost: 33.11, cat: "Snacks", img: "images/OYATSU RAMEN.png", desc: "Crunchy snack-style ramen noodles.", isBestSeller: false },
+            { id: 166, jname: "ホタテせんべい", name: "HOTATE SENBEI", price: 250,cost: 115.88, cat: "Snacks", img: "images/HOTATE SENBEI.png", desc: "Crispy scallop-flavored crackers.", isBestSeller: false },
+            { id: 167, jname: "あじせんべい", name: "AJI SENBEI", price: 250,cost: 77.25, cat: "Snacks", img: "images/UNAVAILABLE.png", desc: "Crispy horse mackerel crackers.", isBestSeller: false },
+            { id: 168, jname: "炙りいわし", name: "ABURIIWASHI", price: 250,cost: 103.00, cat: "Snacks", img: "images/UNAVAILABLE.png", desc: "Lightly grilled sardines with rich flavor.", isBestSeller: false },
+            
+            // Lunch Set
+            { id: 169, jname: "秋刀魚ランチセット", name: "SANMA LUNCH SET", price: 420,cost: 60, cat: "Lunch Set", img: "images/SANMA LUNCH SET.png", desc: "Grilled saury served with rice and sides.", isBestSeller: false },
+            { id: 170, jname: "サーモンランチセット", name: "SALMON LUNCH SET", price: 420,cost: 60, cat: "Lunch Set", img: "images/SALMON LUNCH SET.png", desc: "Grilled salmon served with rice and sides.", isBestSeller: false },
+            { id: 171, jname: "鯖ランチセット", name: "SABA LUNCH SET", price: "Market Price",cost: 60, cat: "Lunch Set", img: "images/SABA LUNCH SET.png", desc: "Grilled mackerel served with rice and sides.", isBestSeller: false },
+            { id: 172, jname: "刺身ランチセット", name: "SASHIMI LUNCH SET", price: 420,cost: 60, cat: "Lunch Set", img: "images/SASHIMI LUNCH SET.png", desc: "Fresh sashimi served with rice and sides.", isBestSeller: false },
+            { id: 173, jname: "かつ煮ランチセット", name: "KATSUNI LUNCH SET", price: 420,cost: 60, cat: "Lunch Set", img: "images/KATSUNI LUNCH SET.png", desc: "Simmered pork cutlet with egg, served with rice and sides.", isBestSeller: false },
+            { id: 174, jname: "親子煮ランチセット", name: "OYAKONI LUNCH SET", price: 420,cost: 60, cat: "Lunch Set", img: "images/OYAKONI LUNCH SET.png", desc: "Chicken and egg simmered dish with rice and sides.", isBestSeller: false },
+            { id: 175, jname: "生姜焼きランチセット", name: "SYOGAYAKI LUNCH SET", price: 420,cost: 60,cat: "Lunch Set", img: "images/SYOGAYAKI LUNCH SET.png", desc: "Ginger pork served with rice and sides.", isBestSeller: false },
+            { id: 176, jname: "鶏唐揚げランチセット", name: "TORI-KARAAGE LUNCH SET", price: 420,cost: 60, cat: "Lunch Set", img: "images/TORI KARAAGE LUNCH SET.png", desc: "Fried chicken served with rice and sides.", isBestSeller: false },
+            { id: 177, jname: "ミックスフライランチセット", name: "MIX-FRY LUNCH SET", price: 420,cost: 60, cat: "Lunch Set", img: "images/MIX FURAI LUNCH SET.png", desc: "Assorted fried items with rice and sides.", isBestSeller: false },
+            { id: 178, jname: "そば・うどんランチセット", name: "SOBA/UDON LUNCH SET", price: 480, cost: 60,cat: "Lunch Set", img: "images/SOBA_UDON LUNCH SET.png", desc: "Noodles served with rice and sides. +30", isBestSeller: false,
+                //options: [{ name: "SOBA LUNCH SET", price: 480.00, cost: 60 },{ name: "UDON LUNCH SET", price: 450, cost: 60 }]
+             },
+            { id: 553, jname: "納豆定食", name: "FERMENTED SOYBEANS LUNCH SET", price: 380,cost: 51.89, cat: "Lunch Set", img: "images/FERMENTED SOYBEANS LUNCH SET.png", desc: "Natto served with rice and side dishes.", isBestSeller: false },
+            
+            
+            // Chicken Dishes
+            
+            
+            
+            { id: 187, jname: "鶏のニラソース", name: "TORI-NIRASOSU", price: 330,cost: 88.91, cat: "Chicken Dishes", img: "images/TORI-NIRASOSU CHICKEN DISH.png", desc: "Chicken with garlic chive sauce.", isBestSeller: false },
+            
+            
+            //no costing 
+            { id: 191, jname: "鶏チャーシュー", name: "TORI-CHASYU", price: 330,cost: 60, cat: "Chicken Dishes", img: "images/TORI-CHASYU CHICKEN DISH.png", desc: "Braised chicken slices in savory sauce.", isBestSeller: false },
+            { id: 192, jname: "鶏大根", name: "TORI DAIKON", price: 330,cost: 60, cat: "Chicken Dishes", img: "images/TORI DAIKON CHICKEN DISH.png", desc: "Chicken simmered with tender radish.", isBestSeller: false },
+            { id: 193, jname: "レモンチキン", name: "LEMON CHICKEN", price: 330,cost: 60, cat: "Chicken Dishes", img: "images/LEMON CHICKEN DISH.png", desc: "Crispy chicken with tangy lemon sauce.", isBestSeller: false },
+            { id: 194, jname: "鶏の味噌漬け焼き", name: "TORI-MISOZUKEYAKI", price: 330,cost: 60, cat: "Chicken Dishes", img: "images/TORI-MISOZUKEYAKI CHICKEN DISH.png", desc: "Grilled chicken marinated in miso.", isBestSeller: false },
+            { id: 195, jname: "バタチリチキン", name: "BATACHIRI-CHIKIN", price: 330,cost: 60, cat: "Chicken Dishes", img: "images/BATACHIRI-CHIKIN CHICKEN DISH.png", desc: "Chicken in rich buttery chili sauce.", isBestSeller: false },
+            { id: 196, jname: "鶏むねステーキ", name: "TORIMUNE-STEAK", price: 330,cost: 60, cat: "Chicken Dishes", img: "images/TORIMUNE-STEAK CHICKEN DISH.png", desc: "Grilled chicken breast, light and juicy.", isBestSeller: false },
+            { id: 197, jname: "ヘルシー茹で鶏むね", name: "HEALTHYYUDE TORIMUNE", price: 330,cost: 60, cat: "Chicken Dishes", img: "images/HEALTHYUDE-TORIMUNE CHICKEN DISH.png", desc: "Boiled chicken breast, simple and healthy.", isBestSeller: false },
+            { id: 198, jname: "手羽先唐揚げ", name: "TEBASAKI-KARAAGE", price: 330,cost: 60, cat: "Chicken Dishes", img: "images/TEBASAKI-KARAAGE CHICKEN DISH.png", desc: "Crispy fried chicken wings.", isBestSeller: false },
+            
+            // Chinese Dishes
+            { id: 199, jname: "青椒肉絲", name: "TINZYAOROSU", price: 360,cost: 93.43, cat: "Chinese Dishes", img: "images/TINZYAOROSU.png", desc: "Stir-fried beef with bell peppers.", isBestSeller: false },
+            
+            
+            { id: 202, jname: "エビケチャ (エビのケチャップ煮)", name: "EBIKETYA", price: 360,cost: 126.21, cat: "Chinese Dishes", img: "images/EBIKETYA.png", desc: "Shrimp in sweet tomato-based sauce.", isBestSeller: false },
+            
+            { id: 204, jname: "カニ玉 (かにたま)", name: "CAHITAMA", price: 360,cost: 98.59, cat: "Chinese Dishes", img: "images/CAHITAMA.png", desc: "Crab omelet with savory sauce.", isBestSeller: false },
+            
+            
+            
+            { id: 208, jname: "鶏のナッツ炒め", name: "TORI-NATTSUITAME", price: 360,cost: 102.26, cat: "Chinese Dishes", img: "images/TORI-NATTUSU ITAME.png", desc: "Stir-fried chicken with fermented soybeans.", isBestSeller: false },
+
+            //drinks/desserts can be added here
+            { id: 209, jname: "サッポロ生ビール", name: "SAPPORO NAMA BEER", price: 180, cost: 58.38,cat: "Drinks/Dessert", img: "images/SAPPORO NAMA BEER.png", desc: "SAPPORO NAMA BEER.", isBestSeller: false },
+            { id: 210, jname: "サンミゲル・ライト", name: "SAN MIGUEL LIGHT", price: 85,cost: 41.88, cat: "Drinks/Dessert", img: "images/SAN MIGUEL LIGHT.png", desc: "SAN MIGUEL LIGHT.", isBestSeller: false },
+            { id: 211, jname: "サンミゲル・アップル", name: "SAN MIGUEL APLLE", price: 80,cost: 35.50, cat: "Drinks/Dessert", img: "images/SAN MIGUEL APLLE.png", desc: "SAN MIGUEL APLLE.", isBestSeller: false },
+            { id: 212, jname: "サンミゲル・ピルセン", name: "SAN MIGUEL PALE PILSEN", price: 80,cost: 35.50, cat: "Drinks/Dessert", img: "images/SAN MIGUEL PALE PILSEN.png", desc: "SAN MIGUEL PALE PILSEN.", isBestSeller: false },
+            { id: 213, jname: "眞露 (ジンロ)", name: "JINRO", price: 900, cat: "Drinks/Dessert", img: "images/JINRO.png", desc: "JINRO.", isBestSeller: false,
+                options: [{ name: "1-Bottle", price: 900, cost: 280.84},{ name: "100ML", price: 180, cost: 40.84 }]   
+            },
+            { id: 214, jname: "黒霧島", name: "KURUKIRISHIMA", price: 1300, cat: "Drinks/Dessert", img: "images/KURUKIRISHIMA.png", desc: "KURUKIRISHIMA.", isBestSeller:false,
+                options: [{ name: "1-Bottle", price: 1300.00, cost:579.84 },{ name: "100ML", price: 180, cost: 64.33 }]
+             },
+            { id : 215, jname : 'いいちこ', name : 'ICHIKO ', price : 1400, cat : 'Drinks/Dessert', img : 'images/ICHIKO.png', desc : 'ICHIKO.', isBestSeller:false,
+                options: [{ name: "1-Bottle", price: 1400, cost: 899.84 },{ name: "100ML", price: 180, cost: 100.73 }]
+             },
+            { id: 216, jname: "サントリー角ハイボール", name: "HIGHBALL", price: 200, cat: "Drinks/Dessert", img: "images/SUNTORY KAKU HIGH BALL.png", desc: "SUNTORY KAKU HIGHBALL.", isBestSeller: false,
+                options: [{ name: "1 PUMP", price: 340.00, cost: 75.00 },{ name: "2 PUMP", price: 440.00, cost: 36.34 },{ name: "3 PUMP", price: 540.00, cost: 36.34 }]
+             },
+             { id: 510, jname: "サントリー 角", name: "SUNTORY KAKU", price: 220, cat: "Drinks/Dessert", img: "images/SUNTORY KAKU.png", desc: "SUNTORY KAKU.", isBestSeller: false,
+                options: [{ name: "1 PUMP", price: 320.00, cost: 75.00 },{ name: "2 PUMP", price: 420.00, cost: 36.34 },{ name: "3 PUMP", price: 520.00, cost: 36.34 }]
+             },
+            { id: 511, jname: "サントリー角コーラ", name: "SUNTORY KAKU COLA", price: 240, cat: "Drinks/Dessert", img: "images/SUNTORY KAKU COLA.png", desc: "SUNTORY KAKU COLA.", isBestSeller: false,
+                options: [{ name: "1 PUMP", price: 340.00, cost: 75.00 },{ name: "2 PUMP", price: 440.00, cost: 36.34 },{ name: "3 PUMP", price: 540.00, cost: 36.34 }]
+             },
+            { id: 301, jname: "サントリー角ジンジャー", name: "SUNTORY KAKU GINGER", price: 240, cat: "Drinks/Dessert", img: "images/SUNTORY KAKU GINGER.png", desc: "SUNTORY KAKU GINGER.", isBestSeller: false,
+                options: [{ name: "1 PUMP", price: 340.00, cost: 75.00 },{ name: "2 PUMP", price: 440.00, cost: 36.34 },{ name: "3 PUMP", price: 540.00, cost: 36.34 }]
+             },
+             
+            { id: 217, jname: "赤ワインと白ワイン", name: "RED AND WHITE WINE", price: 200,cost: 55.99, cat: "Drinks/Dessert", img: "images/RED AND WHITE WINE.png", desc: "RED AND WHITE WINE.", isBestSeller: false,
+                options: [{ name: "RED WINE", price: 200, cost: 55.99 },{ name: "WHITE WINE", price: 200, cost: 55.99 }]
+                
+             },
+            { id: 218, jname: "レモンサワー", name: "LEMON SOUR", price: 180,cost: 21.99, cat: "Drinks/Dessert", img: "images/LEMON SOUR.png", desc: "LEMON SOUR.", isBestSeller: false },
+            { id: 219, jname: "梅サワー", name: "UME SOUR", price: 200,cost: 21.99, cat: "Drinks/Dessert", img: "images/UME SOUR.png", desc: "UME SOUR.", isBestSeller: false },
+            { id: 220, jname: "コーラ", name: "COKE", price: 100,cost: 36.34, cat: "Drinks/Dessert", img: "images/COKE.png", desc: "COKE.", isBestSeller: false,
+                options: [{ name: "REGULAR", price: 100, cost: 36.34 },{ name: "ZERO", price: 100, cost: 36.34 }]
+             },
+            { id: 221, jname: "スプライト", name: "SPRITE", price: 100, cost: 31.51,cat: "Drinks/Dessert", img: "images/SPRITE.png", desc: "SPRITE.", isBestSeller:false },
+            { id : 222, jname : 'ウーロン茶', name : 'OOLONG TEA', price : 120,cost: 75.00, cat : 'Drinks/Dessert', img : 'images/UNAVAILABLE.png', desc : 'COLONG TEA.', isBestSeller:false },
+            { id: 223, jname: "パイナップルジュース", name: "PINEAPPLE JUICE", price: 120,cost: 75.00, cat: "Drinks/Dessert", img: "images/PINEAPPLE JUICE.png", desc: "PINEAPPLE JUICE.", isBestSeller: false },
+            { id: 224, jname: "炭酸水", name: "SODA WATER", price: 150,cost: 75.00, cat: "Drinks/Dessert", img: "images/SODA WATER.png", desc: "SODA WATER.", isBestSeller:false },
+            { id: 225, jname: "ロイヤルオレンジ", name: "ROYAL ORANGE", price: 100,cost: 38.34, cat: "Drinks/Dessert", img: "images/ROYAL.png", desc: "ROYAL.", isBestSeller:false },
+            { id: 319, jname: "ボトル入り飲料水", name: "BOTTLE WATER", price: 45.00,cost: 38.34, cat: "Drinks/Dessert", img: "images/WATER.png", desc: "BOTTLE WATER.", isBestSeller:false },
+            
+            { id: 331, jname: "サントリーウイスキー", name: "SUNTORY WHISKEY", price: 2500, cat: "Drinks/Dessert", img: "images/SUNTORY WHISKEY.png", desc: "SUNTORY WHISKEY.", isBestSeller: false},
+            { id: 500, jname: "サントリー ジン", name: "SUNTORY GIN", price: 1600, cat: "Drinks/Dessert", img: "images/SUNTORY GIN.png", desc: "SUNTORY GIN.", isBestSeller: false},
+            { id: 512, jname: "金宮焼酎", name: "KINMIYA SHOCHU", price: 1000, cat: "Drinks/Dessert", img: "images/KINMIYA SHOCHU.png", desc: "KINMIYA SHOCHU.", isBestSeller: false},
+            { id: 334, jname: "赤霧島", name: "AKA KIRISHIMA", price: 2000, cat: "Drinks/Dessert", img: "images/AKA KIRISHIMA.png", desc: "AKA KIRISHIMA.", isBestSeller: false},
+            { id: 335, jname: "月桂冠", name: "GEKKEIKAN", price: 3500,cost: 36.34, cat: "Drinks/Dessert", img: "images/GEKKEIKAN.png", desc: "GEKKEIKAN.", isBestSeller: false},
+            { id: 336, jname: "月桂冠 グラス", name: "GEKKEIKAN PER GLASS", price: 200,cost: 36.34, cat: "Drinks/Dessert", img: "images/GEKKEIKAN PER GLASS.png", desc: "GEKKEIKAN PER GLASS.", isBestSeller: false,
+                options: [{ name: "HOT", price: 200, cost: 36.34 },{ name: "COLD", price: 200, cost: 36.34 }]
+             },
+             { id: 337, jname: "グレープフルーツサワー", name: "GRAPEFRUIT SOUR", price: 180,cost: 36.34, cat: "Drinks/Dessert", img: "images/GRAPEFRUIT SOUR.png", desc: "GRAPEFRUIT SOUR.", isBestSeller: false},
+             { id: 338, jname: "ピーチカクテル", name: "PEACH COCKTAIL", price: 120,cost: 36.34, cat: "Drinks/Dessert", img: "images/PEACH COCKTAIL.png", desc: "PEACH COCKTAIL.", isBestSeller: false},
+             { id: 340, jname: "だいやめ 焼酎", name: "DAIYAME SHOCHU ", price: 1600, cost: 31.51,cat: "Drinks/Dessert", img: "images/DAIYAME SHOCHUO.png", desc: "DAIYAME SHOCHU.", isBestSeller:false },
+             { id: 345, jname: "アイス アマデオ コーヒー", name: "AMADEO COFFEE COLD ", price: 100, cost: 31.51,cat: "Drinks/Dessert", img: "images/AMADEO COFFEE COLD.png", desc: "AMADEO COFFEE COLD.", isBestSeller:false },
+             { id: 346, jname: "ホット アマデオ コーヒー", name: "AMADEO COFFEE HOT ", price: 80, cost: 31.51,cat: "Drinks/Dessert", img: "images/AMADEO COFFEE HOT.png", desc: "AMADEO COFFEE HOT.", isBestSeller:false },
+            
+            { id: 513, jname: "レモンスカッシュ", name: "LEMON SQUASH", price: 150, cat: "Drinks/Dessert", img: "images/LEMON SQUEEZE.png", desc: "LEMON SQUASH.", isBestSeller: false},
+            { id: 514, jname: "ソーダフロート", name: "SODA FLOAT", price: 180,cost: 32.26, cat: "Drinks/Dessert", img: "images/SODA FLOAT.png",desc: "SODA FLOAT", isBestSeller: false,
+                options: [{ name: "BUBBLEGUM SODA FLOAT", price: 180.00, cost: 47.16 },{ name: "WATERMELON SODA FLOAT", price: 180.00, cost: 47.01},{ name: "CHERRY SODA FLOAT", price: 180.00, cost: 47.16 },{ name: "COFFEE SODA FLOAT", price: 180.00, cost: 47.16 }]
+             },
+             { id: 557, jname: "キリン一番搾り", name: "KIRIN ICHIBAN", price: 120, cat: "Drinks/Dessert", img: "images/KIRIN ICHIBAN.png", desc: "Kirin Ichiba", isBestSeller: false},
+             // Yakitori (Grilled) 
+            { id: 227, jname: "てば", name: "CHICKEN WINGS", price: 95, cat: "Yakitori", img: "images/TEBASAKI.png", desc: "Chicken Wings.", isBestSeller:false,
+                options: [{ name: "5PCS STICKS", price: 390.00, cost: 75.00, name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
+             },
+            { id: 228, jname: "ねぎま", name: "CHICKEN WITH SCALLIONS", price: 85, cat: "Yakitori", img: "images/NEGIMA.png", desc: "Chicken w/ Scallions.", isBestSeller:false,
+                options: [{ name: "5PCS STICKS", price: 390.00, cost: 75.00, name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
+             },
+            { id: 229, jname: "ブタバラ", name: "PORK BELLY", price: 85, cat: "Yakitori", img: "images/BUTABARA.png", desc: "Pork Belly.", isBestSeller:false,
+                options: [{ name: "5PCS STICKS", price: 390.00, cost: 75.00, name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
+             },
+            { id: 230, jname: "かわ", name: "CHICKEN SKIN", price: 80, cat: "Yakitori", img: "images/TORI KAWA.png", desc: "Chicken Skin.", isBestSeller:false,
+                options: [{ name: "5PCS STICKS", price: 390.00, cost: 75.00, name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
+             },
+            { id: 231, jname: "すなぎも", name: "GIZZARD", price: 80, cat: "Yakitori", img: "images/TSUNAGIMO.png", desc: "Gizzard.", isBestSeller:false,
+                options: [{ name: "5PCS STICKS", price: 390.00, cost: 75.00, name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
+             },
+            { id: 232, jname: "ハツ", name: "CHICKEN HEART", price: 70, cat: "Yakitori", img: "images/TORI HATSU.png", desc: "Chicken Heart.", isBestSeller:false,
+                options: [{ name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
+             },
+            { id: 233, jname: "とりむね", name: "CHICKEN BREAST", price: 70, cat: "Yakitori", img: "images/TORI MUNE.png", desc: "Chicken Breast.", isBestSeller:false,
+                options: [{ name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
+             },
+            { id: 234, jname: "レバー", name: "LIVER", price: 80, cat: "Yakitori", img: "images/TORI REBA.png", desc: "Liver.", isBestSeller:false,
+                options: [{ name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
+             },
+            { id: 235, jname: "ぼんじり", name: "CHICKEN ASS", price: 80, cat: "Yakitori", img: "images/BON JIRI.png", desc: "Chicken Ass.", isBestSeller:false,
+                options: [{ name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
+             },
+            { id: 236, jname: "アスパラ", name: "ASPARAGUS BACON", price: 85, cat: "Yakitori", img: "images/ASPARAGUS BACON.png", desc: "Asparagus w/ Bacon.", isBestSeller:false,
+                
+                options: [{ jname: "5本セット", name: "5 STICKS", price: 390 },{ jname: "10本セット", name: "10 STICKS", price: 750 }]
+            },
+            { id: 237, jname: "えのき", name: "ENOKI MUSHROOM WITH BACON", price: 85, cat: "Yakitori", img: "images/ENOKI BACON.png", desc: "Mushroom w/ Bacon.", isBestSeller:false,
+                
+                options: [{ jname: "5本セット", name: "5 STICKS", price: 390 },{ jname: "10本セット", name: "10 STICKS", price: 750 }]
+            },
+            { id: 238, jname: "うずら", name: "QUAIL EGG WITH BACON", price: 85, cat: "Yakitori", img: "images/UZURA BACON.png", desc: "Quail Egg w/ Bacon.", isBestSeller:false,
+                
+                options: [{ jname: "5本セット", name: "5 STICKS", price: 390 },{ jname: "10本セット", name: "10 STICKS", price: 750 }]
+            },
+            { id: 581, jname: "つくね", name: "TSUKUNE", price: 85, cat: "Yakitori", img: "images/TSUKUNE.png", desc: "Minced pork skewer.", isBestSeller:false
+                
+                
+            },
+            { id: 239, jname: "焼き鳥5本セット ", name: "5 STICKS YAKITORI", price: 390.00, cat: "Yakitori", img: "images/5 STICKS YAKITORI.png", desc: "5 STICKS YAKITORI CHEF CHOICE", isBestSeller:false},
+            { id: 240, jname: "焼き鳥10本セット", name: "10 STICKS YAKITORI", price: 750.00, cat: "Yakitori", img: "images/10 STICKS YAKITORI.png", desc: "10 STICKS YAKITORI CHEF CHOICE", isBestSeller:false},
+            { id: 241, jname: "とまと", name: "TOMATO WITH BACON", price: 85, cat: "Yakitori", img: "images/TOMATO WITH BACON.png", desc: "Tomato w/ Bacon.", isBestSeller:false,
+                options: [{ jname: "5本セット", name: "5 STICKS", price: 390 },{ jname: "10本セット", name: "10 STICKS", price: 750 }]
+            },
+            
+
+            //add-ons and sides can be added here
+            { id: 310, jname: "白米", name: "WHITE RICE", price: 100.00, cat: "Add-ons", img: "images/PLAIN RICE.png", desc: "WHITE RICE", isBestSeller:false},
+            { id: 311, jname: "味噌汁", name: "MISO SOUP", price: 50.00, cat: "Add-ons", img: "images/MISO SOUP.png", desc: "MISO SOUP", isBestSeller:false},
+            { id: 312, jname: "アイスバケツ", name: "ICE BUCKET", price: 50.00, cat: "Add-ons", img: "images/ICE BUCKET.png", desc: "ICE BUCKET", isBestSeller:false},
+            { id: 313, jname: "レモンのスライス", name: "LEMON SLICE", price: 100.00, cat: "Add-ons", img: "images/LEMON SLICE.png", desc: "LEMON SLICE", isBestSeller:false},
+            { id: 314, jname: "カラマンシーのスライス", name: "CALAMANSI SLICE", price: 50.00, cat: "Add-ons", img: "images/CALAMANSI SLICE.png", desc: "CALAMANSI SLICE", isBestSeller:false},
+            { id: 315, jname: "コーヒーゼリー", name: "COFFEE JELLY", price: 100.00, cat: "Add-ons", img: "images/COFFEE JELLY.png", desc: "COFFEE JELLY", isBestSeller:false},
+            { id: 316, jname: "日本のプリン", name: "JAPANESE PUDDING", price: 100.00, cat: "Add-ons", img: "images/JAPANESE PUDDING.png", desc: "JAPANESE PUDDING", isBestSeller:false},
+            
+
+
+
+            // //Not in MENU and price
+            // { id: 1000, jname: "", name: "TENPURA SAUCE", price: 0, cat: "Tenpura", img: "images/.png", desc: "SAUCE.", isBestSeller:false },
+            // { id: 1001, jname: "", name: "HIGHBALL KOIME", price: 0, cat: "Drinks/Dessert", img: "images/.png", desc: "HIGHBALL KOIME.", isBestSeller:false },
+            // { id: 1002, jname: "", name: "SAKEI HIYA", price: 0, cat: "Drinks/Dessert", img: "images/.png", desc: "SAKEI HIYA.", isBestSeller:false },
+            // { id: 1003, jname: "", name: "COKE ZERO", price: 0, cat: "Drinks/Dessert", img: "images/.png", desc: "COKE ZERO.", isBestSeller:false },
+
+            
+            // { id: 1005, jname: "", name: "KOMOCHI KOMBU", price: 490, cat: "Osusume", img: "images/.png", desc: "KOMOCHI KOMBU.", isBestSeller:false },
+            
+            
+            // { id: 1008, jname: "", name: "ONION SLICE", price: 120, cat: "Appetizer", img: "images/.png", desc: "ONION SLICE.", isBestSeller:false },
+            
+            // { id: 1009, jname: "", name: "KYURI SLICE", price: 120, cat: "Appetizer", img: "images/.png", desc: "KYURI SLICE.", isBestSeller:false },
+            // { id: 1010, jname: "", name: "TAKUAN SLICE", price: 200, cat: "Appetizer", img: "images/.png", desc: "TAKUAN SLICE.", isBestSeller:false },
+            
+            
+            
+            // { id: 1010, jname: "", name: "KAMPYO MAKI", price: 180, cat: "Makimono", img: "images/.png", desc: "KAMPYO MAKI.", isBestSeller:false },
+           
+            // { id: 1010, jname: "", name: "CHASHU DON", price: 250, cat: "Makimono", img: "images/.png", desc: "CHASHU DON.", isBestSeller:false },
+            // { id: 1009, jname: "", name: "SALMON TERIYAKI DON", price: 390, cat: "Makimono", img: "images/.png", desc: "SALMON TERIYAKI DON.", isBestSeller:false }, 
+            // { id: 1009, jname: "", name: "SALMON DON", price: 400, cat: "Makimono", img: "images/.png", desc: "SALMON DON.", isBestSeller:false },
+            // { id: 1009, jname: "", name: "SALMON TERIYAKI", price: 350, cat: "Yakitori", img: "images/.png", desc: "SALMON TERIYAKI .", isBestSeller:false },
+            // { id: 1009, jname: "", name: "SALMON SHIOYAKI", price: 300, cat: "Yakitori", img: "images/.png", desc: "SALMON SHIOYAKI.", isBestSeller:false },
+           
+            // { id: 1009, jname: "", name: "BUTA MISO YAKI", price: 350, cat: "Yakitori", img: "images/.png", desc: "BUTA MISO YAKI.", isBestSeller:false },
+            // { id: 1009, jname: "", name: "HAMBURG", price: 280, cat: "Ippin-Ryouri", img: "images/.png", desc: "HAMBURG.", isBestSeller:false },
+            // { id: 1009, jname: "", name: "SHIMA AJI", price: 300, cat: "Sashimi", img: "images/.png", desc: "SHIMA AJI.", isBestSeller:false },
+            // { id: 1009, jname: "", name: "KATSUO TATAKI", price: 310, cat: "Sashimi", img: "images/.png", desc: "KATSUO TATAKI.", isBestSeller:false },
+
+            ];
+
+
+        let cart = []; let tableNumber = ""; let selectedItem = null; let tempQty = 1;
+        let unsubscribeCart = null;
+        let itemIndexToDelete = null;
+
+        window.onload = () => {
+    // If a table number exists in the link, just SAVE it quietly in the background.
+    // We DO NOT force them into the menu yet. They still get to pick Dine In or Take Out.
+    if (tableFromUrl) {
+        sessionStorage.setItem('scannedTable', tableFromUrl);
+        console.log("Customer scanned QR for Table: " + tableFromUrl);
+    } else {
+        sessionStorage.removeItem('scannedTable');
+    }
+};
+
+        function showDining() { document.getElementById('splash').style.display='none'; document.getElementById('dining').style.display='flex'; }
+    
+        function startApp(type) { 
+    orderType = type;
+    
+    // --- NEW LOGIC FOR URL SCAN ---
+    // If they click "Dine In" AND we already saved their table from the QR code:
+    if (orderType === "Dine In") {
+        const savedTable = sessionStorage.getItem('scannedTable');
+        if (savedTable) {
+            tableNumber = "Table " + savedTable;
+            startLiveSync(tableNumber); // Connect their cart
+            proceed(); // Skip the modal and go straight to the menu!
+            return; // Stop the function here so the modal doesn't pop up
+        }
+    }
+    // ------------------------------
+
+    // --- ORIGINAL LOGIC --- (Runs for Take Out, or if there is no QR table)
+    const modal = document.getElementById('table-entry');
+    const title = modal.querySelector('h2');
+    
+    // Safety check: only change if elements exist
+    if (title) {
+        title.innerText = (type === 'Dine In') ? "Table Number" : "Queue Number";
+    }
+    
+    if (modal) {
+        modal.style.display = 'flex'; // Show the manual entry modal
+    }
+}
+
+        function saveTableAndStart() { 
+    let t = document.getElementById('table-input').value; 
+    if(!t) return alert("Please enter a number");
+
+    // Check what mode we are in
+    if (orderType === "Take Out") {
+        tableNumber = "Take Out #" + t; 
+    } else {
+        tableNumber = "Table " + t; 
+    }
+
+    startLiveSync(tableNumber);
+    proceed();
+}
+
+        function startLiveSync(tableId) {
+            unsubscribeCart = db.collection("active_sessions").doc(tableId)
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        cart = doc.data().items || [];
+                        updateCartUI(); 
+                    }
+                });
+        }
+        
+
+        function syncCartToFirebase() {
+            // Use the exact tableNumber variable your listener is watching
+            db.collection("active_sessions").doc(tableNumber).set({
+                items: cart,
+                table: tableNumber,
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                console.log("Sync successful!");
+            })
+            .catch((error) => {
+                console.error("Sync failed: ", error);
+            });
+        }
+
+        function proceed() { 
+            document.getElementById('dining').style.display = 'none'; 
+            document.getElementById('table-entry').style.display = 'none';
+            document.getElementById('app').style.display = 'flex'; 
+            // Ensure the cart bar starts hidden when entering the menu
+            const cartBar = document.getElementById('cart-bar') || document.getElementById('view-cart-bar');
+            if (cartBar && cart.length === 0) {
+                cartBar.style.display = 'none';
+            }
+
+            document.getElementById('mode-title').innerText = tableNumber.toUpperCase();
+            const typeDisplay = document.getElementById('dining-type-display');
+            typeDisplay.innerText = orderType.toUpperCase();
+
+            const catScroll = document.getElementById('cat-scroll');
+            catScroll.innerHTML = '<div id="cat-highlight"></div>' + CATEGORIES.map(c => `
+                <div class="cat-btn" id="cat-${c.name}" onclick="renderMenu('${c.name}')">
+                    <div class="cat-img-slot">
+                        <img src="${c.image}" onerror="this.src='https://via.placeholder.com/50?text=🍱'">
+                    </div>
+                    <span>${c.name}</span>
+                    <span>${c.japanese}</span>
+                </div>
+            `).join('');
+
+            if (CATEGORIES.length > 0) renderMenu(CATEGORIES[0].name);
+            updateCartUI();
+        }
+
+        // 3. UPDATED renderMenu logic for "Popular"
+        function renderMenu(cat) {
+    const activeBtn = document.getElementById('cat-' + cat);
+    const bestSellerHeader = document.getElementById('best-seller-section');
+    const bestSellerText = document.getElementById('best-seller-text');
+
+    if (activeBtn) {
+        moveCategoryHighlight(activeBtn);
+        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+        activeBtn.classList.add('active');
+        activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+
+    // Change title based on category
+    if (cat === "Popular") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Best Sellers";
+    } else if (cat === "Donburi") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Donburi";    
+    } else if (cat === "Agemono") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Agemono";
+    } else if (cat === "Tenpura") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Tenpura";
+    } else if (cat === "Ramen") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Ramen";
+    } else if (cat === "Salad") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Salad";
+    } else if (cat === "Soba/Udon") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Soba/Udon";
+    } else if (cat === "Grilled Fish") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Grilled Fish";
+    } else if (cat === "Makimono") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Makimono";
+    } else if (cat === "Yakisoba/Takoyaki") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Yakisoba/Takoyaki";
+    } else if (cat === "Ippin-Ryouri") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Ippin-Ryouri";
+    } else if (cat === "Drinks/Dessert") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Drinks/Dessert";
+    } else if (cat === "Chahan-Kare Rice ETC") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Chahan-Kare Rice";
+    } else if (cat === "Sashimi") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Sashimi";
+    } else if (cat === "Appetizer") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Appetizer";
+    } else if (cat === "Snacks") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Snacks";
+    } else if (cat === "Lunch Set") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Lunch Set";
+    } else if (cat === "Chicken Dishes") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Chicken Dishes";
+    } else if (cat === "Chinese Dishes") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Chinese Dishes";
+    } else if (cat === "Add-ons") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Add-ons";
+    } else if (cat === "Yakitori") {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = "🔥 Yakitori";
+    } else  {
+        bestSellerHeader.style.display = 'none';
+    }
+
+    // --- 1-MINUTE TEST TIMER WINDOW ---
+    if (cat === "Lunch Set") {
+        const now = new Date();
+        const currentMinutes = (now.getHours() * 60) + now.getMinutes();
+        
+        // Dynamic matching configuration for exactly 11:45 AM to 11:46 AM
+        const startMinutes = (11 * 60) + 30; 
+        const endMinutes = (15 * 60) + 0;   
+
+        if (currentMinutes < startMinutes || currentMinutes > endMinutes) {
+            document.getElementById('grid').innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: #555; background: #fff; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-top: 20px;">
+                    <div style="font-size: 3.5rem; margin-bottom: 15px;">🚫</div>
+                    <h3 style="color: #ce1126; font-size: 1.4rem; margin: 0 0 10px 0; font-weight: bold;">ORDER WINDOW CLOSED</h3>
+                    <p style="font-size: 0.95rem; color: #666; margin: 0; line-height: 1.5;">
+                        This exclusive menu is only available from <b style="color: #333;">11:30 AM to 3:00 PM</b><br>
+                        Please check out our other delicious categories!
+                    </p>
+                </div>`;
+            return; 
+        }
+    }
+
+    const itemsToShow = cat === "Popular" 
+        ? MENU.filter(i => i.isBestSeller === true) 
+        : MENU.filter(i => i.cat === cat);
+
+    document.getElementById('grid').innerHTML = itemsToShow.map((i, idx) => {
+        // Create an empty string to accumulate our HTML layout elements
+        let htmlElementString = "";
+
+        // 🌟 1. INTERCEPT: If this special flag is found, inject the option title block first
+        if (i.isOptionHeader) {
+            htmlElementString += `
+            <div class="option-break-title" style="grid-column: 1 / -1; width: 100%; margin: 25px 0 10px 0; padding-top: 15px; border-top: 1px dashed rgba(0,0,0,0.15); text-align: left;">
+                <h3 style="color: #ce1126; font-weight: 800; font-size: 1.3rem; margin: 0 0 4px 0;">✨ Extra Upgrades </h3>
+                <p style="font-size: 0.8rem; color: #666; margin: 0 0 10px 0;">Select additional for your items below:</p>
+            </div>`;
+        }
+
+        // 2. RENDER THE CARD: Then append the normal item code layout directly behind it
+        htmlElementString += `
+        <div class="card menu-anim" onclick="openItemModal(${i.id})" style="animation-delay: ${idx * 0.05}s; position: relative;">
+            ${i.isBestSeller ? `<div style="position: absolute; top: 10px; left: 10px; background: #ce1126; color: white; font-size: 0.6rem; padding: 4px 9px; border-radius: 4px; font-weight: bold; z-index: 5;">BEST SELLER</div>` : ''}
+            
+            <div class="card-img"><img src="${i.img}" alt="${i.name}"
+                loading="lazy" 
+                onload="this.classList.add('loaded')" 
+                onerror="this.src='images/placeholder.jpg'"></div>
+            
+            <div class="card-info">
+                <div>
+                    <b style="font-size: 20px; font-weight: bolder; color: #333; display: block; margin-bottom: 4px;">${i.jname}</b>
+                    <b style="font-size: 0.95rem; color: #333; display: block; margin-bottom: 4px;">${i.name}</b>
+                    <p style="font-size: 0.75rem; color: #777; margin: 0 0 8px 0;">${i.desc || ''}</p>
+                </div>
+                
+                <div>
+                    <div style="color: #ce1126; font-weight: 800; font-size: 1.2rem; margin-bottom: 8px;">₱${i.price}</div>
+                    <button style="width: 100%; background: var(--gold); color: black; border: none; padding: 10px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; cursor: pointer;">
+                        Add to Order
+                    </button>
+                </div>
+            </div>
+        </div>`;
+
+        return htmlElementString;
+    }).join('');
+}
+
+        function moveCategoryHighlight(el) {
+            const h = document.getElementById('cat-highlight');
+            if(h) {
+                h.style.left = el.offsetLeft + "px"; h.style.width = el.offsetWidth + "px";
+                h.style.height = el.offsetHeight + "px"; h.style.top = el.offsetTop + "px";
+            }
+        }
+
+        function openItemModal(id) {
+    selectedItem = MENU.find(m => m.id === id);
+    tempQty = 0;
+    document.getElementById('special-notes').value = "";
+
+    // 1. Generate Options HTML (The Size Box)
+    let optionsHtml = "";
+    if (selectedItem.options) {
+        optionsHtml = `
+        <div style="text-align: left; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px;">
+            <p style="color: var(--gold); font-weight: bold; margin-bottom: 10px; font-size: 0.9rem;">OPTIONS:</p>
+            ${selectedItem.options.map(opt => `
+                <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: pointer; color: white;">
+                    <span style="font-size: 0.9rem;">
+                        <input type="radio" name="size" class="item-option" value="${opt.name}" data-price="${opt.price}" data-cost="${opt.cost || 0}" style="margin-right: 10px; accent-color: var(--gold);">
+                        ${opt.name}
+                    </span>
+                    <span style="font-size: 0.8rem;">₱${opt.price}</span>
+                </label>
+            `).join('')}
+        </div>`;
+    }
+
+    // 2. Generate Add-ons HTML (The Extras Box)
+    let addonsHtml = "";
+    if (selectedItem.addons) {
+        addonsHtml = `
+        <div style="text-align: left; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px;">
+            <p style="color: var(--gold); font-weight: bold; margin-bottom: 10px; font-size: 0.9rem;">EXTRA ADD-ONS:</p>
+            ${selectedItem.addons.map(add => `
+                <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: pointer; color: white;">
+                    <span style="font-size: 0.9rem;">
+                        <input type="checkbox" class="addon-checkbox" data-name="${add.name}" data-price="${add.price}" data-cost="${add.cost || 0}" style="margin-right: 10px; accent-color: var(--gold);">
+                        ${add.name}
+                    </span>
+                    <span style="font-size: 0.8rem;">+₱${add.price}</span>
+                </label>
+            `).join('')}
+        </div>`;
+    }
+
+    // 3. Render the Modal
+    document.getElementById('modal-content').innerHTML = `
+        <img src="${selectedItem.img}" class="modal-food-img">
+        <h2 style="margin:5px 0; color: white;">${selectedItem.name}</h2>
+        
+        ${optionsHtml}
+        ${addonsHtml}
+
+        <div>
+            <div class="modal-qty-pill">
+                <button class="modal-qty-btn" onclick="updateTempQty(-1)">−</button>
+                <input type="number" id="temp-qty-val" class="modal-qty-val" value="${tempQty}" onchange="manualQtyUpdate(this.value)" style="width: 50px; text-align: center; border: none; background: transparent; font-weight: bold; outline: none; -moz-appearance: textfield;">
+                <button class="modal-qty-btn" onclick="updateTempQty(1)">+</button>
+            </div>
+        </div>`;
+        
+    document.getElementById('item-modal').style.display = 'flex';
+}
+
+        function updateTempQty(d) { 
+            tempQty = Math.max(1, tempQty + d); 
+            document.getElementById('temp-qty-val').value = tempQty; 
+        }
+
+        function manualQtyUpdate(newVal) {
+            let parsedVal = parseInt(newVal);
+            // Prevent them from typing letters, 0, or negative numbers
+            if (isNaN(parsedVal) || parsedVal < 1) {
+                parsedVal = 1;
+            }
+            tempQty = parsedVal;
+            document.getElementById('temp-qty-val').value = tempQty;
+        }
+
+        function addToCartFinal() {
+            const notesInput = document.getElementById('special-notes');
+            const notes = notesInput ? notesInput.value.trim() : "";
+            const modalImg = document.querySelector('.modal-food-img');
+            const cartBar = document.getElementById('cart-bar');
+            
+            // 1. --- OPTION LOGIC ---
+            const selectedOption = document.querySelector('.item-option:checked');
+            let finalPrice = selectedOption ? parseFloat(selectedOption.dataset.price) : selectedItem.price;
+            
+            // NEW: Grab the cost from the selected option, otherwise use the base item cost
+            let finalCost = selectedOption ? parseFloat(selectedOption.dataset.cost) : (selectedItem.cost || selectedItem.total_cost || 0);
+            
+            let optionName = selectedOption ? ` (${selectedOption.value})` : "";
+
+            // 2. --- ADD-ONS LOGIC ---
+            const checkboxes = document.querySelectorAll('.addon-checkbox:checked');
+            let addonTotal = 0;
+            let addonCostTotal = 0; // NEW: Track the cost of all selected add-ons
+            let addonNames = [];
+
+            checkboxes.forEach(cb => {
+                addonTotal += parseFloat(cb.dataset.price);
+                // NEW: Add up the cost from the add-on checkboxes
+                addonCostTotal += parseFloat(cb.dataset.cost || 0);
+                addonNames.push(cb.dataset.name);
+            });
+
+            finalPrice += addonTotal;
+            finalCost += addonCostTotal; // NEW: Combine base/option cost with add-on costs
+
+            const addonDisplay = addonNames.length > 0 ? ` + ${addonNames.sort().join(", ")}` : "";
+            const finalName = `${selectedItem.name}${optionName}${addonDisplay}`;
+
+            // 3. --- CONSOLIDATION LOGIC (UPDATED WITH COST) ---
+            const cleanNotes = notes;
+            const cleanName = finalName.trim();
+
+            // Look for the item in the cart
+            const existingItem = cart.find(item => 
+                item.name.trim() === cleanName && 
+                (item.notes || "").trim() === cleanNotes
+            );
+
+            if (existingItem) {
+                existingItem.qty += tempQty;
+            } else {
+                cart.push({ 
+                    name: cleanName, 
+                    jname: selectedItem.jname,
+                    category: selectedItem.cat,
+                    price: finalPrice, 
+                    cost: finalCost, // <--- SAVE THE FULLY CALCULATED LIVE COST HERE
+                    qty: tempQty, 
+                    notes: cleanNotes 
+                });
+            }
+
+            // 4. --- ANIMATION LOGIC --- (Kept exactly as you had it)
+            if (modalImg && cartBar) {
+                const ghost = modalImg.cloneNode(true);
+                const rect = modalImg.getBoundingClientRect();
+                ghost.style.position = 'fixed';
+                ghost.style.zIndex = '10001';
+                ghost.style.transition = 'all 0.6s ease-in-out';
+                ghost.style.width = rect.width + 'px'; 
+                ghost.style.height = rect.height + 'px';
+                ghost.style.top = rect.top + 'px'; 
+                ghost.style.left = rect.left + 'px';
+                ghost.style.pointerEvents = 'none';
+                document.body.appendChild(ghost);
+
+                setTimeout(() => {
+                    ghost.style.top = (window.innerHeight - 50) + 'px';
+                    ghost.style.left = '50%';
+                    ghost.style.transform = 'translateX(-50%)';
+                    ghost.style.width = '40px'; 
+                    ghost.style.height = '40px';
+                    ghost.style.opacity = '0';
+                }, 50);
+
+                setTimeout(() => ghost.remove(), 650); 
+            }
+
+            // 5. --- SYNC & RESET ---
+            syncCartToFirebase(); 
+            tempQty = 1; 
+            closeModals();
+        }
+
+        function updateCartUI() {
+    // 1. Reference the container once
+    const cartList = document.getElementById('cart-list');
+    if (!cartList) return; 
+
+    let subtotal = 0; 
+    let count = 0;
+
+    // 2. Clear existing rows just to be 100% safe before mapping
+    const htmlContent = cart.map((item, index) => {
+        const itemSubtotal = item.price * item.qty;
+        subtotal += itemSubtotal; 
+        count += item.qty;
+
+        return `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:12px;">
+                <div style="flex:1">
+                    <div style="font-weight:bold; font-size:1rem; color:#333;">${item.name}</div>
+                    ${item.notes ? `<div style="font-size:0.75rem; color:#888;">"${item.notes}"</div>` : ''}
+                    <div style="color:var(--deep-red); font-weight:bold;">₱${itemSubtotal.toLocaleString()}</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div class="cart-qty-pill">
+                        <button class="cart-qty-btn" onclick="changeCartQty(${index}, -1)">−</button>
+                        <span class="cart-qty-val">${item.qty}</span>
+                        <button class="cart-qty-btn" onclick="changeCartQty(${index}, 1)">+</button>
+                    </div>
+                    <div onclick="removeFromCart(${index})" style="color:#ccc; font-size:1.5rem; cursor:pointer;">&times;</div>
+                </div>
+            </div>`;
+    }).join('');
+
+    // --- CALCULATIONS ---
+    const serviceCharge = subtotal * 0.05;
+    const grandTotal = subtotal + serviceCharge;
+
+    // 3. Update the DOM all at once
+    cartList.innerHTML = htmlContent;
+
+    // 4. Update Summaries
+    const totalElements = ['total', 'cart-total-bar'];
+    totalElements.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (id === 'cart-total-bar') {
+                // FIXED VERSION: The green bar only shows the label and Grand Total
+                grandTotal > 0 
+                    ? el.innerHTML = `<span>Total: ₱${grandTotal.toLocaleString()}</span>` 
+                    : el.innerHTML = `<span>Your cart is empty</span>`;    
+            } else {
+                // The main cart area: Shows the full breakdown
+                el.innerHTML = `
+                    <div style="font-size: 0.8rem; color: #888;">Subtotal: ₱${subtotal.toLocaleString()}</div>
+                    <div style="font-size: 0.8rem; color: #888;">Service Charge (5%): ₱${serviceCharge.toLocaleString()}</div>
+                    <div style="font-weight: bold; font-size: 1.2rem; color: #000;">Total: ₱${grandTotal.toLocaleString()}</div>
+                `;
+            }
+        }
+    });
+
+    const countEl = document.getElementById('cart-count');
+    if (countEl) countEl.innerText = count;
+
+    const cartBar = document.getElementById('cart-bar');
+    if (cartBar) cartBar.style.display = count > 0 ? 'flex' : 'none';
+}
+
+        function changeCartQty(index, delta) {
+            cart[index].qty += delta; if (cart[index].qty < 1) cart.splice(index, 1);
+            syncCartToFirebase(); updateCartUI();
+        }
+
+        function removeFromCart(index) {
+            itemIndexToDelete = index;
+            document.getElementById('delete-msg').innerText = `Remove ${cart[index].name}?`;
+            document.getElementById('delete-modal').style.display = 'flex';
+            document.getElementById('confirm-delete-btn').onclick = () => {
+                cart.splice(itemIndexToDelete, 1); syncCartToFirebase(); updateCartUI(); closeDeleteModal();
+            };
+        }
+
+        function closeDeleteModal() { document.getElementById('delete-modal').style.display = 'none'; }
+        function toggleCart(show) { document.getElementById('cart-overlay').style.display = show ? 'flex' : 'none'; }
+        function openMethodSelection() { document.getElementById('method-modal').style.display = 'flex'; }
+        function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
+
+        async function processOrder(method) {
+    if (cart.length === 0) return; 
+
+    const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+    const grandTotal = subtotal * 1.05; // 5% added
+    try {
+        // 1. SEND TO KITCHEN
+        // This creates the permanent record for the staff.
+        await db.collection("orders").add({
+            table: tableNumber, 
+            method: method, 
+            items: cart, 
+            status: "Pending",
+            subtotal: subtotal,
+            serviceCharge: subtotal * 0.05, 
+            total: grandTotal, // Always use the grand total here
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // 2. THE VANISHING SIGNAL
+        // We DELETE the session document. 
+        // This tells every other family member's phone to clear their cart.
+        await db.collection("active_sessions").doc(tableNumber).delete();
+
+        // 3. LOCAL RESET
+        cart = []; 
+        updateCartUI(); // This clears your screen immediately
+
+        // 4. SHOW SUCCESS
+        showSuccessWithRating();
+        
+        // Close the cart overlay after a delay
+        setTimeout(() => {
+            toggleCart(false);
+            closeModals();
+        }, 3000);
+
+    } catch (err) { 
+        console.error("Order Error: ", err);
+        alert("Order failed to send. Please call staff."); 
+    }
+}
+
+        function showSuccessWithRating() {
+            closeModals(); toggleCart(false);
+            const successModal = document.getElementById('success-modal');
+            successModal.innerHTML = `
+                <div class="modal-box" style="background:white; color:black; border-radius:25px; width: 85%;">
+                    <div class="logo-wrapper"><div style="font-size:3rem">🏮</div></div>
+                    <h2 style="margin:15px 0 5px; color: var(--deep-red);">ORDER PLACED!</h2>
+                    <p>Kitchen is preparing your food.</p>
+                    <div class="star-rating">
+                        <input type="radio" id="star5" name="rating" value="5" onclick="submitRating(5)"/><label for="star5">★</label>
+                        <input type="radio" id="star4" name="rating" value="4" onclick="submitRating(4)"/><label for="star4">★</label>
+                        <input type="radio" id="star3" name="rating" value="3" onclick="submitRating(3)"/><label for="star3">★</label>
+                        <input type="radio" id="star2" name="rating" value="2" onclick="submitRating(2)"/><label for="star2">★</label>
+                        <input type="radio" id="star1" name="rating" value="1" onclick="submitRating(1)"/><label for="star1">★</label>
+                    </div>
+                    <div class="loading-bar"><div class="progress"></div></div>
+                </div>`;
+            successModal.style.display = 'flex';
+            setTimeout(() => location.reload(), 10000);
+        }
+
+        async function submitRating(stars) {
+            await db.collection("feedback").add({ rating: stars, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+            location.reload();
+        }
+
+        function goBackToOrderType() {
+            document.getElementById('table-entry').style.display = 'none';
+            document.getElementById('dining').style.display = 'flex';
+        }
+        function confirmClearCart() {
+    // Reuse your delete modal for a "Clear All" confirmation
+    itemIndexToDelete = "ALL"; // Flag to tell the confirm button to clear everything
+    document.getElementById('delete-msg').innerText = "Remove all items from your cart?";
+    document.getElementById('delete-modal').style.display = 'flex';
+    
+    // Override the confirm button logic for this specific case
+    document.getElementById('confirm-delete-btn').onclick = () => {
+        clearCartFinal();
+    };
+}
+
+async function clearCartFinal() {
+    cart = []; // Empty the local array
+    
+    // If it's a Table session, clear it in Firebase too
+    if (tableNumber !== "Take Out") {
+        await db.collection("active_sessions").doc(tableNumber).update({
+            items: [],
+            total: 0
+        });
+    }
+    
+    updateCartUI();
+    closeDeleteModal();
+    toggleCart(false); // Close the cart since it's now empty
+}
+
+    // Run this when the Kiosk page loads
+let hasActiveOrder = false; // The Gatekeeper
+
+function startKioskListener(tableId) {
+    // Check if this is the restaurant tablet
+    const isPermanentKiosk = localStorage.getItem('isRestaurantKiosk') === 'true';
+
+    db.collection("orders")
+        .where("table", "==", tableId)
+        .where("status", "in", ["Pending", "Served"]) 
+        .onSnapshot((snapshot) => {
+            
+            if (!snapshot.empty) {
+                hasActiveOrder = true;
+            } 
+            else if (snapshot.empty && hasActiveOrder === true) {
+                hasActiveOrder = false; 
+
+                // 🛑 NEW LOGIC: Only show the reset message/reload if it's NOT the restaurant tablet
+                if (!isPermanentKiosk) {
+                    showResetMessage();
+                    setTimeout(() => {
+                        window.location.reload(); 
+                    }, 3000);
+                } else {
+                    console.log("Restaurant Tablet: Keeping screen active. No reset needed.");
+                }
+            }
+        });
+}
+
+function showResetMessage() {
+    // This creates a nice overlay on the screen instead of a popup alert
+    const msg = document.createElement('div');
+    msg.innerHTML = `
+        <div style="position:fixed; top:0; left:0; width:100%; height:100%; 
+                    background:rgba(0,0,0,0.9); z-index:9999; display:flex; 
+                    flex-direction:column; justify-content:center; align-items:center; color:white;">
+            <h1 style="color:#FFC107;">Arigatou Gozaimasu!</h1>
+            <p>Thank you for dining at Kagaribi.</p>
+            <p style="font-size:0.8rem; color:#666;">This kiosk is resetting for the next guest...</p>
+        </div>`;
+    document.body.appendChild(msg);
+}
+
+// Call it with the current table ID
+startKioskListener(tableNumber);
+
+// 1. Generate a unique ID for THIS specific phone/tab session
+const mySessionId = Math.random().toString(36).substring(7);
+const myTable = "Table 1"; // This would come from your QR code
+
+// 2. Use this unique path for the cart
+const myCartRef = db.collection("active_carts").doc(`${myTable}_${mySessionId}`);
+
+async function addToCart(item) {
+    let currentItems = [];
+    const doc = await myCartRef.get();
+    
+    if (doc.exists) {
+        currentItems = doc.data().items;
+    }
+
+    // Check if item exists in MY specific session cart
+    const index = currentItems.findIndex(i => i.name === item.name);
+    if (index > -1) {
+        currentItems[index].qty += 1;
+    } else {
+        currentItems.push({...item, qty: 1});
+    }
+
+    await myCartRef.set({ items: currentItems, table: myTable });
+}
+
+async function placeOrder() {
+    const doc = await myCartRef.get();
+    if (!doc.exists) return;
+
+    const items = doc.data().items;
+    const batch = db.batch();
+
+    // 1. Send to Kitchen
+    items.forEach(item => {
+        const orderRef = db.collection("orders").doc();
+        batch.set(orderRef, {
+            table: myTable,
+            name: item.name,
+            qty: item.qty,
+            status: "Pending",
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    });
+
+    // 2. DELETE only MY session cart
+    batch.delete(myCartRef);
+
+    await batch.commit();
+    
+    // 3. Clear the UI (Fixes the ReferenceError)
+    renderCartUI([]); 
+    alert("Order Sent!");
+}
+function renderCartUI() {
+    const container = document.getElementById('cart-list'); // Use your real ID
+    if (!container) return;
+    
+    // If yourLocalCartArray is empty, the screen clears!
+    container.innerHTML = yourLocalCartArray.map(item => `<div>${item.name}</div>`).join('');
+}
+(async () => {
+    console.log("Starting patch...");
+    const snapshot = await db.collection("archived_sales").get();
+    
+    snapshot.forEach(async (doc) => {
+        const data = doc.data();
+        if (data.items && data.foodCost === undefined) {
+            let totalCost = 0;
+            data.items.forEach(item => {
+                if(item.name === "KATSU-DON") totalCost += (80 * (item.qty || 1));
+            });
+            
+            await db.collection("archived_sales").doc(doc.id).update({
+                foodCost: totalCost,
+                grossProfit: (data.total - totalCost)
+            });
+            console.log(`Patched order: ${doc.id}`);
+        }
+    });
+    console.log("Patch finished!");
+})();
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(() => console.log('Service Worker registered! Menu images will now cache.'))
+                .catch(err => console.log('Service Worker registration failed:', err));
+        });
+    }
+
+    // --- NEW SEARCH FUNCTIONALITY (WITH ADD TO ORDER BUTTON RESTORED) ---
+function handleSearch(query) {
+    const cleanQuery = query.toLowerCase().trim();
+    const clearBtn = document.getElementById('clear-search-btn');
+    const bestSellerHeader = document.getElementById('best-seller-section');
+    const bestSellerText = document.getElementById('best-seller-text');
+    
+    if (clearBtn) clearBtn.style.display = cleanQuery.length > 0 ? 'block' : 'none';
+
+    if (cleanQuery === "") {
+        if (bestSellerText) bestSellerText.innerHTML = `🔥 Best Sellers`;
+        const activeCatBtn = document.querySelector('.cat-btn.active');
+        const activeCat = activeCatBtn ? activeCatBtn.id.replace('cat-', '') : CATEGORIES[0].name;
+        renderMenu(activeCat);
+        return;
+    }
+
+    if (bestSellerHeader && bestSellerText) {
+        bestSellerHeader.style.display = 'block';
+        bestSellerText.innerHTML = `🔍 Search Results for "${query}"`;
+    }
+
+    const searchResults = MENU.filter(item => 
+        (item.name && item.name.toLowerCase().includes(cleanQuery)) ||
+        (item.jname && item.jname.toLowerCase().includes(cleanQuery)) ||
+        (item.desc && item.desc.toLowerCase().includes(cleanQuery))
+    );
+
+    const gridContainer = document.getElementById('grid');
+    if (!gridContainer) return;
+
+    if (searchResults.length === 0) {
+        gridContainer.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; color: #888;">
+                <div style="font-size: 2.5rem; margin-bottom: 10px;"></div>
+                <p>No matching delicious items found.</p>
+            </div>`;
+        return;
+    }
+
+    // Maps out the layout while safely maintaining the "Add to Order" button structure
+    gridContainer.innerHTML = searchResults.map((i, idx) => {
+        return `
+        <div class="card menu-anim" onclick="openItemModal(${i.id})" style="animation-delay: ${idx * 0.03}s; position: relative; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;">
+            ${i.isBestSeller ? `<div class="badge" style="position: absolute; top: 10px; left: 10px; background: #ce1126; color: white; font-size: 0.6rem; padding: 4px 9px; border-radius: 4px; font-weight: bold; z-index: 5;">BEST SELLER</div>` : ''}
+            
+            <div>
+                <div class="card-img">
+                    <img src="${i.img || 'images/placeholder.jpg'}" alt="${i.name || 'Food Item'}" loading="lazy" onerror="this.src='images/placeholder.jpg'">
+                </div>
+                <div class="card-info" style="padding: 12px 12px 4px 12px;">
+                    <b class="jname" style="display: block; font-size: 1.1rem; color: #1a1a1a; margin-bottom: 2px;">${i.jname || ''}</b>
+                    <b class="ename" style="display: block; font-size: 0.9rem; color: #555; margin-bottom: 4px;">${i.name || ''}</b>
+                    <p class="desc" style="font-size: 0.75rem; color: #777; margin: 0 0 8px 0; line-height: 1.3;">${i.desc || ''}</p>
+                </div>
+            </div>
+
+            <div style="padding: 0 12px 12px 12px;">
+                <div class="price-row" style="margin-bottom: 8px;">
+                    <div class="price" style="color: #ce1126; font-weight: 800; font-size: 1.15rem;">₱${(i.price || 0).toFixed(2)}</div>
+                </div>
+                <button class="add-btn" style="width: 100%; background: var(--gold, #FFC107); color: black; border: none; padding: 8px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; cursor: pointer;">
+                    Add to Order
+                </button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function clearSearch() {
+    const searchInput = document.getElementById('menu-search-input');
+    if (searchInput) {
+        searchInput.value = "";
+        handleSearch("");
+    }
+}
+
+    </script>
+</body>
+</html>

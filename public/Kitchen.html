@@ -1,0 +1,275 @@
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="google-site-verification" content="0zC3FfybV_8OXbcH8KL_r1yCflzQKsPQ7vFuSO6js7E" />
+        <title>Kitchen Display - Final Layout</title>
+        <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+        <style>
+            body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; padding: 20px; margin: 0; }
+            
+            /* HEADER & DEBUG */
+            .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; }
+            #debug-log { 
+                background: #000; color: #0f0; padding: 10px; font-family: monospace; 
+                font-size: 0.8rem; border-radius: 8px 8px 0 0; border: 1px solid #333; 
+                height: 50px; overflow-y: auto; 
+            }
+
+            /* SUMMARY BAR */
+            .summary-bar {
+                background: #1e1e1e; padding: 12px 20px; border-radius: 0 0 8px 8px;
+                margin-bottom: 25px; border: 1px solid #333; border-top: none;
+                display: flex; align-items: center; gap: 15px; overflow-x: auto;
+            }
+            .summary-item {
+                background: #333; padding: 6px 12px; border-radius: 6px;
+                white-space: nowrap; font-weight: bold; border: 1px solid #444; font-size: 1rem;
+            }
+            .summary-qty { color: #FFC107; margin-right: 5px; }
+
+            /* TICKETS */
+            .rack { display: flex; flex-wrap: wrap; gap: 20px; }
+            .ticket { 
+                background: white; color: black; padding: 20px; border-radius: 12px; 
+                width: 290px; position: relative; display: flex; flex-direction: column;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.3); min-height: 360px;
+            }
+            
+            .order-timestamp-label {
+                position: absolute; top: 20px; right: 20px;
+                font-weight: bold; font-size: 1rem; color: #777;
+            }
+
+            /* BADGES */
+            .badge-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+            .badge {
+                padding: 4px 10px; border-radius: 6px; font-weight: 800; 
+                font-size: 0.75rem; text-transform: uppercase;
+            }
+            .label-dinein { background: #D30F0F; color: white; }
+            .label-takeout { background: #333; color: white; }
+            
+            .pay-cash { background: #e0e0e0; color: #333; border: 1px solid #ccc; }
+            .pay-gcash { background: #007dfe; color: white; }
+            .pay-maya { background: #000000; color: #00ff41; }
+
+            .ticket h2 { margin: 0; font-size: 2.2rem; font-weight: 800; color: #222; }
+            .table-text { margin: 5px 0 0 0; color: #555; font-size: 1.1rem; font-weight: 600; }
+
+            .timer-container {
+                position: absolute; bottom: 85px; right: 20px;
+                font-family: monospace; font-size: 1.1rem; font-weight: bold; color: #888;
+            }
+            .timer-urgent { color: #D30F0F !important; animation: blink 1s infinite; }
+            @keyframes blink { 50% { opacity: 0.5; } }
+
+            .item-list { margin: 15px 0; padding: 0; list-style: none; border-top: 2px solid #eee; padding-top: 10px; }
+            .item-list li { padding: 8px 0; font-size: 1.25rem; font-weight: 700; border-bottom: 1px solid #f0f0f0; }
+            .qty-badge { color: #D30F0F; font-weight: 900; margin-right: 10px; }
+
+            .btn-done { 
+                width: 100%; padding: 15px; background: #27ae60; color: white; 
+                border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1.1rem; margin-top: auto;
+            }
+
+            #audio-unlock { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; display: flex; align-items: center; justify-content: center; }
+            .start-btn { padding: 20px 40px; background: #D30F0F; color: white; border: none; border-radius: 50px; cursor: pointer; font-weight: bold; }
+
+            #print-area { display: none; }
+            @media print {
+                body * { visibility: hidden; }
+                #print-area, #print-area * { visibility: visible; }
+                #print-area { display: block !important; position: absolute; left: 0; top: 0; width: 72mm; }
+                .receipt-font { font-family: 'Courier New', monospace; font-size: 10pt; text-align: center; color: black; }
+            }
+            /* Add this to your <style> section in the Kitchen file */
+            .item-list li {
+                padding: 8px 0;
+                font-size: 1.1rem; /* Slightly smaller to fit longer names */
+                font-weight: 700;
+                border-bottom: 1px solid #f0f0f0;
+                line-height: 1.2; /* Better spacing for wrapped text */
+                word-wrap: break-word; /* Prevents text from going off the ticket */
+            }
+        </style>
+    </head>
+    <body>
+
+        <div id="audio-unlock">
+            <button class="start-btn" onclick="unlockAudio()">👨‍🍳 START KITCHEN MONITOR</button>
+        </div>
+
+        <div class="header">
+            <h1>Kitchen Rack</h1>
+            <div id="conn-status">🟡 Connecting...</div>
+        </div>
+
+        <div id="debug-log">System Ready.</div>
+
+        <div class="summary-bar" id="summary-bar">
+            <div style="color:#666;">Waiting for items...</div>
+        </div>
+
+        <div class="rack" id="rack"></div>
+        <div id="print-area"></div>
+
+        <audio id="ding" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"></audio>
+
+        <script>
+            const debug = document.getElementById('debug-log');
+            let printWindow = null; // Track the receipt tab
+            
+            function log(msg) { 
+                const t = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                debug.innerHTML += `<div>[${t}] > ${msg}</div>`; 
+                debug.scrollTop = debug.scrollHeight; 
+            }
+
+            const firebaseConfig = {
+                apiKey: "AIzaSyAQZQYmI5pfNSKbuv368nwuRAs1PrtusV4",
+                authDomain: "kagaribi-order.firebaseapp.com",
+                projectId: "kagaribi-order",
+                storageBucket: "kagaribi-order.firebasestorage.app",
+                messagingSenderId: "724955593450",
+                appId: "1:724955593450:web:45fd894a5281906cdef593"
+            };
+
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+            const sound = document.getElementById('ding');
+
+            let activeOrders = [];
+
+            function unlockAudio() {
+                document.getElementById('audio-unlock').style.display = 'none';
+                sound.play().catch(() => {});
+            }
+
+            function groupItems(items) {
+                const counts = {};
+                items.forEach(item => {
+                    counts[item.name] = (counts[item.name] || { qty: 0, price: item.price });
+                    counts[item.name].qty += (item.qty || 1);
+                });
+                return Object.keys(counts).map(name => ({ name, qty: counts[name].qty, price: counts[name].price }));
+            }
+
+            setInterval(() => {
+                const now = new Date();
+                activeOrders.forEach(order => {
+                    const elapsed = Math.floor((now - order.time) / 1000);
+                    const mins = Math.floor(elapsed / 60);
+                    const secs = elapsed % 60;
+                    const timerElement = document.getElementById(`timer-${order.id}`);
+                    if (timerElement) {
+                        timerElement.innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
+                        if (elapsed >= 300) timerElement.classList.add('timer-urgent');
+                    }
+                });
+            }, 1000);
+
+            // SYNC LOGIC: LISTENING FOR PENDING RUNNING TABS
+            db.collection("orders").where("status", "==", "Pending").onSnapshot(snap => {
+                document.getElementById('conn-status').innerHTML = "🟢 Live";
+                const rack = document.getElementById('rack');
+                const summaryBar = document.getElementById('summary-bar');
+                
+                let totalProd = {}; 
+
+                snap.docChanges().forEach(change => {
+                    if (change.type === "added") {
+                        log(`New Ticket: ${change.doc.data().table}`);
+                        sound.play().catch(()=>{});
+                    }
+                });
+
+                // Clean list of active tracking
+                activeOrders = [];
+
+                snap.forEach(doc => {
+                    const order = doc.data();
+                    const grouped = groupItems(order.items);
+                    const tableID = `ticket-${doc.id}`;
+                    
+                    const displayTable = order.table || "Take Out";
+                    const isDineIn = displayTable.includes("Table");
+                    const typeClass = isDineIn ? 'label-dinein' : 'label-takeout';
+                    const orderType = isDineIn ? "DINE IN" : "TAKE OUT";
+                    
+                    let payClass = "pay-cash";
+                    if(order.method === "GCASH") payClass = "pay-gcash";
+                    if(order.method === "MAYA") payClass = "pay-maya";
+                    
+                    grouped.forEach(i => totalProd[i.name] = (totalProd[i.name] || 0) + i.qty);
+                    const orderTime = order.timestamp ? order.timestamp.toDate() : new Date();
+                    const timeString = orderTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    activeOrders.push({ id: doc.id, time: orderTime });
+
+                    // RUNNING TAB UPDATE LOGIC
+                    let existingTicket = document.getElementById(tableID);
+                    if (existingTicket) {
+                        // Update only the item list if ticket exists
+                        const list = existingTicket.querySelector('.item-list');
+                        list.innerHTML = grouped.map(i => `<li><span class="qty-badge">${i.qty}x</span> ${i.name}</li>`).join('');
+                    } else {
+                        // Create new ticket
+                        const ticket = document.createElement('div');
+                        ticket.id = tableID;
+                        ticket.className = "ticket";
+                        ticket.innerHTML = `
+                            <div class="order-timestamp-label">${timeString}</div>
+                            <h2>#${doc.id.slice(-4).toUpperCase()}</h2>
+                            <p class="table-text">${displayTable}</p>
+                            <div class="badge-row">
+                                <span class="badge ${typeClass}">${orderType}</span>
+                                <span class="badge ${payClass}">${order.method || 'CASH'}</span>
+                            </div>
+                            <ul class="item-list">
+                                ${grouped.map(i => `<li><span class="qty-badge">${i.qty}x</span> ${i.name}</li>`).join('')}
+                            </ul>
+                            <div class="timer-container">⏱ <span id="timer-${doc.id}">0:00</span></div>
+                            
+                            <button class="btn-done" onclick="printAndComplete('${doc.id}')">MARK AS SERVED</button>
+                        `;
+                        rack.appendChild(ticket);
+                    }
+                });
+
+                // Remove any tickets that are no longer in the snapshot (completed)
+                const currentDocIds = snap.docs.map(doc => `ticket-${doc.id}`);
+                document.querySelectorAll('.ticket').forEach(t => {
+                    if(!currentDocIds.includes(t.id)) t.remove();
+                });
+
+                // Summary Bar Update
+                if (Object.keys(totalProd).length > 0) {
+                    summaryBar.innerHTML = `<div style="color:#FFC107; font-weight:bold; font-size:0.8rem;">TOTAL:</div>` + 
+                        Object.keys(totalProd).map(name => `
+                            <div class="summary-item"><span class="summary-qty">${totalProd[name]}x</span> ${name}</div>
+                        `).join('');
+                } else {
+                    summaryBar.innerHTML = `<div style="color:#666;">No active items.</div>`;
+                }
+            });
+
+            function printAndComplete(docId) {
+        // We only need to update the status now. 
+        // No window.open or receipt HTML needed here.
+        
+        db.collection("orders").doc(docId).update({ 
+            status: "Served",
+            servedAt: firebase.firestore.FieldValue.serverTimestamp() 
+        })
+        .then(() => {
+            log(`Order #${docId.slice(-4)} marked as SERVED and sent to Billing.`);
+            // The ticket will automatically disappear because of the onSnapshot filter
+        })
+        .catch((error) => {
+            log(`Error updating order: ${error}`);
+        });
+    }
+        </script>
+</body>
+</html>

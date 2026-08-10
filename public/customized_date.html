@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kagaribi - Live POS Billing Control</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
+    <style>
+        :root {
+            --bg-dark: #0a0a0c;
+            --card-bg: #141419;
+            --gold: #d4af37;
+            --primary-red: #d30f0f;
+            --text-light: #ffffff;
+            --border-color: #26262b;
+            --success: #10b981;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            margin: 0;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--primary-red);
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            letter-spacing: 1px;
+        }
+
+        .metrics-bar {
+            display: flex;
+            gap: 20px;
+        }
+
+        .metric-box {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .metric-box small {
+            display: block;
+            color: #888;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .metric-box span {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--gold);
+        }
+
+        #billing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 20px;
+        }
+
+        #empty-msg {
+            grid-column: 1 / -1;
+            text-align: center;
+            color: #555;
+            padding: 60px;
+            font-size: 1.2rem;
+            border: 2px dashed #222;
+            border-radius: 8px;
+        }
+
+        .table-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .table-card h2 {
+            margin: 0 0 15px 0;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .void-all-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #555;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+
+        .void-all-btn:hover {
+            color: var(--primary-red);
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .pay-badge {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: white;
+            font-weight: bold;
+        }
+        .b-gcash { background-color: #007dfe; }
+        .b-maya { background-color: #00ff66; color: #000; }
+        .b-cash { background-color: #22c55e; }
+
+        .item-list {
+            border-top: 1px solid #222;
+            padding-top: 10px;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .cancel-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            margin-right: 5px;
+            padding: 0;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px dashed #333;
+            padding-top: 12px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .total-price {
+            color: var(--gold);
+            font-size: 1.4rem;
+        }
+
+        .bill-btn {
+            background-color: var(--primary-red);
+            color: white;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .bill-btn:hover {
+            background-color: #b30c0c;
+        }
+
+        /* Modal Overlay Windows */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0,0,0,0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-box {
+            background-color: #1c1c24;
+            border: 1px solid #333;
+            padding: 25px;
+            border-radius: 8px;
+            width: 320px;
+            text-align: center;
+        }
+
+        .modal-box h3 { margin-top: 0; margin-bottom: 15px; }
+
+        .modal-box input {
+            width: 90%;
+            padding: 10px;
+            background: #000;
+            border: 1px solid #444;
+            color: white;
+            text-align: center;
+            font-size: 1.2rem;
+            letter-spacing: 3px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* 72mm Thermal Printer Layout Overrides */
+        #print-receipt {
+            display: none;
+        }
+
+        @media print {
+            body * { visibility: hidden; background: #fff; }
+            #print-receipt, #print-receipt * { visibility: visible; }
+            #print-receipt {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 72mm;
+                display: block !important;
+            }
+            @page { margin: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1>KAGARIBI BILLING CONTROL</h1>
+            <div style="color: #666; font-size: 0.85rem; margin-top: 4px;">Live POS Table Interface & Historical Adjuster</div>
+        </div>
+        <div class="metrics-bar">
+            <div class="metric-box">
+                <small>Today's Sales Total</small>
+                <span id="daily-total">₱0.00</span>
+            </div>
+            <div class="metric-box">
+                <small>Billed Tables</small>
+                <span id="tables-count">0</span>
+            </div>
+        </div>
+    </header>
+
+    <div id="billing-grid">
+        <div id="empty-msg">Establishing connection to database...</div>
+    </div>
+
+    <div id="print-receipt"></div>
+
+    <div class="modal-overlay" id="cancel-item-modal">
+        <div class="modal-box">
+            <h3 id="cancel-item-title">Cancel Item?</h3>
+            <input type="password" id="cancel-item-pin" maxlength="6" placeholder="******">
+            <div class="modal-actions">
+                <button style="background:#444; color:white;" onclick="document.getElementById('cancel-item-modal').style.display='none'">Abort</button>
+                <button style="background:var(--primary-red); color:white;" onclick="executeCancelItem()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="void-modal">
+        <div class="modal-box">
+            <h3 id="void-title">Void Table orders?</h3>
+            <input type="password" id="void-pin" maxlength="6" placeholder="******">
+            <div class="modal-actions">
+                <button style="background:#444; color:white;" onclick="document.getElementById('void-modal').style.display='none'">Abort</button>
+                <button style="background:var(--primary-red); color:white;" onclick="executeVoid()">Void All</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQZQYmI5pfNSKbuv368nwuRAs1PrtusV4",
+            authDomain: "kagaribi-order.firebaseapp.com",
+            projectId: "kagaribi-order",
+            storageBucket: "kagaribi-order.firebasestorage.app",
+            messagingSenderId: "724955593450",
+            appId: "1:724955593450:web:45fd894a5281906cdef593"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let pendingItemCancel = null;
+        let pendingVoid = null;
+
+        // 1. SALES TRACKER MATRIX
+        function loadDailySales() {
+            const startOfToday = new Date();
+            startOfToday.setHours(0, 0, 0, 0);
+
+            db.collection("archived_sales")
+            .where("completedAt", ">=", startOfToday)
+            .orderBy("completedAt", "desc") 
+            .onSnapshot(snapshot => {
+                let totalSales = 0;
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    totalSales += data.total || 0;
+                });
+
+                document.getElementById('daily-total').innerText = `₱${totalSales.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                document.getElementById('tables-count').innerText = snapshot.size;
+            });
+        }
+
+        // 2. LIVE MONITORING & DYNAMIC CARDS GENERATOR
+        db.collection("orders")
+            .where("status", "in", ["Pending", "Served"])
+            .onSnapshot(snapshot => {
+                const grid = document.getElementById('billing-grid');
+                if (snapshot.empty) {
+                    grid.innerHTML = '<div id="empty-msg">No active table orders present.</div>';
+                    return;
+                }
+
+                let groups = {};
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const table = data.table || "Take Out";
+                    
+                    if (!groups[table]) {
+                        groups[table] = { items: [], total: 0, docIds: [], allServed: true, method: data.method || "" };
+                    }
+                    
+                    const itemsWithMeta = data.items.map((item, index) => ({
+                        ...item,
+                        docId: doc.id,
+                        index: index
+                    }));
+
+                    groups[table].items.push(...itemsWithMeta);
+                    groups[table].total += data.total;
+                    groups[table].docIds.push(doc.id);
+                    if (data.status === "Pending") groups[table].allServed = false;
+                    if (data.method) groups[table].method = data.method;
+                });
+
+                grid.innerHTML = "";
+                Object.keys(groups).forEach(tableId => {
+                    const data = groups[tableId];
+                    const safeData = JSON.stringify(data).replace(/"/g, '&quot;');
+                    
+                    let badgeHtml = "";
+                    if (data.method) {
+                        const displayMethod = data.method.toUpperCase() === 'MAYA' ? 'CARD' : data.method.toUpperCase();
+                        const bClass = displayMethod === 'GCASH' ? 'b-gcash' : (displayMethod === 'CARD' ? 'b-maya' : 'b-cash');
+                        badgeHtml = `<span class="pay-badge ${bClass}">${displayMethod}</span>`;
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = "table-card";
+                    card.innerHTML = `
+    <button class="void-all-btn" onclick="voidWholeTable('${tableId}', ${JSON.stringify(data.docIds).replace(/"/g, '&quot;')})">✕</button>
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+        <h2>${tableId} ${badgeHtml}</h2> 
+        <span class="status-badge" style="background:${data.allServed ? 'var(--success)' : '#444'}">
+            ${data.allServed ? '✓ Ready' : '⌛ Cooking'}
+        </span>
+    </div>
+
+    <div class="item-list" style="flex: 1; overflow-y: auto; min-height: 140px; max-height: 240px; margin-bottom: 12px; padding-right: 5px;">
+        ${data.items.map(item => {
+        const parts = item.name.split(' (');
+        const displayName = parts[0];
+        const addonText = parts[1] ? '(' + parts[1] : '';
+
+        return `
+            <div class="item-row" style="align-items: flex-start; margin-bottom: 6px;">
+                <span style="flex: 1;">
+                    <button class="cancel-btn" onclick="cancelSingleItem('${item.docId}', ${item.index}, '${item.name}')">🗑️</button>
+                    <b style="font-size: 0.95rem;">${item.qty}x ${displayName}</b>
+                    <div style="font-size: 0.75rem; color: var(--gold); margin-left: 28px;">${addonText}</div>
+                </span>
+                <span style="font-weight: bold;">₱${(item.qty * item.price).toLocaleString()}</span>
+            </div>
+        `;
+    }).join('')}
+    </div>
+
+    <div style="margin-top: auto;">
+       <div style="margin-bottom: 10px; border-top: 1px solid #222; padding-top: 10px;">
+            <span style="font-size: 0.7rem; color: var(--gold); display: block; margin-bottom: 5px; font-weight: bold; text-transform: uppercase;">PH Regulatory Compliance Configuration:</span>
+            
+            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                <div style="flex: 1;">
+                    <small style="color:#888; font-size: 9px; display:block;">TOTAL PAX</small>
+                    <input type="number" id="total-pax-${tableId}" value="1" min="1" 
+                        style="width: 85%; background:#000; border:1px solid #333; color:white; padding:4px; border-radius:4px; font-size:11px;"
+                        oninput="calculatePHDiscount('${tableId}', ${data.total}, ${JSON.stringify(data.items).replace(/"/g, '&quot;')})">
+                </div>
+                <div style="flex: 1;">
+                    <small style="color:var(--gold); font-size: 9px; display:block;">SENIOR PAX</small>
+                    <input type="number" id="senior-pax-${tableId}" value="0" min="0"
+                        style="width: 85%; background:#000; border:1px solid var(--gold); color:white; padding:4px; border-radius:4px; font-size:11px;"
+                        oninput="calculatePHDiscount('${tableId}', ${data.total}, ${JSON.stringify(data.items).replace(/"/g, '&quot;')})">
+                </div>
+                <div style="flex: 1.5;">
+                    <small style="color:var(--gold); font-size: 9px; display:block;">SENIOR/PWD ID(S)</small>
+                    <input type="text" id="discount-id-${tableId}"
+                        style="width: 90%; background:#000; border:1px solid var(--gold); color:white; padding:4px; border-radius:4px; font-size:11px;"
+                        placeholder="e.g. ID-1234">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                <div style="flex: 1;">
+                    <small style="color:#888; font-size: 9px; display:block;">OUTSIDE ALCOHOL VALUE (₱)</small>
+                    <input type="number" id="corkage-base-${tableId}" value="0" min="0" 
+                        style="width: 95%; background:#000; border:1px solid #333; color:white; padding:4px; border-radius:4px; font-size:11px;"
+                        oninput="calculatePHDiscount('${tableId}', ${data.total}, ${JSON.stringify(data.items).replace(/"/g, '&quot;')})"
+                        placeholder="0.00">
+                </div>
+            </div>
+            
+            <div style="margin-top: 8px; border-top: 1px dashed #26262b; padding-top: 8px; background: rgba(211,15,15,0.02); padding: 6px; border-radius: 4px;">
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #a1a5b7; font-weight: bold; cursor: pointer;">
+                    <input type="checkbox" id="backdate-toggle-${tableId}" onchange="document.getElementById('backdate-inputs-${tableId}').style.display = this.checked ? 'flex' : 'none'">
+                    ⚠️ Override Date / Backdate Print
+                </label>
+                <div id="backdate-inputs-${tableId}" style="display: none; gap: 8px; margin-top: 6px;">
+                    <input type="date" id="backdate-day-${tableId}" value="2026-05-10" style="flex: 1; background:#000; border: 1px dashed var(--primary-red); color: #fff; padding: 4px; font-size: 11px; border-radius: 4px; outline:none;">
+                    <input type="time" id="backdate-time-${tableId}" value="14:30" style="flex: 1; background:#000; border: 1px dashed var(--primary-red); color: #fff; padding: 4px; font-size: 11px; border-radius: 4px; outline:none;">
+                </div>
+            </div>
+        </div>
+
+        <div class="total-row">
+            <span>Amount Due</span>
+            <span class="total-price" id="total-display-${tableId}">₱${data.total.toLocaleString()}</span>
+        </div>
+        <button class="bill-btn" onclick="checkout('${tableId}', ${safeData})">PRINT & BILL OUT</button>
+    </div>
+`;
+                    grid.appendChild(card);
+                    calculatePHDiscount(tableId, data.total, data.items);
+                });
+            });
+
+        // 3. REGULATORY MATH COMPLIANCE ENGINE
+        function calculatePHDiscount(tableId, grossTotal, items) {
+            const NON_DISCOUNTABLE = ['SAN MIGUEL APLLE', 'ASAHI', 'SAPPORO', 'SAN MIG', 'PILSNER', 'RED HORSE', 'SAKE', 'SOJU', 'WINE', 'ALCOHOL'];
+            const totalPax = parseInt(document.getElementById(`total-pax-${tableId}`).value) || 1;
+            const seniorPax = parseInt(document.getElementById(`senior-pax-${tableId}`).value) || 0;
+            const regularPax = totalPax - seniorPax;
+            const corkageBaseValue = parseFloat(document.getElementById(`corkage-base-${tableId}`).value) || 0;
+            const corkageFeeGross = corkageBaseValue * 0.30; 
+
+            let beerGross = 0;
+            let foodGross = 0;
+
+            items.forEach(item => {
+                const nameUpper = item.name.toUpperCase();
+                const isBeer = NON_DISCOUNTABLE.some(keyword => nameUpper.includes(keyword));
+                if (isBeer) beerGross += (item.price * item.qty);
+                else foodGross += (item.price * item.qty);
+            });
+
+            const foodSharePerPerson = foodGross / totalPax;
+            const seniorFoodExempt = (foodSharePerPerson * seniorPax) / 1.12;
+            const seniorDisc = seniorFoodExempt * 0.20;
+            const seniorFoodNet = (seniorFoodExempt - seniorDisc) * 1.05;
+            const regularFoodPortion = (foodSharePerPerson * regularPax);
+            const regularFoodNet = regularFoodPortion * 1.05;
+            const beerNet = beerGross * 1.05;
+            const corkageFeeNet = corkageFeeGross * 1.05;
+
+            const finalTotal = seniorFoodNet + regularFoodNet + beerNet + corkageFeeNet;
+
+            const displayElement = document.getElementById(`total-display-${tableId}`);
+            if (displayElement) {
+                displayElement.innerText = `₱${finalTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            }
+
+            const card = displayElement.closest('.table-card');
+            card.dataset.seniorFood = seniorFoodNet;
+            card.dataset.regularFood = regularFoodNet;
+            card.dataset.beerPortion = beerNet;
+            card.dataset.corkagePortion = corkageFeeNet; 
+            card.dataset.finalTotal = finalTotal;
+            card.dataset.discount = seniorDisc;
+            card.dataset.vatExempt = seniorFoodExempt;
+            card.dataset.sc = ( (seniorFoodExempt - seniorDisc) + regularFoodPortion + beerGross + corkageFeeGross ) * 0.05;
+            card.dataset.vatable = (regularFoodPortion + beerGross + corkageFeeGross) / 1.12;
+            card.dataset.vat = ((regularFoodPortion + beerGross + corkageFeeGross) / 1.12) * 0.12;
+        }
+
+        // 4. CANCEL INDIVIDUAL ROW ITEM
+        function cancelSingleItem(docId, itemIndex, itemName) {
+            pendingItemCancel = { docId, index: itemIndex };
+            const modal = document.getElementById('cancel-item-modal');
+            const title = document.getElementById('cancel-item-title');
+            const pinInput = document.getElementById('cancel-item-pin');
+
+            if (!modal || !title || !pinInput) return;
+            modal.style.display = 'flex';
+            title.innerText = `Cancel ${itemName.split(' (')[0]}?`;
+            pinInput.value = "";
+            pinInput.focus();
+        }
+
+        async function executeCancelItem() {
+            const pin = document.getElementById('cancel-item-pin').value;
+            if (pin !== "080910") { alert("Invalid Authorization PIN"); return; }
+
+            const { docId, index } = pendingItemCancel;
+            const docRef = db.collection("orders").doc(docId);
+            const snap = await docRef.get();
+            
+            if (snap.exists) {
+                let items = snap.data().items;
+                items.splice(index, 1);
+
+                if (items.length === 0) {
+                    await docRef.delete();
+                } else {
+                    const newTotal = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+                    await docRef.update({ items: items, total: newTotal });
+                }
+            }
+            document.getElementById('cancel-item-modal').style.display = 'none';
+        }
+
+        // 5. CHECKOUT AND THERMAL INVOICE DEPLOYMENT
+        let activeCheckoutData = null;
+
+        async function checkout(tableId, group) {
+            const seniorPaxInput = document.getElementById(`senior-pax-${tableId}`);
+            const seniorPax = seniorPaxInput ? parseInt(seniorPaxInput.value) : 0;
+            const discountIdInput = document.getElementById(`discount-id-${tableId}`);
+            const rawIds = discountIdInput ? discountIdInput.value.trim() : "";
+            const discountIdsArray = rawIds.split(',').map(id => id.trim()).filter(id => id.length > 0);
+
+            if (seniorPax > 0) {
+                if (discountIdsArray.length === 0) { alert("Please enter Senior/PWD ID numbers."); return; }
+                if (discountIdsArray.length !== seniorPax) { alert(`Mismatch: Provide exactly ${seniorPax} IDs.`); return; }
+
+                const startOfToday = new Date();
+                startOfToday.setHours(0, 0, 0, 0);
+                
+                try {
+                    const todaysSales = await db.collection("archived_sales").where("completedAt", ">=", startOfToday).get();
+                    let duplicateIdFound = null;
+
+                    todaysSales.forEach(doc => {
+                        const data = doc.data();
+                        const savedIds = data.discountIds || [];
+                        discountIdsArray.forEach(id => { if (savedIds.includes(id)) duplicateIdFound = id; });
+                    });
+
+                    if (duplicateIdFound) { alert(`ID (${duplicateIdFound}) already processed today!`); return; }
+                } catch (err) { console.error(err); }
+            }
+
+            const displayElement = document.getElementById(`total-display-${tableId}`);
+            const card = displayElement.closest('.table-card');
+
+            const finalTotal = parseFloat(card.dataset.finalTotal) || group.total;
+            const seniorPortion = parseFloat(card.dataset.seniorFood) || 0;
+            const regularPortion = parseFloat(card.dataset.regularFood) || 0;
+            const beerPortion = parseFloat(card.dataset.beerPortion) || 0;
+            const corkagePortion = parseFloat(card.dataset.corkagePortion) || 0;
+            const vatable = parseFloat(card.dataset.vatable) || (group.total / 1.12);
+            const vat = parseFloat(card.dataset.vat) || (vatable * 0.12);
+            const discount = parseFloat(card.dataset.discount) || 0;
+            const sc = parseFloat(card.dataset.sc) || (group.total * 0.05);
+            const vatExempt = parseFloat(card.dataset.vatExempt) || 0;
+
+            activeCheckoutData = {
+                tableId, group, method: (group.method || "CASH").toUpperCase(), discountIdsArray,
+                seniorPortion, regularPortion, beerPortion, corkagePortion, vatable, vat,
+                grossTotal: group.total, vatExempt, discount, sc, finalTotal: Math.round(finalTotal * 100) / 100
+            };
+
+            finishCheckout(); 
+        }
+
+        if (!window.printTracker) window.printTracker = {};
+
+        async function finishCheckout() {
+            const { 
+                tableId, group, method, vatable, vat, vatExempt, discount, sc, finalTotal,
+                seniorPortion, regularPortion, beerPortion, corkagePortion, discountIdsArray 
+            } = activeCheckoutData;
+
+            let isFirstPrint = false;
+            if (!window.printTracker[tableId]) {
+                isFirstPrint = true;
+                window.printTracker[tableId] = {
+                    docRef: db.collection("archived_sales").doc(),
+                    invoiceNo: Math.floor(1000 + Math.random() * 9000)
+                };
+            }
+
+            const newSaleRef = window.printTracker[tableId].docRef;
+            const orderId = newSaleRef.id.substring(0, 5).toUpperCase();
+            const invoiceNo = window.printTracker[tableId].invoiceNo;
+
+            let paid = finalTotal;
+            let myChange = 0;
+
+            const consolidatedItems = [];
+            group.items.forEach(item => {
+                const existingItem = consolidatedItems.find(i => i.name === item.name && i.price === item.price);
+                if (existingItem) { existingItem.qty = Number(existingItem.qty) + Number(item.qty); } 
+                else { consolidatedItems.push({ ...item }); }
+            });
+
+            // REAL-TIME TIMESTAMP COMPILATION OVERRIDE
+            let targetPrintDate = new Date();
+            const backdateToggled = document.getElementById(`backdate-toggle-${tableId}`)?.checked;
+            if (backdateToggled) {
+                const customDayStr = document.getElementById(`backdate-day-${tableId}`).value;
+                const customTimeStr = document.getElementById(`backdate-time-${tableId}`).value;
+                if (customDayStr && customTimeStr) {
+                    targetPrintDate = new Date(`${customDayStr}T${customTimeStr}:00+08:00`);
+                }
+            }
+
+            const printArea = document.getElementById('print-receipt');
+            printArea.innerHTML = ""; 
+
+            let qrHtml = "";
+            if (method === "GCASH") {
+                qrHtml = `<center style="margin: 10px 0;"><img id="qr-code" src="images/gcash.png" style="width:55mm;"><div style="font-size: 14px; font-weight: bold; margin-top: 5px;">GCASH PAYMENT</div></center>`;
+            }
+
+            printArea.innerHTML = `
+                <div style="font-family: 'Courier New', monospace; font-size: 12px; color: black; line-height: 1.2; width: 72mm; margin: 0 auto;">
+                    <center>
+                        <b style="font-size: 18px;">KAGARIBI</b><br>
+                        JAPANESE RESTAURANT<br>Paseo De Carmona, Carmona, Philippines, 4117 <br> TIN: 662-927-364-00000
+                    </center>
+                    <div style="display: flex; justify-content: space-between; margin-top: 5px; border-top: 1px dashed #000; padding-top: 5px;"><span>Invoice: ${invoiceNo}</span></div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 5px; border-top: 1px dashed #000; padding-top: 5px;">
+                        <span>Date: ${targetPrintDate.toLocaleDateString('en-US', {timeZone: 'Asia/Manila'})}</span><span>${targetPrintDate.toLocaleTimeString('en-US', {timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit', hour12: true})}</span>
+                    </div>
+                    <p style="margin: 5px 0; text-align: center;">Order ID: #${orderId}<br>Table: ${tableId}<br>Mode: ${method}</p>
+                    <div style="width: 100%; border-top: 1px dashed #000; padding-top: 5px;">
+                        ${consolidatedItems.map(i => `
+                            <div style="margin-bottom: 8px;">
+                                <div style="display: flex; justify-content: space-between;"><span>${i.qty} x ${i.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</span><span>${(i.qty * i.price).toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                                <div style="margin-left: 10px; text-transform: uppercase; font-weight: bold;">${i.name}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div style="width: 100%; border-top: 1px dashed #000; padding-top: 5px;">
+                        ${seniorPortion > 0 ? `<div style="display: flex; justify-content: space-between;"><span>Senior Food:</span><span>${seniorPortion.toLocaleString(undefined, {minimumFractionDigits:2})}</span></div>` : ''}
+                        <div style="display: flex; justify-content: space-between;"><span>Regular Food:</span><span>${regularPortion.toLocaleString(undefined, {minimumFractionDigits:2})}</span></div>
+                        ${beerPortion > 0 ? `<div style="display: flex; justify-content: space-between;"><span>Alcohol/Beer:</span><span>${beerPortion.toLocaleString(undefined, {minimumFractionDigits:2})}</span></div>` : ''}
+                        ${corkagePortion > 0 ? `<div style="display: flex; justify-content: space-between;"><span>Corkage Fee:</span><span>${corkagePortion.toLocaleString(undefined, {minimumFractionDigits:2})}</span></div>` : ''}
+                    </div>
+                    <div style="width: 100%; font-size: 15px; border-top: 1px dashed #000; border-bottom: 1px dashed #000; font-weight: bold; margin-top: 5px; padding: 5px 0;">
+                        <div style="display: flex; justify-content: space-between;"><span>TOTAL AMT DUE</span><span>₱${finalTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                    </div>
+                    <div style="width: 100%; font-size: 12px; padding-top: 5px">
+                        <div style="display: flex; justify-content: space-between;"><span>Vatable Sales:</span><span>${vatable.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                        <div style="display: flex; justify-content: space-between;"><span>VAT EXEMPT:</span><span>${vatExempt.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                        <div style="display: flex; justify-content: space-between;"><span>VAT Amount:</span><span>${vat.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Service Charge (5%):</span><span>${sc.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                        ${discount > 0 ? `<div style="display: flex; justify-content: space-between;"><span>Discount (20%):</span><span>-${discount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>` : ''}
+                    </div>
+                    ${qrHtml}
+                    <center><p style="margin-top:15px; font-weight:bold;">THANK YOU, COME AGAIN!</p></center>
+                </div>
+            `;
+
+            printArea.style.display = 'block';
+            
+            const executePrintAction = () => {
+                if (isFirstPrint) {
+                    setTimeout(() => { document.getElementById('print-receipt').style.display = 'none'; }, 1000);
+                } else {
+                    finishDatabaseTasks(tableId, group, paid, myChange, method, finalTotal, sc, vat, discount, vatable, vatExempt, newSaleRef, invoiceNo, seniorPortion, regularPortion, beerPortion, corkagePortion, discountIdsArray, targetPrintDate); 
+                    delete window.printTracker[tableId]; 
+                }
+            };
+            
+            window.print();
+            executePrintAction();
+        }
+
+        async function finishDatabaseTasks(tableId, group, paid, change, method, finalTotalToSave, serviceCharge, vatAmount, discountAmount, vatableSales, vatExemptSales, newSaleRef, invoiceNo, seniorPort, regularPort, beerPort, corkagePort, discountIdsArray, resolvedTimestamp) {
+            await newSaleRef.set({
+                invoiceNo, table: tableId, total: finalTotalToSave, cashPaid: paid, change, method,
+                serviceFee: serviceCharge, vat: vatAmount, discount: discountAmount, vatable: vatableSales, vatExempt: vatExemptSales,
+                seniorFood: seniorPort, regularFood: regularPort, alcoholSales: beerPort, corkageFee: corkagePort,
+                discountIds: discountIdsArray || [], items: group.items, 
+                completedAt: firebase.firestore.Timestamp.fromDate(resolvedTimestamp)    
+            });
+            
+            const batch = db.batch();
+            group.docIds.forEach(id => batch.update(db.collection("orders").doc(id), { status: "Completed" }));
+            await batch.commit();
+
+
+
+            *52441411454888459-----
+
+
+
+
+            
+            
+            setTimeout(() => { document.getElementById('print-receipt').style.display = 'none'; }, 1000);
+        }
+
+        // 6. TOTAL TABLE REMOVAL MECHANICS
+        function voidWholeTable(tableId, docIds) {
+            pendingVoid = { tableId, docIds };
+            document.getElementById('void-modal').style.display = 'flex';
+            document.getElementById('void-title').innerText = `Void ${tableId}?`;
+            document.getElementById('void-pin').value = "";
+            document.getElementById('void-pin').focus();
+        }
+
+        async function executeVoid() {
+            if (document.getElementById('void-pin').value !== "080910") { alert("Invalid Authorization PIN"); return; }
+            const batch = db.batch();
+            pendingVoid.docIds.forEach(id => batch.delete(db.collection("orders").doc(id)));
+            await batch.commit();
+            document.getElementById('void-modal').style.display = 'none';
+        }
+
+        loadDailySales();
+    </script>
+</body>
+</html>

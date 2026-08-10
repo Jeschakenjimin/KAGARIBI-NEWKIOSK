@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Banquet Inventory | Kagaribi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <script>
+        // Your Firebase Config
+        const firebaseConfig = { 
+            apiKey: "AIzaSyAQZQYmI5pfNSKbuv368nwuRAs1PrtusV4", 
+            authDomain: "kagaribi-order.firebaseapp.com", 
+            projectId: "kagaribi-order", 
+            storageBucket: "kagaribi-order.appspot.com", 
+            messagingSenderId: "724955593450", 
+            appId: "1:724955593450:web:45fd894a5281906cdef593" 
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+    </script>
+
+    <style>
+        * { box-sizing: border-box; }
+        :root {
+            --primary: #D30F0F;
+            --sidebar-bg: #1e1e2d;
+            --sidebar-hover: #2b2b40;
+            --bg-color: #f3f6f9;
+            --card-bg: #ffffff;
+            --text-main: #3f4254;
+            --text-muted: #a1a5b7;
+            --gold: #FFC107;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg-color); 
+            color: var(--text-main); 
+            margin: 0; 
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            opacity: 0; 
+            transition: opacity 0.5s ease-in;
+        }
+
+        /* Login Overlay */
+        #admin-login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url("ecbfbd6b-545e-4dec-b2c0-2a53aa08ac11.jpg") no-repeat center center; background-size: cover; display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        
+        /* Staff specific overlay styling */
+        #staff-login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(30, 30, 45, 0.98); display: none; justify-content: center; align-items: center; z-index: 9990; backdrop-filter: blur(10px); }
+        
+        .login-box { background: rgba(255, 255, 255, 0.1); padding: 40px; border-radius: 20px; text-align: center; width: 380px; backdrop-filter: blur(15px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); margin-top:100px; }
+        .login-box h2 { color: white; margin-bottom: 25px; font-weight: 700; letter-spacing: 1px; }
+        .login-box input { width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.3); background: rgba(255, 255, 255, 0.9); box-sizing: border-box; font-size: 1rem; outline: none; }
+        .btn-login { width: 100%; background: var(--primary); color: white; padding: 14px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.3s; }
+        .btn-login:hover { background: #b00d0d; box-shadow: 0 4px 15px rgba(211, 15, 15, 0.4); }
+
+        /* Logout Modal */
+        #logout-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 10000; }
+        .logout-box { background: white; padding: 30px; border-radius: 15px; text-align: center; width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .btn-confirm { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; flex: 1; }
+        .btn-cancel { background: #eee; color: #333; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; flex: 1; }
+
+        /* Sidebar Styling */
+        .sidebar { width: 260px; background: var(--sidebar-bg); color: white; display: flex; flex-direction: column; flex-shrink: 0; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
+        .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .sidebar-header h2 { margin: 0; font-size: 1.2rem; color: #fff; letter-spacing: 1px; }
+        .sidebar-header span { color: var(--primary); }
+        .nav-menu { list-style: none; padding: 20px 0; margin: 0; flex-grow: 1; }
+        .nav-menu li { padding: 5px 20px; }
+        .nav-menu a { display: flex; align-items: center; padding: 12px 15px; color: #9899ac; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 0.95rem; transition: 0.3s; }
+        .nav-menu a:hover, .nav-menu li.active a { background: var(--sidebar-hover); color: white; }
+        .nav-menu li.active a { border-left: 4px solid var(--primary); background: rgba(211, 15, 15, 0.1); color: var(--primary); }
+
+        /* Main Content Layout */
+        .main-content { flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding: 30px 40px; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header-top h1 { margin: 0; font-size: 1.8rem; font-weight: 700; color: #181c32; }
+
+        /* Panes & Cards */
+        .inventory-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 25px; }
+        .panel { background: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #eff2f5; }
+        
+        /* Stat Cards */
+        .stat-card { padding: 20px; border-radius: 12px; color: white; margin-bottom: 20px; }
+        .card-green { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+        .card-red { background: linear-gradient(135deg, #D30F0F, #ff4d4d); }
+        .stat-card small { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; opacity: 0.9; }
+        .stat-card .amount { font-size: 1.5rem; font-weight: 800; margin-top: 5px; word-wrap: break-word; overflow-wrap: break-word; }
+
+        /* Form Styling */
+        .add-form { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr auto; gap: 10px; margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px dashed #e4e6ef; }
+        .add-form input, .add-form select { padding: 10px; border-radius: 6px; border: 1px solid #e4e6ef; outline: none; font-family: inherit; min-width: 0; width: 100%; box-sizing: border-box; }
+        .add-form select:hover, .add-form input:hover { border-color: #f55047; cursor: pointer; }
+        .btn-add { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+        .controls { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; background: #f8f9fa; padding: 12px; border-radius: 8px; }
+        .search-input { flex: 2; padding: 8px; border: 1px solid #e4e6ef; border-radius: 6px; }
+
+        /* Table Styling */
+        table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        th { background: #f8f9fa; color: #a1a5b7; text-align: left; padding: 15px; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; border-bottom: 1px dashed #e4e6ef; }
+        td { border-bottom: 1px dashed #e4e6ef; padding: 15px; font-size: 0.9rem; }
+        .low-stock-row { background: rgba(211, 15, 15, 0.05); color: var(--primary); font-weight: 600; }
+
+        /* Progress Bar for Active Volume */
+        .vol-track { width: 100%; height: 6px; background: #eee; border-radius: 3px; margin-top: 5px; overflow: hidden; }
+        .vol-fill { height: 100%; background: var(--primary); transition: width 0.3s; }
+
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 10000; backdrop-filter: blur(4px); }
+        .modal-card { background: white; padding: 30px; border-radius: 15px; width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; }
+        .pin-input { width: 100%; padding: 15px; font-size: 2rem; text-align: center; letter-spacing: 8px; border: 1px solid #e4e6ef; border-radius: 8px; margin: 20px 0; box-sizing: border-box; }
+
+        /* History Logs */
+        .log-item { padding: 12px; border-bottom: 1px dashed #e4e6ef; font-size: 0.85rem; }
+        .btn-history, .btn-excel { padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; border: none; font-family: inherit; flex-shrink: 0; }
+        .btn-excel { background: #107c41; color: white; display: flex; align-items: center; gap: 8px; }
+        .btn-history { background-color: white; color: #3f4254; border: 1px solid #e4e6ef; }
+        .btn-history:hover { background: gold; }
+        @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.02); box-shadow: 0 0 15px rgba(211, 15, 15, 0.4); } 100% { transform: scale(1); } }
+        .critical-animate { animation: pulse-red 1.5s infinite; }
+        
+        .pin-container { position: relative; width: 100%; }
+        .toggle-password { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; background: none; border: none; font-size: 1.2rem; }
+        .input-wrapper { position: relative; display: flex; align-items: center; }
+        .toggle-icon { position: absolute; right: 15px; cursor: pointer; font-size: 1.2rem; user-select: none; }
+        
+        /* New Button Style */
+        .btn-lock { background: var(--sidebar-bg); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
+        .btn-lock:hover { background: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <div id="admin-login-overlay">
+        <div class="login-box">
+            <h2>ADMIN LOGIN</h2>
+            <input type="text" id="admin-email" placeholder="Email Address">
+            
+            <div class="password-wrapper" style="position: relative; width: 100%;">
+                <input type="password" id="admin-password" placeholder="Password" style="width: 100%; padding: 14px; padding-right: 45px;">
+                <span onclick="toggleVisibility('admin-password', this)" 
+                      style="position: absolute; right: 12px; top: 12px; cursor: pointer; color: #888;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </span>
+            </div>
+            
+            <button class="btn-login" onclick="checkLogin()">Unlock Data</button>
+            <p id="login-error" style="color:#ff6b6b; display:none; margin-top:10px; font-size:0.9rem;"></p>
+        </div>
+    </div>
+
+    <div id="staff-login-overlay">
+        <div class="login-box" style="margin-top:0;">
+            <h2 style="color: var(--gold);">STAFF ACCESS</h2>
+            <p style="color: #a1a5b7; margin-bottom: 20px; font-size: 0.9rem;">Please enter the Banquet inventory PIN</p>
+            <input type="password" id="staff-pin" placeholder="••••" style="text-align:center; letter-spacing: 8px; font-size: 1.5rem;" maxlength="4">
+            <button class="btn-login" style="background:var(--gold); color:black;" onclick="checkStaffLogin()">Enter Inventory</button>
+            <button onclick="window.location.href='dailysales.html'" style="margin-top:20px; background:none; border:none; color:#a1a5b7; cursor:pointer; text-decoration:underline;">Return to Menu</button>
+            <p id="staff-error" style="color:#ff6b6b; display:none; margin-top:10px; font-size:0.9rem;">Incorrect PIN. Try again.</p>
+        </div>
+    </div>
+
+    <div id="logout-modal-overlay">
+        <div class="logout-box">
+            <h3>Confirm Logout</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">Are you sure you want to sign out?</p>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-cancel" onclick="closeLogoutModal()">Cancel</button>
+                <button class="btn-confirm" onclick="confirmAdminLogout()">Yes, Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <aside class="sidebar">
+        <div class="sidebar-header"><h2>KAGARIBI <span>ADMIN</span></h2></div>
+        <ul class="nav-menu">
+            <li><a href="dailysales.html">📊 Daily Sales</a></li>
+            <li><a href="monthly-report.html">📅 Monthly Report</a></li>
+            <li><a href="inventory.html">📦 Main Inventory</a></li>
+            <li class="active"><a href="#">📦 Banquet Inventory</a></li>
+            <li><a href="reservations.html">📝 Reservation</a></li>
+            <li><a href="records.html">📄 Reservation Record </a></li>
+        </ul>
+        <div class="sidebar-footer" style="padding: 20px;">
+            <button style="width:100%; background:rgba(255, 255, 255, 0.05); border:1px solid rgba(255,255,255,0.2); color:white; padding:12px; border-radius:8px; cursor:pointer;" onclick="adminLogout()">🚪 Logout</button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        
+        <header class="header-top">
+            <h1>Banquet & Occasion Inventory</h1>
+            <button class="btn-lock" onclick="lockInventory()">🔒 Lock Inventory</button>
+        </header>
+
+        <div class="inventory-grid">
+            <div class="panel">
+                <div class="add-form">
+                    <input type="text" id="newName" placeholder="Item Name">
+                    <select id="newCat">
+                        <option value="Meat">Meat</option>
+                        <option value="Seafood">Seafood</option>
+                        <option value="Produce">Produce</option>
+                        <option value="Liquor">Liquor</option>
+                        <option value="Dry Goods">Dry Goods</option>
+                        <option value="Frozen Items">Frozen Items</option>
+                        <option value="Vegetables">Vegetables</option>
+                        <option value="Fruits">Fruits</option>
+                        <option value="Sauce & Seasonings">Sauce & Seasonings</option>
+                        <option value="Non-Food Supplies">Non-Food Supplies</option>
+                        <option value="Dairy and Alternatives">Dairy and Alternatives</option>
+                        <option value="Beverages">Beverages</option>
+                    </select>
+                    
+                    
+                    <input type="number" id="newCap" placeholder="Unit Capacity (e.g. 700)">
+                    <select id="newActiveUnit">
+                        <option value="grams">grams</option>
+                        <option value="ml">ml</option>
+                        <option value="pcs">pcs</option>
+                    </select>
+                    <input type="number" id="newPrice" placeholder="Price">
+                    <input type="number" id="newQty" placeholder="Qty">
+                    <select id="newBulkUnit">
+                        <option value="kg">kg</option>
+                        <option value="L">Liters</option>
+                        <option value="box">box</option>
+                        <option value="pcs">pcs</option>
+                    </select>
+                    <button class="btn-add" onclick="addNewItem()">+ ADD</button>
+                </div>
+
+                <div class="controls">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search event ingredients...">
+                    <select id="catFilter" style="padding: 8px; border-radius: 6px; border: 1px solid #e4e6ef; cursor: pointer;">
+                        <option value="All">All Categories</option>
+                        <option value="Meat">Meat</option>
+                        <option value="Seafood">Seafood</option>
+                        <option value="Produce">Produce</option>
+                        <option value="Liquor">Liquor</option>
+                        <option value="Dry Goods">Dry Goods</option>
+                        <option value="Frozen Items">Frozen Items</option>
+                        <option value="Vegetables">Vegetables</option>
+                        <option value="Fruits">Fruits</option>
+                        <option value="Sauce & Seasonings">Sauce & Seasonings</option>
+                        <option value="Non-Food Supplies">Non-Food Supplies</option>
+                        <option value="Dairy and Alternatives">Dairy and Alternatives</option>
+                        <option value="Beverages">Beverages</option>
+                    </select>
+                    <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 5px; color: var(--text-muted);">
+                        <input type="checkbox" id="criticalToggle"> Critical
+                    </label>
+                    <button class="btn-excel" onclick="exportInventoryToExcel()">📊 Export Stock</button>
+                    <button class="btn-history" onclick="window.location.href='banquet-records.html'">View Records</button>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Ingredient</th>
+                            <th>Price</th>
+                            <th>Qty/Stock</th>
+                            <th>In-Use Stock</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryBody"></tbody>
+                </table>
+            </div>
+
+            <div class="side-panels">
+                <div class="stat-card card-green">
+                    <small>Total Banquet Value</small>
+                    <div class="amount" id="totalValue">₱0.00</div>
+                </div>
+                <div id="critCard" class="stat-card card-red" style="display: none;">
+                    <small>Alert Status</small>
+                    <div class="amount" id="critBadge">0 ITEMS CRITICAL</div>
+                </div>
+                <div class="panel">
+                    <h3 style="margin-top:0; font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase;">Banquet History</h3>
+                    <div id="logBody" style="max-height: 400px; overflow-y: auto;"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="pinModal" class="modal-overlay">
+    <div class="modal-card">
+        <h3 style="margin:0;">Manager PIN</h3>
+        <p id="modalDesc" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 10px;">Required for deletion</p>
+        
+        <div class="pin-container" style="position: relative;">
+            <input type="password" id="managerPin" class="pin-input" maxlength="4" placeholder="••••">
+            <span onclick="toggleVisibility('managerPin', this)" 
+                  style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #888;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </span>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top: 20px;">
+            <button style="flex:1; padding:12px; border:none; border-radius:8px; cursor:pointer; background:#eee;" onclick="closeModal()">Cancel</button>
+            <button style="flex:1; padding:12px; border:none; border-radius:8px; cursor:pointer; background:var(--primary); color:white; font-weight:bold;" onclick="verifyAndExecute()">Confirm</button>
+        </div>
+    </div>
+</div>
+
+    <div id="editModal" class="modal-overlay">
+        <div class="modal-card" style="width: 400px; text-align: left;">
+            <h3 style="margin-bottom:20px;">Edit Event Ingredient</h3>
+            <input type="hidden" id="editId">
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">ITEM NAME</label>
+            <input type="text" id="editName" disabled style="width:100%; padding:10px; margin-bottom:15px; background:#f3f6f9; border:1px solid #e4e6ef; border-radius:6px;">
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <label style="font-size: 0.75rem;">Category</label>
+                    <select id="editCat" style="width:100%; padding:10px; border:1px solid #e4e6ef; border-radius:6px;">
+                        <option value="Meat">Meat</option>
+                        <option value="Seafood">Seafood</option>
+                        <option value="Produce">Produce</option>
+                        <option value="Liquor">Liquor</option>
+                        <option value="Dry Goods">Dry Goods</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem;">Stock (Qty)</label>
+                    <input type="number" id="editQty" style="width:100%; padding:10px; border:1px solid #e4e6ef; border-radius:6px;">
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem;">Active Volume (In-Use)</label>
+                    <input type="number" id="editActiveVol" style="width:100%; padding:10px; border:1px solid #e4e6ef; border-radius:6px;">
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem;">Capacity (ml/g)</label>
+                    <input type="number" id="editCap" style="width:100%; padding:10px; border:1px solid #e4e6ef; border-radius:6px;">
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem;">Price (₱)</label>
+                    <input type="number" id="editPrice" style="width:100%; padding:10px; border:1px solid #e4e6ef; border-radius:6px;">
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem;">Qty Unit</label>
+                    <select id="editBulkUnit" style="width:100%; padding:10px; border:1px solid #e4e6ef; border-radius:6px;">
+                        <option value="kg">kg</option>
+                        <option value="L">Liters</option>
+                        <option value="box">box</option>
+                        <option value="pcs">pcs</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem;">In-Use Unit</label>
+                    <select id="editActiveUnit" style="width:100%; padding:10px; border:1px solid #e4e6ef; border-radius:6px;">
+                        <option value="grams">grams</option>
+                        <option value="ml">ml</option>
+                        <option value="pcs">pcs</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:25px;">
+                <button onclick="closeEditModal()" style="flex:1; padding:12px; border:none; border-radius:8px; cursor:pointer; background:#eee;">Cancel</button>
+                <button onclick="saveEdit()" style="flex:1; padding:12px; border:none; border-radius:8px; cursor:pointer; background:var(--primary); color:white; font-weight:bold;">Save Changes</button>
+            </div>
+        </div>
+    </div>
+    
+
+    <div id="deductModal" class="modal-overlay">
+        <div class="modal-card" style="width: 320px;">
+            <h3 style="margin-bottom:5px;">Quick Deduct</h3>
+            <p id="deductItemDesc" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0;"></p>
+            
+            <input type="hidden" id="deductId">
+            <input type="hidden" id="deductCurrentActive">
+            <input type="hidden" id="deductCapacity">
+            <input type="hidden" id="deductCurrentQty">
+            <input type="hidden" id="deductActiveUnit">
+
+            <div style="text-align: left; margin-top: 20px;">
+                <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">AMOUNT USED</label>
+                <input type="number" id="deductAmount" style="width:100%; padding:15px; font-size:1.5rem; text-align:center; border:1px solid #e4e6ef; border-radius:8px; margin-top:5px; box-sizing:border-box;" placeholder="0">
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top: 20px;">
+                <button style="flex:1; padding:12px; border:none; border-radius:8px; cursor:pointer; background:#eee;" onclick="closeDeductModal()">Cancel</button>
+                <button style="flex:1; padding:12px; border:none; border-radius:8px; cursor:pointer; background:var(--primary); color:white; font-weight:bold;" onclick="confirmDeduction()">Deduct</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const MASTER_PIN = "1234";
+        const STAFF_PIN = "0000"; 
+        
+        let allItems = [];
+        let pendingTask = null;
+        let oldQty = 0;
+
+        // --- Auth Logic ---
+        async function checkLogin() { 
+            const email = document.getElementById('admin-email').value; 
+            const pass = document.getElementById('admin-password').value; 
+            try { await auth.signInWithEmailAndPassword(email, pass); } 
+            catch (err) { 
+                document.getElementById('login-error').innerText = err.message; 
+                document.getElementById('login-error').style.display = 'block'; 
+            } 
+        }
+
+        function adminLogout() { document.getElementById('logout-modal-overlay').style.display = 'flex'; }
+        function closeLogoutModal() { document.getElementById('logout-modal-overlay').style.display = 'none'; }
+        
+        async function confirmAdminLogout() { 
+            sessionStorage.removeItem('staffAuthenticated'); 
+            await auth.signOut(); 
+            location.reload(); 
+        }
+
+        auth.onAuthStateChanged(user => { 
+            document.getElementById('admin-login-overlay').style.display = user ? 'none' : 'flex'; 
+            if (user) {
+                initInventoryData(); 
+                
+                if(sessionStorage.getItem('staffAuthenticated') === 'true') {
+                    document.getElementById('staff-login-overlay').style.display = 'none';
+                } else {
+                    document.getElementById('staff-login-overlay').style.display = 'flex';
+                }
+            } 
+            document.body.style.opacity = "1"; 
+        });
+
+        function checkStaffLogin() {
+            const inputPin = document.getElementById('staff-pin').value;
+            if(inputPin === STAFF_PIN) {
+                sessionStorage.setItem('staffAuthenticated', 'true'); 
+                document.getElementById('staff-login-overlay').style.display = 'none';
+                document.getElementById('staff-pin').value = ''; 
+                document.getElementById('staff-error').style.display = 'none';
+            } else {
+                document.getElementById('staff-error').style.display = 'block';
+            }
+        }
+
+        function lockInventory() {
+            sessionStorage.removeItem('staffAuthenticated'); 
+            document.getElementById('staff-login-overlay').style.display = 'flex';
+        }
+
+        // --- Inventory Logic ---
+        function initInventoryData() {
+            // CHANGED: Now looking at 'banquet_inventory' instead of 'inventory'
+            db.collection('banquet_inventory').onSnapshot(snap => {
+                allItems = [];
+                let totalVal = 0;
+                let criticalCount = 0;
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    allItems.push({ id: doc.id, ...data });
+                    totalVal += (data.quantity * (data.price || 0));
+                    if(data.quantity <= 5) criticalCount++;
+                });
+
+                document.getElementById('totalValue').innerText = `₱${totalVal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                const critCard = document.getElementById('critCard');
+                if(criticalCount > 0) {
+                    critCard.style.display = 'block';
+                    critCard.classList.add('critical-animate');
+                    document.getElementById('critBadge').innerText = `${criticalCount} ITEMS CRITICAL`;
+                } else { critCard.style.display = 'none'; }
+                render();
+            });
+
+            // CHANGED: Now looking at 'banquet_logs' instead of 'logs'
+            db.collection('banquet_logs').orderBy('timestamp', 'desc').limit(15).onSnapshot(snap => {
+                const logBody = document.getElementById('logBody');
+                logBody.innerHTML = '';
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    const time = data.timestamp ? data.timestamp.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
+                    let color = (data.action.includes('Deducted') || data.action.includes('Delete')) ? '#D30F0F' : '#27ae60';
+                    logBody.innerHTML += `
+                        <div class="log-item">
+                            <span style="color:var(--text-muted); font-size:0.7rem;">[${time}]</span> 
+                            <b style="color:${color}; margin-left:5px;">${data.action}</b><br>
+                            <span style="color:var(--text-main); font-weight:600;">${data.details}</span>
+                        </div>`;
+                });
+            });
+        }
+
+        function render() {
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const cat = document.getElementById('catFilter').value;
+            const onlyCritical = document.getElementById('criticalToggle').checked;
+            const body = document.getElementById('inventoryBody');
+            body.innerHTML = '';
+
+            allItems.filter(item => {
+                const matchS = item.id.toLowerCase().includes(term);
+                const matchC = cat === "All" || item.category === cat;
+                const matchCrit = !onlyCritical || item.quantity <= 5;
+                return matchS && matchC && matchCrit;
+            }).forEach(item => {
+                const isLow = item.quantity <= 5;
+                const cap = item.capacity || 1;
+                const active = item.activeVol || 0;
+                const percent = (active / cap) * 100;
+
+                body.innerHTML += `
+                    <tr class="${isLow ? 'low-stock-row' : ''}">
+                        <td style="color:var(--text-muted); font-size:0.75rem;">${item.category || '-'}</td>
+                        <td><b style="color:#181c32;">${item.id}</b> ${isLow ? '⚠️' : ''}</td>
+                        <td style="font-family:monospace; color:#27ae60; font-weight:600;">₱${(item.price || 0).toFixed(2)}</td>
+                        <td style="font-weight:700;">${item.quantity} <small>${item.bulkUnit || 'kg'}</small></td>
+                        <td>
+                            <div style="font-weight:600; font-size: 0.8rem;">${active} / ${cap} ${item.activeUnit || 'g'}</div>
+                            <div class="vol-track"><div class="vol-fill" style="width:${percent}%"></div></div>
+                        </td>
+                        <td style="text-align:right;">
+                            <button onclick="openDeductModal('${item.id}')" 
+                                    style="background:#fff3f3; color:#D30F0F; border:1px solid rgba(211,15,15,0.2); padding:6px 12px; border-radius:4px; cursor:pointer; font-size:0.75rem; font-weight:700; margin-right:5px;">DEDUCT</button>
+                            <button onclick="openEditModal('${item.id}')" 
+                                    style="background:rgba(0,0,0,0.05); border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:0.75rem; font-weight:700;">EDIT</button>
+                            <button onclick="openAuth('${item.id}', 'delete')" 
+                                    style="background:none; border:none; cursor:pointer; margin-left:10px;">🗑️</button>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        async function logActivity(action, details) {
+            // CHANGED: Saving to banquet_logs
+            await db.collection('banquet_logs').add({
+                action: action, details: details, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+
+        async function addNewItem() {
+            const name = document.getElementById('newName').value.trim();
+            const cap = parseFloat(document.getElementById('newCap').value) || 0;
+            const qty = parseFloat(document.getElementById('newQty').value) || 0;
+            if(!name) return alert("Name is required");
+            
+            // CHANGED: Saving to banquet_inventory
+            await db.collection('banquet_inventory').doc(name).set({ 
+                category: document.getElementById('newCat').value, 
+                bulkUnit: document.getElementById('newBulkUnit').value, 
+                activeUnit: document.getElementById('newActiveUnit').value,
+                price: parseFloat(document.getElementById('newPrice').value) || 0, 
+                quantity: qty,
+                capacity: cap,
+                activeVol: cap 
+            });
+            const selectedUnit = document.getElementById('newBulkUnit').value;
+            logActivity('Add Item', `New event ingredient: ${name} (${qty} ${selectedUnit})`);
+            
+            document.getElementById('newName').value = '';
+            document.getElementById('newPrice').value = '';
+            document.getElementById('newQty').value = '';
+            document.getElementById('newCap').value = '';
+        }
+
+        // --- Quick Deduct Logic ---
+        function openDeductModal(id) {
+            const item = allItems.find(i => i.id === id);
+            document.getElementById('deductId').value = id;
+            document.getElementById('deductItemDesc').innerText = `${id} (in ${item.activeUnit || 'g'})`;
+            document.getElementById('deductAmount').value = '';
+            
+            // Store current values invisibly so we can do the math
+            document.getElementById('deductCurrentActive').value = item.activeVol || 0;
+            document.getElementById('deductCapacity').value = item.capacity || 1;
+            document.getElementById('deductCurrentQty').value = item.quantity || 0;
+            document.getElementById('deductActiveUnit').value = item.activeUnit || 'g';
+            
+            document.getElementById('deductModal').style.display = 'flex';
+            document.getElementById('deductAmount').focus();
+        }
+
+        function closeDeductModal() { 
+            document.getElementById('deductModal').style.display = 'none'; 
+        }
+
+        async function confirmDeduction() {
+            const id = document.getElementById('deductId').value;
+            const amountUsed = parseFloat(document.getElementById('deductAmount').value) || 0;
+
+            if (amountUsed <= 0) return alert("Please enter a valid amount to deduct.");
+
+            let currentActive = parseFloat(document.getElementById('deductCurrentActive').value);
+            let capacity = parseFloat(document.getElementById('deductCapacity').value);
+            let currentQty = parseFloat(document.getElementById('deductCurrentQty').value);
+            const aUnit = document.getElementById('deductActiveUnit').value;
+
+            // Subtract the amount used from the active volume
+            let newActive = currentActive - amountUsed;
+            let newQty = currentQty;
+
+            // If active volume drops below 0, pull 1 from Bulk Stock
+            while (newActive < 0 && newQty > 0) {
+                newQty -= 1;
+                newActive += capacity; 
+            }
+
+            if (newActive < 0) return alert("Not enough stock available to deduct this amount!");
+
+            // Update the Database
+            await db.collection('banquet_inventory').doc(id).update({
+                activeVol: newActive,
+                quantity: newQty
+            });
+
+            // Log it perfectly for your records page!
+            logActivity('Deduct Stock', `${id}: -${amountUsed} ${aUnit}`);
+            
+            closeDeductModal();
+        }
+
+        function openEditModal(id) {
+            const item = allItems.find(i => i.id === id);
+            oldQty = item.quantity;
+            document.getElementById('editId').value = id;
+            document.getElementById('editName').value = id;
+            document.getElementById('editCat').value = item.category || "Meat";
+            document.getElementById('editBulkUnit').value = item.bulkUnit || "kg";
+            document.getElementById('editActiveUnit').value = item.activeUnit || "grams";
+            document.getElementById('editPrice').value = item.price || 0;
+            document.getElementById('editQty').value = item.quantity || 0;
+            document.getElementById('editActiveVol').value = item.activeVol || 0;
+            document.getElementById('editCap').value = item.capacity || 0;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeEditModal() { document.getElementById('editModal').style.display = 'none'; }
+
+        async function saveEdit() {
+            const id = document.getElementById('editId').value;
+            let newQty = parseFloat(document.getElementById('editQty').value) || 0;
+            let active = parseFloat(document.getElementById('editActiveVol').value) || 0;
+            const cap = parseFloat(document.getElementById('editCap').value) || 1;
+            
+            const bUnit = document.getElementById('editBulkUnit').value;
+            const aUnit = document.getElementById('editActiveUnit').value;
+
+            if (active <= 0 && newQty > 0) {
+                newQty -= 1;
+                active = cap + active; 
+            }
+            
+            // CHANGED: Updating banquet_inventory
+            await db.collection('banquet_inventory').doc(id).update({
+                category: document.getElementById('editCat').value,
+                bulkUnit: bUnit,      
+                activeUnit: aUnit,    
+                price: parseFloat(document.getElementById('editPrice').value) || 0,
+                quantity: newQty,
+                activeVol: active,
+                capacity: cap
+            });
+
+            if (newQty > oldQty) {
+                let addedQty = newQty - oldQty;
+                logActivity('Add Stock', `${id}: +${addedQty} ${bUnit}`);
+            } else if (newQty < oldQty) {
+                let deductedQty = oldQty - newQty;
+                logActivity('Deduct Stock', `${id}: -${deductedQty} ${bUnit}`);
+            } else if (newQty === oldQty) {
+                // If only the active volume was changed, log it with the correct units
+                logActivity('Stock Adjustment', `${id}: Updated to ${newQty} ${bUnit} / ${active} ${aUnit}`);
+            }
+            closeEditModal();
+        }
+
+        function openAuth(id, action) {
+            pendingTask = { id, action };
+            document.getElementById('modalDesc').innerText = `Confirm Event Deletion: ${id}`;
+            document.getElementById('pinModal').style.display = 'flex';
+            document.getElementById('managerPin').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('pinModal').style.display = 'none';
+            document.getElementById('managerPin').value = '';
+        }
+
+        async function verifyAndExecute() {
+            if(document.getElementById('managerPin').value !== MASTER_PIN) return alert("Unauthorized PIN");
+            const idToDelete = pendingTask.id;
+            // CHANGED: Deleting from banquet_inventory
+            await db.collection('banquet_inventory').doc(idToDelete).delete();
+            logActivity('Delete Item', `Removed event ingredient: ${idToDelete}`);
+            closeModal();
+        }
+
+        document.getElementById('searchInput').addEventListener('input', render);
+        document.getElementById('catFilter').addEventListener('change', render);
+        document.getElementById('criticalToggle').addEventListener('change', render);
+
+        function exportInventoryToExcel() {
+            if (allItems.length === 0) return alert("No data to export.");
+            let csvContent = "Category,Ingredient,Price,Bulk Stock,Bulk Unit,Active Volume,In-Use Unit,Capacity,Total Value\n";
+            allItems.forEach(item => {
+                const totalValue = (item.price * item.quantity).toFixed(2);
+                csvContent += `${item.category},${item.id},${item.price},${item.quantity},${item.bulkUnit || 'kg'},${item.activeVol},${item.activeUnit || 'g'},${item.capacity},${totalValue}\n`;
+            });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const today = new Date().toISOString().split('T')[0];
+            link.setAttribute("href", URL.createObjectURL(blob));
+            // CHANGED: Export filename
+            link.setAttribute("download", `Kagaribi_Banquet_Inventory_${today}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        function toggleVisibility(inputId, iconElement) {
+            const input = document.getElementById(inputId);
+            if (input.type === "password") {
+                input.type = "text";
+                iconElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+            } else {
+                input.type = "password";
+                iconElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+            }
+        }
+    </script>
+</body>
+</html>

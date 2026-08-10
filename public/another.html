@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="google-site-verification" content="0zC3FfybV_8OXbcH8KL_r1yCflzQKsPQ7vFuSO6js7E" />
+    <title>Admin Sales History & Analytics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script>
+        // Your existing Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQZQYmI5pfNSKbuv368nwuRAs1PrtusV4",
+            authDomain: "kagaribi-order.firebaseapp.com",
+            databaseURL: "https://kagaribi-order-default-rtdb.firebaseio.com",
+            projectId: "kagaribi-order",
+            storageBucket: "kagaribi-order.firebasestorage.app",
+            messagingSenderId: "724955593450",
+            appId: "1:724955593450:web:45fd894a5281906cdef593",
+            measurementId: "G-SDR9L9G2V6"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+    </script>
+
+    <style>
+        /* Base Variables & Reset */
+        :root {
+            --primary: #D30F0F;
+            --sidebar-bg: #1e1e2d;
+            --sidebar-hover: #2b2b40;
+            --bg-color: #f3f6f9;
+            --card-bg: #ffffff;
+            --text-main: #3f4254;
+            --text-muted: #a1a5b7;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg-color); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding: 0;
+            opacity: 0; 
+            transition: opacity 0.5s ease-in; 
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Logout Modal */
+        #logout-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 10000; }
+        .modal-box { background: white; padding: 30px; border-radius: 15px; text-align: center; width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .btn-confirm { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; flex: 1; }
+        .btn-cancel { background: #eee; color: #333; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; flex: 1; }
+
+        /* Left Sidebar Layout */
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        .sidebar-header {
+            padding: 30px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+        .sidebar-header span { color: var(--primary); }
+        
+        .nav-menu {
+            list-style: none;
+            padding: 20px 0;
+            margin: 0;
+            flex-grow: 1;
+        }
+        .nav-menu li { padding: 5px 20px; }
+        .nav-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: #9899ac;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+        .nav-menu a:hover, .nav-menu li.active a {
+            background: var(--sidebar-hover);
+            color: white;
+        }
+        .nav-menu li.active a {
+            border-left: 4px solid var(--primary);
+            background: rgba(211, 15, 15, 0.1);
+            color: var(--primary);
+        }
+        .sidebar-footer { padding: 20px; }
+        .btn-logout { width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 12px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-weight: bold; }
+        .btn-logout:hover { background: rgba(255,255,255,0.1); }
+
+        /* Main Content Area */
+        .main-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 30px 40px;
+            position: relative;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .header-top h1 { margin: 0; font-size: 1.8rem; font-weight: 700; color: #181c32; }
+        .controls { display: flex; gap: 15px; align-items: center; }
+        .controls input[type="date"] {
+            padding: 10px 15px;
+            border: 1px solid #e4e6ef;
+            border-radius: 8px;
+            font-family: inherit;
+            color: var(--text-main);
+            outline: none;
+        }
+        .btn-pdf {
+            background: #D30F0F;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+        }
+        .btn-pdf:hover { background: #ce0202; }
+
+        /* Added Excel Button Styling */
+        .btn-excel {
+            background: #217346;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+        }
+        .btn-excel:hover { background: #185c37; }
+
+        /* Report Container - Modern Style */
+        #daily-report { background: var(--card-bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin: 0 auto; border: 1px solid #eff2f5; }
+        .report-title { text-align: center; margin-bottom: 5px; font-weight: 700; color: #181c32; }
+        #report-date { text-align: center; color: var(--text-muted); margin-bottom: 30px; font-size: 0.9rem; }
+
+        /* Grid Layout for Analytics */
+        .analytics-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 25px; margin-bottom: 40px; }
+        
+        .chart-container { background: #fafafa; border: 1px solid #eff2f5; padding: 20px; border-radius: 12px; }
+        .chart-scroll-container { height: 350px; overflow-y: auto; padding-right: 10px; }
+        
+        .summary-box { display: flex; flex-direction: column; gap: 15px; }
+        
+        /* Modernized Stat Cards */
+        .stat-card { padding: 20px; border-radius: 12px; text-align: left; position: relative; overflow: hidden; }
+        .stat-card small { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; opacity: 0.9; text-transform: uppercase; }
+        .stat-card .amount { font-size: 1.8rem; font-weight: 800; margin-top: 8px; }
+        
+        .card-green { background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; }
+        .card-blue { background: linear-gradient(135deg, #2980b9, #3498db); color: white; }
+        .card-purple { background: linear-gradient(135deg, #8e44ad, #9b59b6); color: white; }
+        .card-yellow { background: linear-gradient(135deg, #f39c12, #f1c40f); color: white; }
+        /* Added new card colors for VAT and Discount */
+        .card-red { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
+        .card-teal { background: linear-gradient(135deg, #1abc9c, #16a085); color: white; }
+        .card-orange { background: linear-gradient(135deg, #d35400, #e67e22); color: white; }
+
+        .payment-breakdown { background: #f8f9fa; display: flex; justify-content: space-between; padding: 15px 20px; border-radius: 12px; border: 1px solid #eff2f5; text-align: center; }
+        .breakdown-item { flex: 1; }
+        .breakdown-item small { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 5px; text-transform: uppercase; }
+        .breakdown-item div { font-weight: 700; font-size: 1.1rem; color: var(--text-main); }
+        .breakdown-divider { width: 1px; background: #e4e6ef; margin: 0 15px; }
+
+        /* Modern Table */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 10px; }
+        th { background: #f8f9fa; color: #a1a5b7; text-align: left; padding: 15px; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px dashed #e4e6ef; }
+        td { border-bottom: 1px dashed #e4e6ef; padding: 15px; font-size: 0.9rem; vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        td:nth-child(3) { max-width: 250px; white-space: normal; word-wrap: break-word; line-height: 1.5; color: var(--text-muted); }
+        
+        .badge { padding: 6px 12px; border-radius: 6px; font-weight: 700; font-size: 0.7rem; color: white; text-transform: uppercase; display: inline-block; }
+        .b-gcash { background: rgba(0, 125, 254, 0.1); color: #007DFE; }
+        .b-maya { background: rgba(0, 0, 0, 0.05); color: #333; border: 1px solid #ccc; }
+        .b-cash { background: rgba(39, 174, 96, 0.1); color: #27ae60; }
+
+        .feedback-list-container { border: 1px solid #eff2f5; border-radius: 12px; padding: 15px 20px; background: #fafafa; max-height: 140px; overflow-y: auto; }
+        .feedback-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e4e6ef; font-size: 0.85rem; }
+        .feedback-item:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+
+    <div id="logout-modal-overlay">
+        <div class="modal-box">
+            <h3>Confirm Logout</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">Are you sure you want to sign out?</p>
+            <div class="modal-buttons" style="display:flex; gap:10px;">
+                <button class="btn-cancel" onclick="closeLogoutModal()">Cancel</button>
+                <button class="btn-confirm" onclick="confirmAdminLogout()">Yes, Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <aside class="sidebar no-print">
+        <div class="sidebar-header">
+            <h2>KAGARIBI <span>ADMIN</span></h2>
+        </div>
+        <ul class="nav-menu">
+            <li class="active"><a href="#">📊 Daily Sales</a></li>
+            <li><a href="monthly-report.html">📅 Monthly Report</a></li>
+            <li><a href="inventory.html">📦 Inventory</a></li>
+            <li><a href="banquet-inventory.html">📦Banquet Inventory</a></li>
+            <li><a href="reservations.html">📝 Reservation</a></li>
+            <li><a href="records.html">📄 Reservation Record</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="btn-logout" onclick="adminLogout()">🚪 Logout</button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="header-top no-print">
+            <h1>Kagaribi Sales Overview</h1>
+            <div class="controls">
+                <input type="date" id="date-selector">
+                <button class="btn-excel" onclick="generateExcel()">📊 Export Excel</button>
+                <button class="btn-pdf" onclick="generatePDF()">📄 Export PDF</button>
+            </div>
+        </header>
+
+        <div id="daily-report">
+            <h2 class="report-title">KAGARIBI KIOSK DAILY REPORT</h2>
+            <p id="report-date">Select a date to view sales</p>
+
+            <div class="analytics-grid">
+                <div class="chart-container">
+                    <div style="font-weight: 600; margin-bottom: 15px; color: var(--text-main); font-size: 0.9rem;">ITEM SALES PERFORMANCE</div>
+                    <div class="chart-scroll-container">
+                        <div id="chart-inner-wrapper">
+                            <canvas id="itemChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="summary-box">
+                    <div class="stat-card card-green">
+                        <small>Total Business Revenue</small>
+                        <div class="amount" id="grand-total">₱0.00</div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="stat-card card-blue">
+                            <small>Total Profit</small>
+                            <div class="amount" id="total-profit" style="font-size: 1.4rem;">₱0.00</div>
+                        </div>
+                        <div class="stat-card card-purple">
+                            <small> Total Service Charge </small>
+                            <div class="amount" id="total-service-fee" style="font-size: 1.4rem;">₱0.00</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="stat-card card-red">
+                            <small>Total VAT Amount</small>
+                            <div class="amount" id="total-vat" style="font-size: 1.4rem;">₱0.00</div>
+                        </div>
+                        <div class="stat-card card-teal">
+                            <small>Total Discounts PWD/Senior (20%)</small>
+                            <div class="amount" id="total-discount" style="font-size: 1.4rem;">₱0.00</div>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 15px; margin-top: 15px;">
+                        <div class="stat-card card-orange">
+                            <small>Total Corkage (Outside Alcohol)</small>
+                            <div class="amount" id="total-corkage" style="font-size: 1.4rem;">₱0.00</div>
+                        </div>
+                    </div>
+
+                    <div class="payment-breakdown">
+                        <div class="breakdown-item">
+                            <small>Cash</small>
+                            <div id="cash-sum">₱0</div>
+                        </div>
+                        <div class="breakdown-divider"></div>
+                        <div class="breakdown-item">
+                            <small style="color: #007DFE;">GCash</small>
+                            <div id="gcash-sum">₱0</div>
+                        </div>
+                        <div class="breakdown-divider"></div>
+                        <div class="breakdown-item">
+                            <small style=" color: #27ae60;">Card</small>
+                            <div id="maya-sum">₱0</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 15px;">
+                        <div class="stat-card card-yellow">
+                            <small style="color: #664d03;">Avg Rating</small>
+                            <div id="avg-rating" style="font-size: 1.4rem; font-weight: 800; color: #664d03; margin-top: 5px;">0.0 ★</div>
+                        </div>
+                        <div class="feedback-list-container">
+                            <small style="font-weight: 700; color: #a1a5b7; font-size: 0.65rem; display: block; margin-bottom: 5px;">RECENT FEEDBACK</small>
+                            <div id="rating-history-list">
+                                <p style="color:#ccc; font-style: italic; font-size: 0.8rem; margin:0;">No feedback.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table id="sales-table"> <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Invoice #</th>
+                            <th>Time</th>
+                            <th>Items Sold</th>
+                            <th>Payment</th>
+                            <th>Cost</th>
+                            <th>Service Fee</th>
+                            <th>VAT</th>
+                            <th>Discount</th>
+                            <th>Discount IDs</th> <th>Corkage</th>
+                            <th>Profit</th>
+                            <th style="text-align:right;">Net Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let itemChartInstance = null;
+        let currentDaySalesData = []; // Array variable to track data safely across components
+        const dateSelector = document.getElementById('date-selector');
+        
+        function setToday() { 
+            const now = new Date(); 
+            const offset = now.getTimezoneOffset() * 60000; 
+            const localISODate = new Date(now - offset).toISOString().split('T')[0]; 
+            dateSelector.value = localISODate; 
+        }
+        setToday();
+
+        // Safe explicit AM/PM conversion engine
+        function formatTo12HourAMPM(dateObj) {
+            let hours = dateObj.getHours();
+            const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // Formats zero hour values to 12
+            const formattedHours = hours.toString().padStart(2, '0');
+            return `${formattedHours}:${minutes} ${ampm}`;
+        }
+
+        async function checkLogin() { 
+            const email = document.getElementById('admin-email').value; 
+            const pass = document.getElementById('admin-password').value; 
+            try { 
+                await auth.signInWithEmailAndPassword(email, pass); 
+            } catch (err) { 
+                document.getElementById('login-error').innerText = err.message; 
+                document.getElementById('login-error').style.display = 'block'; 
+            } 
+        }
+
+        function adminLogout() { document.getElementById('logout-modal-overlay').style.display = 'flex'; }
+        function closeLogoutModal() { document.getElementById('logout-modal-overlay').style.display = 'none'; }
+        
+        async function confirmAdminLogout() { 
+            await auth.signOut(); 
+            window.location.href = "login.html"; 
+        }
+
+        auth.onAuthStateChanged(user => { 
+            if (!user) {
+                window.location.href = "login.html"; 
+            } else {
+                document.body.style.opacity = "1"; 
+                fetchHistory(); 
+                fetchRatings(); 
+            }
+        });
+
+        dateSelector.addEventListener('change', () => { fetchHistory(); fetchRatings(); });
+
+        function fetchHistory() {
+            if (!auth.currentUser) return;
+            const selectedDate = dateSelector.value;
+            const start = new Date(selectedDate); start.setHours(0,0,0,0);
+            const end = new Date(selectedDate); end.setHours(23,59,59,999);
+            
+            document.getElementById('report-date').innerText = `Sales data for: ${new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
+
+            db.collection("archived_sales")
+              .where("completedAt", ">=", start)
+              .where("completedAt", "<=", end)
+              .orderBy("completedAt", "desc")
+              .onSnapshot(snapshot => {
+                let grandTotal = 0, totalProfit = 0, totalServiceFee = 0, totalVat = 0, totalDiscount = 0, totalCorkage = 0, itemCounts = {};
+                let sums = { CASH: 0, GCASH: 0, MAYA: 0 };
+                const tbody = document.getElementById('history-body');
+                tbody.innerHTML = ""; 
+                
+                currentDaySalesData = []; // Clear current history snapshot array 
+
+                if (snapshot.empty) {
+                    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center; padding: 30px; color: #a1a5b7;">No sales records found for this date.</td></tr>`;
+                }
+
+                snapshot.forEach(doc => {
+                    const sale = doc.data();
+                    const serviceFee = sale.serviceFee || 0;
+                    const businessTotal = (sale.total || 0) - serviceFee;
+                    
+                    const vatAmt = sale.vat || sale.vatAmount || 0;
+                    const discountAmt = sale.discount || sale.discountAmt || 0;
+
+                    let discountIdsDisplay = "-";
+                    if (sale.discountIds && Array.isArray(sale.discountIds) && sale.discountIds.length > 0) {
+                        discountIdsDisplay = sale.discountIds.join(", ");
+                    } else if (sale.discountId && typeof sale.discountId === 'string') {
+                        discountIdsDisplay = sale.discountId;
+                    }
+
+                    const corkageAmt = sale.corkage || sale.corkageFee || 0;
+                    totalCorkage += parseFloat(corkageAmt) || 0;
+
+                    let foodCost = sale.foodCost || 0;
+                    if ((foodCost === 0 || !sale.foodCost) && sale.items) {
+                        foodCost = sale.items.reduce((sum, item) => {
+                            let costPerUnit = item.cost || item.total_cost || 0; 
+                            return sum + (costPerUnit * (item.qty || 1));
+                        }, 0);
+                    }
+
+                    let grossProfit = businessTotal - foodCost;
+                    
+                    grandTotal += businessTotal;
+                    totalProfit += grossProfit;
+                    totalServiceFee += serviceFee; 
+                    totalVat += vatAmt;
+                    totalDiscount += discountAmt; 
+                    
+                    const payMethod = (sale.method || "CASH").toUpperCase();
+                    if (payMethod.includes("GCASH")) sums.GCASH += businessTotal;
+                    else if (payMethod.includes("MAYA")) sums.MAYA += businessTotal;
+                    else sums.CASH += businessTotal;
+
+                    if (sale.items) { 
+                        sale.items.forEach(item => { 
+                            itemCounts[item.name] = (itemCounts[item.name] || 0) + (item.qty || 1); 
+                        }); 
+                    }
+
+                    const invNo = sale.invoiceNo || "---";
+                    const formattedTimeStr = formatTo12HourAMPM(sale.completedAt.toDate());
+
+                    // Store internal fields formatted into operational structures to construct row groups cleanly inside generateExcel
+                    currentDaySalesData.push({
+                        orderId: `#${doc.id.substring(0, 5).toUpperCase()}`,
+                        invoiceNum: invNo,
+                        time: formattedTimeStr,
+                        paymentMethod: payMethod.includes('MAYA') ? 'CARD' : payMethod,
+                        totalCost: foodCost,
+                        serviceFee: serviceFee,
+                        vat: vatAmt,
+                        discount: discountAmt,
+                        discountId: discountIdsDisplay,
+                        corkage: corkageAmt,
+                        profit: grossProfit,
+                        netRevenue: businessTotal,
+                        itemsList: sale.items || []
+                    });
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td style="font-weight:600; color:#3f4254;">#${doc.id.substring(0, 5).toUpperCase()}</td>
+                            <td style="font-weight:700; color:var(--primary);">${invNo}</td> 
+                            <td>${formattedTimeStr}</td>
+                            <td>${sale.items ? sale.items.map(i => `<b>${i.qty}x</b> ${i.name}`).join(", ") : "No Items"}</td>
+                            <td>
+                                <span class="badge ${payMethod.includes('GCASH') ? 'b-gcash' : (payMethod.includes('MAYA') ? 'b-maya' : 'b-cash')}">
+                                    ${payMethod.includes('MAYA') ? 'CARD' : payMethod}
+                                </span>
+                            </td>
+                            <td style="color:#e67e22;">₱${foodCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td style="color:#8e44ad;">₱${serviceFee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td style="color:#c0392b;">₱${vatAmt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td style="color:#16a085;">₱${discountAmt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td style="color:#7f8c8d; font-size: 0.8rem; font-weight: 600;">${discountIdsDisplay}</td> <td style="color:#d35400; font-weight:600;">₱${parseFloat(corkageAmt).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td style="color:#27ae60; font-weight:600;">₱${grossProfit.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td style="text-align:right; font-weight:700; color:#181c32;">₱${businessTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                        </tr>`;
+                });
+
+                document.getElementById('grand-total').innerText = "₱" + grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2});
+                document.getElementById('total-profit').innerText = "₱" + totalProfit.toLocaleString(undefined, {minimumFractionDigits: 2});
+                document.getElementById('cash-sum').innerText = "₱" + sums.CASH.toLocaleString();
+                document.getElementById('gcash-sum').innerText = "₱" + sums.GCASH.toLocaleString();
+                document.getElementById('maya-sum').innerText = "₱" + sums.MAYA.toLocaleString();
+                
+                const vatElement = document.getElementById('total-vat');
+                if(vatElement) vatElement.innerText = "₱" + totalVat.toLocaleString(undefined, {minimumFractionDigits: 2});
+                
+                const discountElement = document.getElementById('total-discount');
+                if(discountElement) discountElement.innerText = "₱" + totalDiscount.toLocaleString(undefined, {minimumFractionDigits: 2});
+                const corkageElement = document.getElementById('total-corkage');
+                if(corkageElement) corkageElement.innerText = "₱" + totalCorkage.toLocaleString(undefined, {minimumFractionDigits: 2});
+                const serviceFeeElement = document.getElementById('total-service-fee');
+                if(serviceFeeElement) {
+                    serviceFeeElement.innerText = "₱" + totalServiceFee.toLocaleString(undefined, {minimumFractionDigits: 2});
+                }
+                
+                updateScrollableChart(itemCounts);
+            });
+        }
+
+        async function fetchRatings() {
+            const allSnap = await db.collection("feedback").get();
+            let totalStars = 0;
+            allSnap.forEach(doc => totalStars += doc.data().rating);
+            const allTimeAvg = allSnap.size > 0 ? (totalStars / allSnap.size).toFixed(1) : "0.0";
+            document.getElementById('avg-rating').innerHTML = `${allTimeAvg} ★ <div style="font-size:0.7rem; font-weight:normal; color: rgba(255,255,255,0.8); margin-top: 3px;">${allSnap.size} reviews</div>`;
+
+            const selectedDate = dateSelector.value;
+            const start = new Date(selectedDate); start.setHours(0,0,0,0);
+            const end = new Date(selectedDate); end.setHours(23,59,59,999);
+
+            const dailySnap = await db.collection("feedback")
+                .where("timestamp", ">=", start).where("timestamp", "<=", end)
+                .orderBy("timestamp", "desc").get();
+
+            let historyHTML = "";
+            dailySnap.forEach(doc => {
+                const data = doc.data();
+                const time = data.timestamp ? formatTo12HourAMPM(data.timestamp.toDate()) : "Now";
+                historyHTML += `<div class="feedback-item"><span style="color:#f1c40f; letter-spacing: 2px;">${"★".repeat(data.rating)}</span><span style="color:#a1a5b7;">${time}</span></div>`;
+            });
+            document.getElementById('rating-history-list').innerHTML = historyHTML || "<p style='color:#ccc; font-size:0.8rem; margin:0;'>No feedback today.</p>";
+        }
+
+        function updateScrollableChart(counts) {
+            const ctx = document.getElementById('itemChart').getContext('2d');
+            const wrapper = document.getElementById('chart-inner-wrapper');
+            const itemCount = Object.keys(counts).length;
+            
+            wrapper.style.height = Math.max(300, itemCount * 40) + "px";
+            if (itemChartInstance) itemChartInstance.destroy();
+            const sortedData = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+            
+            itemChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedData.map(d => d[0]),
+                    datasets: [{ 
+                        label: 'Units Sold', 
+                        data: sortedData.map(d => d[1]), 
+                        backgroundColor: '#D30F0F', 
+                        borderRadius: 6,
+                        barThickness: 15
+                    }]
+                },
+                options: { 
+                    indexAxis: 'y', 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } }, 
+                    scales: { 
+                        y: { ticks: { autoSkip: false, font: { size: 11, family: 'Inter' } }, grid: { display: false } },
+                        x: { grid: { borderDash: [5, 5] }, ticks: { stepSize: 1 } }
+                    } 
+                }
+            });
+        }
+
+        function generatePDF() {
+            const element = document.getElementById('daily-report');
+            const opt = { 
+                margin: 0.5, 
+                filename: 'Sales_Report.pdf', 
+                image: { type: 'jpeg', quality: 0.98 }, 
+                html2canvas: { scale: 2, backgroundColor: '#ffffff' }, 
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } 
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // Updated spreadsheet generation with exact requested headers and mapping
+        function generateExcel() {
+            if (currentDaySalesData.length === 0) {
+                alert("No transitional metrics data found to export.");
+                return;
+            }
+
+            const formattedWorkbookRows = [];
+
+            // Evaluates and breaks grouped records onto distinct list item fields
+            currentDaySalesData.forEach((order, orderIndex) => {
+                const itemsCount = order.itemsList.length;
+
+                if (itemsCount === 0) {
+                    // Fallback block if transaction holds no validated item references
+                    formattedWorkbookRows.push({
+                        "Order ID": order.orderId,
+                        "Invoice #": order.invoiceNum,
+                        "Time": order.time,
+                        "Items Sold": "No Items Listed",
+                        "Payment": order.paymentMethod,
+                        "Cost": order.totalCost,
+                        "Service Fee": order.serviceFee,
+                        "VAT": order.vat,
+                        "Discount": order.discount === 0 ? "-" : order.discount,
+                        "Discount IDs": order.discountId,
+                        "Corkage": order.corkage === 0 ? "-" : order.corkage,
+                        "Profit": order.profit,
+                        "Net Sales": order.netRevenue
+                    });
+                } else {
+                    // Keep an explicit count of rows written FOR THIS SPECIFIC ORDER
+                    let rowsWrittenForThisOrder = 0;
+
+                    order.itemsList.forEach((item) => {
+                        // Extract quantity safely
+                        const quantity = item.quantity || item.qty || 1; 
+
+                        // Loop through every single piece individually
+                        for (let i = 0; i < quantity; i++) {
+                            
+                            // Financial headers like VAT/Profit belong strictly to the absolute 1st row of the entire order block
+                            const isAbsoluteFirstRowOfOrder = (rowsWrittenForThisOrder === 0);
+
+                            // Safely parse the individual actual recipe cost of the menu item
+                            const actualItemCost = parseFloat(item.cost || item.total_cost) || 0;
+                            const itemPrice = parseFloat(item.price) || 0;
+                            
+                            // Calculate exactly 5% of this specific item's menu price
+                            const preciseItemServiceFee = itemPrice * 0.05;
+
+                            const excelRow = {
+                                "Order ID": order.orderId,
+                                "Invoice #": order.invoiceNum,
+                                "Time": order.time,
+                                "Items Sold": item.name.toUpperCase(), // Force uppercase items
+                                "Payment": order.paymentMethod,
+                                
+                                // ADJUSTMENT: Displays the true menu cost/recipe food cost per each item
+                                "Cost": actualItemCost || 0,
+                                
+                                // Displays the true 5% service fee calculated strictly from this item's cost
+                                "Service Fee": preciseItemServiceFee > 0 ? Number(preciseItemServiceFee.toFixed(2)) : 0,
+                                
+                                // VAT, Discounts, and Profits remain grouped only on the absolute first row
+                                "VAT": isAbsoluteFirstRowOfOrder ? order.vat : "",
+                                "Discount": isAbsoluteFirstRowOfOrder ? (order.discount === 0 ? "-" : order.discount) : "",
+                                "Discount IDs": isAbsoluteFirstRowOfOrder ? order.discountId : "",
+                                "Corkage": isAbsoluteFirstRowOfOrder ? (order.corkage === 0 ? "-" : order.corkage) : "",
+                                "Profit": isAbsoluteFirstRowOfOrder ? order.profit : "",
+                                
+                                // ADJUSTMENT: Header changed from 'Net Revenue' to 'Net Sales'
+                                "Net Sales": isAbsoluteFirstRowOfOrder ? order.netRevenue : ""
+                            };
+                            
+                            formattedWorkbookRows.push(excelRow);
+                            rowsWrittenForThisOrder++; // Increment row counter for this order block
+                        }
+                    });
+                }
+
+                // If this isn't the last order of the day, append an empty spacer row to separate the data groups
+                if (orderIndex < currentDaySalesData.length - 1) {
+                    formattedWorkbookRows.push({
+                        "Order ID": "",
+                        "Invoice #": "",
+                        "Time": "",
+                        "Items Sold": "",
+                        "Payment": "",
+                        "Cost": "",
+                        "Service Fee": "",
+                        "VAT": "",
+                        "Discount": "",
+                        "Discount IDs": "",
+                        "Corkage": "",
+                        "Profit": "",
+                        "Net Sales": ""
+                    });
+                }
+            });
+
+            // Convert raw clean structured JSON lines array into file output
+            const worksheet = XLSX.utils.json_to_sheet(formattedWorkbookRows);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Daily Sales");
+            
+            const dateStr = dateSelector.value;
+            const fileName = `Sales_Report_${dateStr}.xlsx`;
+            
+            XLSX.writeFile(workbook, fileName);
+        }
+        
+</script>
+</body>
+</html>
