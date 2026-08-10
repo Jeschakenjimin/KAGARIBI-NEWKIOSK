@@ -455,34 +455,51 @@
 
     <script>
         // 1. CONFIGURATION
-    const DURATION = 60 * 60 * 1000; // 5 minutes
+    const DURATION = 60 * 60 * 1000; // 60 minutes
     const urlParams = new URLSearchParams(window.location.search);
     const tableFromUrl = urlParams.get('table');
+
+    function showSessionExpiredOverlay() {
+        if (document.getElementById('session-expired-overlay')) return;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'session-expired-overlay';
+        overlay.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.9); color:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:24px; z-index:9999; text-align:center;';
+        overlay.innerHTML = `
+            <div style="max-width: 460px; padding: 0 15px;">
+                <div style="font-size: 100px; margin-bottom: 24px;">⚠️</div>
+                <h1 style="font-size: 34px; font-weight: 700; margin-bottom: 14px; color: #ffcc00;">Session Expired</h1>
+                <p style="font-size: 18px; color: #e5e5e5; line-height: 1.6; margin-bottom: 28px;">
+                    Your session has ended due to inactivity. Please scan the QR code to start a new order.
+                </p>
+                <button onclick="window.location.reload()" style="background:#ffcc00; color:#000; border:none; border-radius:16px; padding:14px 28px; font-size:18px; font-weight:800; cursor:pointer;">
+                    Reload Page
+                </button>
+            </div>`;
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+    }
 
     // 2. THE GATEKEEPER: Check expiry IMMEDIATELY on load
     function checkSession() {
         const expiry = localStorage.getItem('expiryTimestamp');
         const now = new Date().getTime();
 
-        // If expiry exists and time is up
         if (expiry && now > parseInt(expiry)) {
-            document.body.innerHTML = `
-                <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; width:100vw; text-align:center; background:linear-gradient(135deg, #1a1a1a 0%, #000000 100%); color:#ffffff; font-family:sans-serif; padding:20px; box-sizing:border-box;">
-                    <div style="font-size: 80px; margin-bottom: 20px;">⚠️</div>
-                    <h1 style="font-size: 28px; font-weight: 600; margin-bottom: 10px; color: #ffcc00;">Session Expired</h1>
-                    <p style="font-size: 16px; color: #b3b3b3; max-width: 300px; line-height: 1.5;">
-                        Your session has ended due to inactivity. Please scan the QR code to start a new order.
-                    </p>
-                </div>`;
-            return true; // Return true to indicate it is expired
+            showSessionExpiredOverlay();
+            return true;
         }
         return false;
     }
 
     // 3. INITIALIZE SESSION
-    // Only set a NEW timestamp if it's a start-scan or if one doesn't exist at all
-    if (urlParams.has('start') || !localStorage.getItem('expiryTimestamp')) {
-        const now = new Date().getTime();
+    // Reset the timer for any new page load when there is no active session,
+    // when a QR table/start parameter is present, or when the previous session already expired.
+    const existingExpiry = localStorage.getItem('expiryTimestamp');
+    const now = new Date().getTime();
+    const shouldResetSession = urlParams.has('start') || urlParams.has('table') || !existingExpiry || (existingExpiry && now > parseInt(existingExpiry));
+
+    if (shouldResetSession) {
         localStorage.setItem('expiryTimestamp', now + DURATION);
         window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -1423,7 +1440,10 @@
     // 3. Render the Modal
     document.getElementById('modal-content').innerHTML = `
         <img src="${selectedItem.img}" class="modal-food-img">
-        <h2 style="margin:5px 0; color: white;">${selectedItem.name}</h2>
+        <div style="text-align: center; margin: 5px 0 10px;">
+            <h2 style="margin: 0 0 4px; color: white;">${selectedItem.name}</h2>
+            ${selectedItem.jname ? `<div style="color: var(--gold); font-size: 1.4rem; font-weight: 700; letter-spacing: 0.02em;">${selectedItem.jname}</div>` : ''}
+        </div>
         
         ${optionsHtml}
         ${addonsHtml}
