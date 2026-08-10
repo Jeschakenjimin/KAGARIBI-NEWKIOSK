@@ -195,7 +195,7 @@
         }
         .menu-anim { animation: slideUpFade 0.4s ease forwards; }
 
-        .menu-container { padding: 15px; padding-bottom: 120px; }
+        .menu-container { padding: 15px; padding-bottom: 180px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         
         /* The Card itself */
@@ -248,8 +248,10 @@
         aspect-ratio: 16 / 10; /* Shorter image so we can see the 'Add' button */
     }
 }
-        .qty-controls { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 15px; }
-        .qty-btn { width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--gold); background: transparent; color: var(--gold); font-size: 1.5rem; line-height: 1; }
+        .qty-controls { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 15px; background: rgba(255,255,255,0.08); padding: 12px 10px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.16); }
+        .qty-btn { width: 46px; height: 46px; border-radius: 16px; border: 1px solid rgba(245, 158, 11, 0.4); background: #f59e0b; color: #fff; font-size: 1rem; font-weight: 700; line-height: 1; cursor: pointer; transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, color 120ms ease; }
+        .qty-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 16px rgba(0,0,0,0.16); }
+        .qty-btn.active { background: #16a34a; color: #fff; border-color: rgba(255,255,255,0.24); transform: translateY(-1px); box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.22); }
 
         .special-notes-input { 
             width: 90%; 
@@ -441,6 +443,11 @@
         <div class="cart-bar" id="cart-bar" onclick="toggleCart(true)">
             <span>View Order (<span id="cart-count">0</span>)</span>
             <span id="cart-total-bar">₱0.00</span>
+        </div>
+
+        <div class="bottom-search-bar" style="position: fixed; inset: auto 0 0 0; z-index: 999; background: rgba(255,255,255,0.95); box-shadow: 0 -8px 20px rgba(0,0,0,0.08); padding: 12px 16px; display: flex; gap: 10px; align-items: center; justify-content: flex-end; backdrop-filter: blur(10px);">
+            <input type="text" id="bottom-search-input" placeholder="Search food items..." oninput="triggerBottomSearch()" style="flex: 1; min-width: 0; padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 28px; font-size: 0.95rem; outline: none; box-sizing: border-box; background: #fff; color: #1a1a1a; display: none;">
+            <button id="bottom-search-button" onclick="onBottomSearchClick()" style="background: #fbbf24; color: #1f2937; border: none; border-radius: 999px; padding: 14px 16px; font-size: 1.35rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">🔍</button>
         </div>
     </div>
 
@@ -1442,7 +1449,7 @@
 
         function openItemModal(id) {
     selectedItem = MENU.find(m => m.id === id);
-    tempQty = 0;
+    tempQty = 1;
     document.getElementById('special-notes').value = "";
 
     // 1. Generate Options HTML (The Size Box)
@@ -1495,29 +1502,39 @@
         ${addonsHtml}
 
         <div>
-            <div class="modal-qty-pill">
-                <button class="modal-qty-btn" onclick="updateTempQty(-1)">−</button>
-                <input type="number" id="temp-qty-val" class="modal-qty-val" value="${tempQty}" onchange="manualQtyUpdate(this.value)" style="width: 50px; text-align: center; border: none; background: transparent; font-weight: bold; outline: none; -moz-appearance: textfield;">
-                <button class="modal-qty-btn" onclick="updateTempQty(1)">+</button>
+            <div class="qty-controls">
+                ${[1,2,3,4,5].map(q => `
+                    <button type="button" class="qty-btn${tempQty === q ? ' active' : ''}" data-qty="${q}" onclick="manualQtyUpdate(${q})">${q}</button>
+                `).join('')}
             </div>
         </div>`;
         
     document.getElementById('item-modal').style.display = 'flex';
+    refreshQtyButtons();
 }
 
-        function updateTempQty(d) { 
-            tempQty = Math.max(1, tempQty + d); 
-            document.getElementById('temp-qty-val').value = tempQty; 
+        function refreshQtyButtons() {
+            document.querySelectorAll('.qty-btn').forEach(btn => {
+                const q = parseInt(btn.dataset.qty);
+                const isActive = q === tempQty;
+                btn.classList.toggle('active', isActive);
+                btn.style.background = isActive ? '#16a34a' : '#f59e0b';
+                btn.style.color = '#fff';
+                btn.style.borderColor = isActive ? 'rgba(255,255,255,0.24)' : 'rgba(245, 158, 11, 0.4)';
+                btn.style.boxShadow = isActive ? '0 0 0 4px rgba(16, 185, 129, 0.22)' : 'none';
+            });
         }
 
         function manualQtyUpdate(newVal) {
             let parsedVal = parseInt(newVal);
-            // Prevent them from typing letters, 0, or negative numbers
             if (isNaN(parsedVal) || parsedVal < 1) {
                 parsedVal = 1;
             }
+            if (parsedVal > 5) {
+                parsedVal = 5;
+            }
             tempQty = parsedVal;
-            document.getElementById('temp-qty-val').value = tempQty;
+            refreshQtyButtons();
         }
 
         function addToCartFinal() {
@@ -1525,6 +1542,8 @@
             const notes = notesInput ? notesInput.value.trim() : "";
             const modalImg = document.querySelector('.modal-food-img');
             const cartBar = document.getElementById('cart-bar');
+            const qtySelect = document.getElementById('temp-qty-val');
+            tempQty = qtySelect ? parseInt(qtySelect.value) : 1;
             
             // 1. --- OPTION LOGIC ---
             const selectedOption = document.querySelector('.item-option:checked');
@@ -2032,6 +2051,41 @@ function hideBottomSearch() {
         closeButton.classList.remove('visible');
     }
     handleSearch("");
+function clearSearch() {
+    const searchInput = document.getElementById('menu-search-input');
+    const bottomSearchInput = document.getElementById('bottom-search-input');
+    if (searchInput) {
+        searchInput.value = "";
+    }
+    if (bottomSearchInput) {
+        bottomSearchInput.value = "";
+    }
+    handleSearch("");
+}
+
+function triggerBottomSearch() {
+    const bottomSearchInput = document.getElementById('bottom-search-input');
+    const searchValue = bottomSearchInput ? bottomSearchInput.value.trim() : "";
+    const menuSearchInput = document.getElementById('menu-search-input');
+    if (menuSearchInput) {
+        menuSearchInput.value = searchValue;
+    }
+    handleSearch(searchValue);
+}
+
+function onBottomSearchClick() {
+    const bottomSearchInput = document.getElementById('bottom-search-input');
+    if (!bottomSearchInput) return;
+
+    const isVisible = bottomSearchInput.style.display !== 'none';
+    if (!isVisible) {
+        bottomSearchInput.style.display = 'block';
+        bottomSearchInput.focus();
+        return;
+    }
+
+    // if already visible, keep focus so typing starts immediately
+    bottomSearchInput.focus();
 }
 
     </script>
