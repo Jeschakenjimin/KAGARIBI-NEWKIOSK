@@ -201,10 +201,10 @@
             resize: none; 
         }
         .cart-bar { 
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    position: fixed; bottom: 86px; left: 50%; transform: translateX(-50%);
     width: 90%; max-width: 480px; background: #27ae60; color: white; 
     border-radius: 15px; display: none; justify-content: space-between; 
-    align-items: center; padding: 15px 20px; z-index: 200; 
+    align-items: center; padding: 15px 20px; z-index: 1001; 
     font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); cursor: pointer;
     box-sizing: border-box;
     /* Removed fixed height so it stays clean */
@@ -411,6 +411,7 @@
             <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-size:1.3rem;">
                 <b>Total:</b><b id="total" style="color:var(--deep-red)">₱0.00</b>
             </div>
+            <button class="pay-btn" onclick="closeMethodModalAndReturnMenu()" style="background: transparent; border: 1px solid #666; color: #1a1a1a; margin-bottom: 10px;">BACK TO MENU</button>
             <button class="pay-btn" onclick="openMethodSelection()">CHECKOUT</button>
         </div>
     </div>
@@ -418,10 +419,11 @@
     <div id="method-modal" class="modal-overlay">
         <div class="modal-box">
             <h3 style="margin-top:0">Payment Method</h3>
+            <button class="pay-btn" onclick="closeMethodModalAndReturnMenu()" style="background: transparent; border: 1px solid #666; color: #fff;">BACK TO MENU</button>
             <button class="pay-btn" onclick="processOrder('GCASH')" style="background:#2071e8;">GCASH</button>
             <button class="pay-btn" onclick="processOrder('MAYA')" style="background:#1abc9c;">CARD</button>
             <button class="pay-btn" onclick="processOrder('CASH')" style="background:#555;">CASH AT COUNTER</button>
-            <p onclick="closeModals()" style="color:#aaa; cursor:pointer; margin-top:15px;">Back</p>
+            <p onclick="closeMethodModalAndReturnMenu()" style="color:#aaa; cursor:pointer; margin-top:15px;">Back</p>
         </div>
     </div>
 
@@ -1560,7 +1562,8 @@
             }
 
             // 5. --- SYNC & RESET ---
-            syncCartToFirebase(); 
+            syncCartToFirebase();
+            updateCartUI();
             tempQty = 1; 
             closeModals();
         }
@@ -1631,6 +1634,15 @@
     const cartBar = document.getElementById('cart-bar');
     if (cartBar) cartBar.style.display = count > 0 ? 'flex' : 'none';
 }
+
+        function closeMethodModalAndReturnMenu() {
+            document.getElementById('method-modal').style.display = 'none';
+            toggleCart(false);
+            const cartBar = document.getElementById('cart-bar');
+            if (cartBar && cart.length > 0) {
+                cartBar.style.display = 'flex';
+            }
+        }
 
         function changeCartQty(index, delta) {
             cart[index].qty += delta; if (cart[index].qty < 1) cart.splice(index, 1);
