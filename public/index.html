@@ -191,6 +191,50 @@
         aspect-ratio: 16 / 10; /* Shorter image so we can see the 'Add' button */
     }
 }
+
+/* Unavailable Item Styling */
+.card.unavailable {
+    opacity: 0.7;
+    position: relative;
+}
+
+.card.unavailable .card-img {
+    filter: grayscale(100%) brightness(0.8);
+}
+
+.unavailable-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+    z-index: 10;
+}
+
+.sold-out-badge {
+    background: rgba(206, 17, 38, 0.95);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    text-align: center;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 4px 12px rgba(206, 17, 38, 0.4);
+}
+
+.card.unavailable button {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
         .qty-controls { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 15px; background: rgba(255,255,255,0.08); padding: 12px 10px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.16); }
         .qty-btn { width: 46px; height: 46px; border-radius: 16px; border: 1px solid rgba(245, 158, 11, 0.4); background: #f59e0b; color: #fff; font-size: 1rem; font-weight: 700; line-height: 1; cursor: pointer; transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, color 120ms ease; }
         .qty-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 16px rgba(0,0,0,0.16); }
@@ -1098,6 +1142,70 @@
 
             ];
 
+        // Initialize isAvailable for all menu items
+        MENU.forEach(item => {
+            if (!item.hasOwnProperty('isAvailable')) {
+                item.isAvailable = true;
+            }
+        });
+
+        // Load availability from Firestore on page load
+        async function loadMenuAvailability() {
+            try {
+                const doc = await db.collection('menu-availability').doc('items').get();
+                if (doc.exists) {
+                    const availabilityMap = doc.data().availability || {};
+                    MENU.forEach(item => {
+                        if (availabilityMap.hasOwnProperty(item.id)) {
+                            item.isAvailable = availabilityMap[item.id];
+                        }
+                    });
+                    // Refresh menu display if already rendered
+                    const activeCategory = document.querySelector('.cat-btn.active');
+                    if (activeCategory) {
+                        const categoryName = activeCategory.id.replace('cat-', '');
+                        renderMenu(categoryName);
+                    }
+                }
+            } catch (error) {
+                console.log('Note: Could not load availability from Firestore:', error);
+                // Continue with default (all available)
+            }
+        }
+
+        // Function to save availability status to Firestore
+        async function saveMenuAvailability() {
+            try {
+                const availabilityMap = {};
+                MENU.forEach(item => {
+                    availabilityMap[item.id] = item.isAvailable;
+                });
+                
+                await db.collection('menu-availability').doc('items').set({
+                    availability: availabilityMap,
+                    lastUpdated: new Date(),
+                    updatedBy: auth.currentUser ? auth.currentUser.email : 'anonymous'
+                });
+                console.log('Availability saved to Firebase');
+            } catch (error) {
+                console.error('Error saving availability:', error);
+            }
+        }
+
+        // Function to toggle item availability
+        function toggleItemAvailability(itemId, newStatus) {
+            const item = MENU.find(m => m.id === itemId);
+            if (item) {
+                item.isAvailable = newStatus;
+                saveMenuAvailability();
+                // Refresh menu display
+                const activeCategory = document.querySelector('.cat-btn.active');
+                if (activeCategory) {
+                    const categoryName = activeCategory.id.replace('cat-', '');
+                    renderMenu(categoryName);
+                }
+            }
+        }
 
         let cart = []; let tableNumber = ""; let selectedItem = null; let tempQty = 1;
         let unsubscribeCart = null;
@@ -1188,6 +1296,9 @@
         }
 
         function proceed() { 
+            // Load menu availability from Firestore
+            loadMenuAvailability();
+            
             document.getElementById('dining').style.display = 'none'; 
             document.getElementById('table-entry').style.display = 'none';
             document.getElementById('app').style.display = 'flex'; 
@@ -1340,8 +1451,14 @@
 
         // 2. RENDER THE CARD: Then append the normal item code layout directly behind it
         htmlElementString += `
-        <div class="card menu-anim" onclick="openItemModal(${i.id})" style="animation-delay: ${idx * 0.05}s; position: relative;">
+        <div class="card menu-anim ${!i.isAvailable ? 'unavailable' : ''}" onclick="openItemModal(${i.id})" style="animation-delay: ${idx * 0.05}s; position: relative;">
             ${i.isBestSeller ? `<div style="position: absolute; top: 10px; left: 10px; background: #ce1126; color: white; font-size: 0.6rem; padding: 4px 9px; border-radius: 4px; font-weight: bold; z-index: 5;">BEST SELLER</div>` : ''}
+            ${!i.isAvailable ? `<div class="unavailable-overlay">
+                <div class="sold-out-badge">
+                    <div style="font-size: 1.2rem; margin-bottom: 4px;">🚫</div>
+                    SOLD OUT
+                </div>
+            </div>` : ''}
             
             <div class="card-img"><img src="${i.img}" alt="${i.name}"
                 loading="lazy" 
@@ -1406,6 +1523,13 @@
 
         function openItemModal(id) {
     selectedItem = MENU.find(m => m.id === id);
+    
+    // Check if item is available
+    if (!selectedItem.isAvailable) {
+        alert(`❌ ${selectedItem.jname || selectedItem.name} is currently SOLD OUT.\n\nPlease select another item.`);
+        return;
+    }
+    
     tempQty = 1;
     document.getElementById('special-notes').value = "";
 
@@ -1434,8 +1558,7 @@
     let addonsHtml = "";
     if (selectedItem.addons) {
         addonsHtml = `
-        <div style="text-al
-        ign: left; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px;">
+        <div style="text-align: left; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px;">
             <p style="color: var(--gold); font-weight: bold; margin-bottom: 10px; font-size: 0.9rem;">EXTRA ADD-ONS / 追加オプション:</p>
             ${selectedItem.addons.map(add => {
                 const addonLabel = add.name + (add.jname ? ` / ${add.jname}` : (ADDON_LABELS[add.name] ? ` / ${ADDON_LABELS[add.name]}` : ''));
