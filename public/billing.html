@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <base href="/">
     <meta charset="UTF-8">
     <meta name="google-site-verification" content="0zC3FfybV_8OXbcH8KL_r1yCflzQKsPQ7vFuSO6js7E" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -59,6 +60,20 @@
     /* Ensure the receipt is hidden from the main view entirely */
     #print-receipt { display: none !important; position: absolute; left: -9999px; /* Push it off-screen when not printing */ }
 
+    .notification-banner {
+        display: none;
+        width: 100%;
+        margin-bottom: 15px;
+        padding: 14px 18px;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+    }
+    .notification-banner.success { background: rgba(34, 197, 94, 0.18); color: #d1fae5; border: 1px solid rgba(34, 197, 94, 0.4); }
+    .notification-banner.error { background: rgba(239, 68, 68, 0.18); color: #fee2e2; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .notification-banner.info { background: rgba(59, 130, 246, 0.18); color: #bfdbfe; border: 1px solid rgba(59, 130, 246, 0.4); }
+
     /* --- THERMAL PRINTER SPECIFIC CSS --- */
 
 @media print {
@@ -104,6 +119,8 @@
         <h1>Billing Dashboard</h1>
         <div id="status">🟢 Live Sync Active</div>
     </div>
+
+    <div id="billing-notification" class="notification-banner"></div>
 
     <div class="sales-summary-bar">
         <div class="summary-card">
@@ -753,32 +770,51 @@ async function finishCheckout() {
 // Helper to handle the "Vanish" (Firebase tasks) - UPDATED TO SAVE ARRAY OF IDs
 async function finishDatabaseTasks(tableId, group, paid, change, method, finalTotalToSave, serviceCharge, vatAmount, discountAmount, vatableSales, vatExemptSales, newSaleRef, invoiceNo, seniorPort, regularPort, beerPort, corkagePort, discountIdsArray) {
     
-    await newSaleRef.set({
-        invoiceNo: invoiceNo,
-        table: tableId, 
-        total: finalTotalToSave, 
-        cashPaid: paid, 
-        change: change, 
-        method: method,
-        serviceFee: serviceCharge, 
-        vat: vatAmount,            
-        discount: discountAmount,  
-        vatable: vatableSales,     
-        vatExempt: vatExemptSales, 
-        
-        seniorFood: seniorPort,
-        regularFood: regularPort,
-        alcoholSales: beerPort,
-        corkageFee: corkagePort,
-        discountIds: discountIdsArray || [], // NEW: Saves all IDs as an array
-        
-        items: group.items, 
-        completedAt: firebase.firestore.FieldValue.serverTimestamp()    
-    });
+    try {
+        console.log('[Billing] Saving archived_sale', { invoiceNo, table: tableId, total: finalTotalToSave, discount: discountAmount, discountIds: discountIdsArray });
+        await newSaleRef.set({
+            invoiceNo: invoiceNo,
+            table: tableId, 
+            total: finalTotalToSave, 
+            cashPaid: paid, 
+            change: change, 
+            method: method,
+            serviceFee: serviceCharge, 
+            vat: vatAmount,            
+            discount: discountAmount,  
+            vatable: vatableSales,     
+            vatExempt: vatExemptSales, 
+            
+            seniorFood: seniorPort,
+            regularFood: regularPort,
+            alcoholSales: beerPort,
+            corkageFee: corkagePort,
+            discountIds: discountIdsArray || [], // NEW: Saves all IDs as an array
+            
+            items: group.items, 
+            completedAt: firebase.firestore.FieldValue.serverTimestamp()    
+        });
+        console.log('[Billing] archived_sale saved:', newSaleRef.id);
+    } catch (err) {
+        console.error('[Billing] archived_sale set failed:', err);
+        showBillingNotification('Failed to save archived sale. See console for details.', 'error');
+    }
     
     const batch = db.batch();
-    group.docIds.forEach(id => batch.update(db.collection("orders").doc(id), { status: "Completed" }));
-    await batch.commit();
+    group.docIds.forEach(id => batch.update(db.collection("orders").doc(id), { 
+        status: "Completed",
+        total: finalTotalToSave,
+        discount: discountAmount,
+        discountIds: discountIdsArray || []
+    }));
+    try {
+        await batch.commit();
+        console.log('[Billing] Orders updated (batch.commit) for docIds:', group.docIds);
+        showBillingNotification(`Checkout complete. Orders updated for ${group.docIds.length} item(s).`, 'success');
+    } catch (err) {
+        console.error('[Billing] batch.commit failed:', err);
+        showBillingNotification('Failed to update order status. See console for details.', 'error');
+    }
     
     setTimeout(() => {
         document.getElementById('print-receipt').style.display = 'none';
@@ -813,6 +849,18 @@ async function executeVoid() {
     
     await batch.commit();
     document.getElementById('void-modal').style.display = 'none';
+}
+
+function showBillingNotification(message, type = 'info') {
+    const banner = document.getElementById('billing-notification');
+    if (!banner) return;
+    banner.innerText = message;
+    banner.className = `notification-banner ${type}`;
+    banner.style.display = 'block';
+    clearTimeout(window.billingNotificationTimeout);
+    window.billingNotificationTimeout = setTimeout(() => {
+        banner.style.display = 'none';
+    }, 6000);
 }
 
 function log(message) {
