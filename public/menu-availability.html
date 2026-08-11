@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Availability | Kagaribi Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="../menu-data.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        :root { --primary: #D30F0F; --sidebar-bg: #1e1e2d; --bg-color: #f3f6f9; --card-bg: #ffffff; --text-main: #3f4254; --text-muted: #a1a5b7; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 260px; background: var(--sidebar-bg); color: white; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
+        .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .sidebar-header h2 { margin: 0; font-size: 1.2rem; color: #fff; }
+        .sidebar-header span { color: var(--primary); }
+        .nav-menu { list-style: none; padding: 20px 0; margin: 0; flex-grow: 1; }
+        .nav-menu li { padding: 5px 20px; }
+        .nav-menu a { display: flex; padding: 12px 15px; color: #9899ac; text-decoration: none; border-radius: 8px; font-weight: 600; transition: 0.3s; }
+        .nav-menu a:hover, .nav-menu li.active a { background: #2b2b40; color: white; }
+        .nav-menu li.active a { border-left: 4px solid var(--primary); color: var(--primary); }
+        .main-content { flex-grow: 1; overflow-y: auto; padding: 30px 40px; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .search-box { margin-bottom: 20px; display: flex; gap: 10px; }
+        .search-box input, .search-box select { flex: 1; padding: 10px; border: 1px solid #e4e6ef; border-radius: 6px; }
+        .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .item-card { background: var(--card-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border: 1px solid #eff2f5; }
+        .item-image { width: 100%; height: 180px; object-fit: cover; background: #f0f0f0; }
+        .item-info { padding: 15px; }
+        .item-name { font-weight: 700; color: #333; margin: 0 0 4px 0; }
+        .item-price { color: var(--primary); font-weight: 700; font-size: 1.1rem; margin-bottom: 12px; }
+        .toggle-container { display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e4e6ef; }
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: 0.4s; border-radius: 26px; }
+        .toggle-slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 2px; bottom: 2px; background-color: white; transition: 0.4s; border-radius: 50%; }
+        .toggle-switch input:checked + .toggle-slider { background-color: #27ae60; }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(24px); }
+        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; margin-top: 8px; }
+        .status-available { background: rgba(39, 174, 96, 0.1); color: #27ae60; }
+        .status-unavailable { background: rgba(211, 15, 15, 0.1); color: var(--primary); }
+        .sidebar-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .btn-logout { width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 700; }
+        .btn-logout:hover { background: var(--primary); }
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        .login-box { background: rgba(255, 255, 255, 0.1); padding: 40px; border-radius: 20px; text-align: center; width: 380px; backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .login-box h2 { color: white; margin-bottom: 25px; font-weight: 700; }
+        .login-box input { width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.3); background: rgba(255, 255, 255, 0.9); font-size: 1rem; }
+        .btn-login { width: 100%; background: var(--primary); color: white; padding: 14px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; }
+        .btn-login:hover { background: #b00d0d; }
+        #login-error { color: #ff6b6b; display: none; margin-top: 10px; }
+        .no-items { text-align: center; padding: 50px; color: var(--text-muted); }
+        .stats-bar { display: flex; gap: 20px; margin-bottom: 25px; }
+        .stat-card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid #eff2f5; flex: 1; max-width: 200px; }
+        .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--primary); }
+        .stat-label { font-size: 0.85rem; color: var(--text-muted); margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2>ADMIN LOGIN</h2>
+            <input type="text" id="admin-email" placeholder="Email">
+            <input type="password" id="admin-password" placeholder="Password">
+            <button class="btn-login" onclick="checkLogin()">Unlock Menu Management</button>
+            <p id="login-error"></p>
+        </div>
+    </div>
+    <aside class="sidebar">
+        <div class="sidebar-header"><h2>KAGARIBI <span>ADMIN</span></h2></div>
+        <ul class="nav-menu">
+            <li><a href="dailysales.html">📊 Sales</a></li>
+            <li><a href="inventory.html">📦 Inventory</a></li>
+            <li class="active"><a href="#">🍽️ Menu Availability</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="btn-logout" onclick="adminLogout()">🚪 Logout</button>
+        </div>
+    </aside>
+    <main class="main-content">
+        <header class="header-top">
+            <h1>Menu Item Availability</h1>
+            <div id="syncStatus" style="font-size:0.9rem; color:#666; margin-top:8px;">Mode: unknown</div>
+        </header>
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-value" id="totalItems">0</div>
+                <div class="stat-label">Total Items</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="availableCount">0</div>
+                <div class="stat-label">Available</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="unavailableCount">0</div>
+                <div class="stat-label">Unavailable</div>
+            </div>
+        </div>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search items...">
+            <select id="categoryFilter">
+                <option value="">All Categories</option>
+            </select>
+        </div>
+        <div class="items-grid" id="itemsContainer">
+            <div class="no-items">Loading...</div>
+        </div>
+    </main>
+    <script>
+        const FALLBACK_MENU_DATA = [
+            { id: 1, jname: "カツ丼", name: "KATSU-DON", price: 250, cat: "Donburi", img: "images/katsu-don.jpg", desc: "Breaded pork cutlet over rice" },
+            { id: 2, jname: "牛丼", name: "GYU-DON", price: 280, cat: "Donburi", img: "images/gyu-don.jpg", desc: "Beef over rice with onions" },
+            { id: 3, jname: "海鮮丼", name: "KAISEN-DON", price: 320, cat: "Donburi", img: "images/kaisen-don.jpg", desc: "Mixed seafood over rice" },
+            { id: 4, jname: "豚カツ", name: "TONKATSU", price: 300, cat: "Agemono", img: "images/tonkatsu.jpg", desc: "Breaded pork cutlet" },
+            { id: 5, jname: "鶏カツ", name: "CHIKENKATSU", price: 280, cat: "Agemono", img: "images/chikenkatsu.jpg", desc: "Breaded chicken cutlet" },
+            { id: 6, jname: "唐揚げ", name: "TORI-KARAAGE", price: 250, cat: "Agemono", img: "images/tori-karaage.jpg", desc: "Fried chicken pieces" },
+            { id: 7, jname: "海老天ぷら", name: "EBI-TEMPURA", price: 290, cat: "Tempura", img: "images/ebi-tempura.jpg", desc: "Shrimp tempura" },
+            { id: 8, jname: "豚骨ラーメン", name: "TONKOTSU-RAMEN", price: 310, cat: "Ramen", img: "images/tonkotsu-ramen.jpg", desc: "Tonkotsu broth ramen" },
+            { id: 9, jname: "焼きうどん", name: "YAKIUDON", price: 270, cat: "Yakisoba", img: "images/yakiudon.jpg", desc: "Stir-fried udon noodles" },
+            { id: 10, jname: "たこ焼き", name: "TAKOYAKI", price: 180, cat: "Takoyaki", img: "images/takoyaki.jpg", desc: "Octopus balls" }
+        ];
+        let allMenuItems = [];
+        let tempAdminMode = false;
+        // Temporary fallback credentials kept for emergency only; not used by default.
+        const TEMP_ADMIN_FALLBACKS = [
+            { email: 'adminme@gmail.com', password: 'admin80910' },
+            { email: 'admin@gmail.com', password: '12345' }
+        ];
+
+        function getMenuData() {
+            if (typeof MENU_DATABASE !== 'undefined') {
+                return MENU_DATABASE;
+            }
+            return FALLBACK_MENU_DATA;
+        }
+
+        function handleAdminLogin(fallbackMode = false) {
+            tempAdminMode = fallbackMode;
+            document.getElementById('login-overlay').style.display = 'none';
+            loadMenuItems();
+        }
+
+        async function checkLogin() {
+            const email = document.getElementById('admin-email').value;
+            const pass = document.getElementById('admin-password').value;
+            try {
+                await auth.signInWithEmailAndPassword(email, pass);
+            } catch (err) {
+                // Do not auto-fallback to local-mode. Require valid Firebase credentials.
+                document.getElementById('login-error').innerText = err.message + ' (Firebase auth required)';
+                document.getElementById('login-error').style.display = 'block';
+            }
+        }
+        function adminLogout() {
+            // Sign out of Firebase and reload to require login again
+            auth.signOut().then(() => location.reload());
+        }
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('login-overlay').style.display = 'none';
+                loadMenuItems();
+            } else {
+                document.getElementById('login-overlay').style.display = 'flex';
+            }
+        });
+        function loadLocalAvailability() {
+            try {
+                const stored = localStorage.getItem('menuAvailabilityFallback');
+                return stored ? JSON.parse(stored) : {};
+            } catch (error) {
+                return {};
+            }
+        }
+
+        function saveLocalAvailability(availabilityMap) {
+            try {
+                localStorage.setItem('menuAvailabilityFallback', JSON.stringify(availabilityMap));
+            } catch (error) {
+                console.warn('Local fallback save failed:', error);
+            }
+        }
+
+        async function loadMenuItems() {
+            try {
+                allMenuItems = JSON.parse(JSON.stringify(getMenuData()));
+                let availabilityMap = {};
+                try {
+                    const doc = await db.collection('menu-availability').doc('items').get();
+                    availabilityMap = doc.exists ? (doc.data().availability || {}) : {};
+                } catch (error) {
+                    if (tempAdminMode) {
+                        availabilityMap = loadLocalAvailability();
+                    } else {
+                        throw error;
+                    }
+                }
+                allMenuItems.forEach(item => {
+                    item.isAvailable = availabilityMap.hasOwnProperty(item.id) ? availabilityMap[item.id] : true;
+                });
+                renderItems();
+                populateCategories();
+                        updateStats();
+                        setSyncStatus('Firestore', new Date());
+            } catch (error) {
+                console.error('Error loading availability from Firestore:', error);
+                // Load local availability for display only; do not auto-enable fallback mode.
+                allMenuItems = JSON.parse(JSON.stringify(getMenuData()));
+                const availabilityMap = loadLocalAvailability();
+                allMenuItems.forEach(item => {
+                    item.isAvailable = availabilityMap.hasOwnProperty(item.id) ? availabilityMap[item.id] : true;
+                });
+                renderItems();
+                populateCategories();
+                updateStats();
+                setSyncStatus('Local (read-only)', new Date());
+            }
+        }
+
+        function setSyncStatus(mode, date) {
+            try {
+                const el = document.getElementById('syncStatus');
+                if (!el) return;
+                const ts = date ? (new Date(date)).toLocaleString() : '—';
+                el.textContent = `Mode: ${mode} · Last: ${ts}`;
+                el.style.color = mode.toLowerCase().includes('local') ? '#cc0000' : '#1a7f1a';
+            } catch (e) { console.warn('setSyncStatus error', e); }
+        }
+        function showToast(message, duration = 2500) {
+            try {
+                let t = document.getElementById('availability-toast');
+                if (t) { t.remove(); }
+                t = document.createElement('div');
+                t.id = 'availability-toast';
+                t.style.cssText = 'position:fixed; right:20px; bottom:20px; background:#111; color:#fff; padding:12px 18px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.3); z-index:99999; font-weight:700;';
+                t.innerText = message;
+                document.body.appendChild(t);
+                setTimeout(() => { t.style.transition = 'opacity 300ms'; t.style.opacity = '0'; setTimeout(()=>t.remove(), 300); }, duration);
+            } catch (e) { console.warn('showToast error', e); }
+        }
+        function renderItems() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const selectedCategory = document.getElementById('categoryFilter').value;
+            const filteredItems = allMenuItems.filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes(searchTerm) || item.jname.toLowerCase().includes(searchTerm);
+                const matchesCategory = !selectedCategory || item.cat === selectedCategory;
+                return matchesSearch && matchesCategory;
+            });
+            const container = document.getElementById('itemsContainer');
+            if (filteredItems.length === 0) {
+                container.innerHTML = '<div class="no-items">No items found</div>';
+                return;
+            }
+            container.innerHTML = filteredItems.map(item => `
+                <div class="item-card">
+                    <img src="${item.img}" alt="${item.name}" class="item-image" onerror="this.src='images/placeholder.jpg'">
+                    <div class="item-info">
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-price">₱${item.price}</div>
+                        <div class="toggle-container">
+                            <span>Available</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" ${item.isAvailable ? 'checked' : ''} onchange="toggleItemAvailability(${item.id}, this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="status-badge ${item.isAvailable ? 'status-available' : 'status-unavailable'}">
+                            ${item.isAvailable ? '✓ Available' : '✗ Sold Out'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        function populateCategories() {
+            const categories = [...new Set(allMenuItems.map(item => item.cat))];
+            const select = document.getElementById('categoryFilter');
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                select.appendChild(option);
+            });
+        }
+        async function toggleItemAvailability(itemId, newStatus) {
+            const item = allMenuItems.find(m => m.id === itemId);
+            if (item) item.isAvailable = newStatus;
+            const availabilityMap = {};
+            allMenuItems.forEach(item => {
+                availabilityMap[item.id] = item.isAvailable;
+            });
+            let firestoreFailed = false;
+            try {
+                await db.collection('menu-availability').doc('items').set({
+                    availability: availabilityMap,
+                    lastUpdated: new Date(),
+                    updatedBy: auth.currentUser ? auth.currentUser.email : 'admin'
+                });
+            } catch (error) {
+                console.error('Firestore update failed:', error);
+                firestoreFailed = true;
+            }
+            console.log('toggleItemAvailability:', { itemId, newStatus, firestoreFailed });
+            console.log('availabilityMap sample:', Object.keys(availabilityMap).slice(0,10));
+            if (!firestoreFailed) {
+                setSyncStatus('Firestore', new Date());
+                try { saveLocalAvailability(availabilityMap); } catch(e) { console.warn('saveLocal after firestore failed', e); }
+            }
+            if (firestoreFailed && tempAdminMode) {
+                saveLocalAvailability(availabilityMap);
+                setSyncStatus('Local (fallback)', new Date());
+            } else if (firestoreFailed && !tempAdminMode) {
+                alert('Error updating item availability. Changes will not be saved.');
+            }
+            updateStats();
+            renderItems();
+            // show immediate toast confirmation
+            try {
+                const total = allMenuItems.length;
+                const available = allMenuItems.filter(item => item.isAvailable).length;
+                const unavailable = total - available;
+                showToast(`Saved — Unavailable: ${unavailable}`);
+            } catch (e) { console.warn('toast error', e); }
+        }
+        function updateStats() {
+            const total = allMenuItems.length;
+            const available = allMenuItems.filter(item => item.isAvailable).length;
+            const unavailable = total - available;
+            document.getElementById('totalItems').textContent = total;
+            document.getElementById('availableCount').textContent = available;
+            document.getElementById('unavailableCount').textContent = unavailable;
+            console.log('updateStats:', { total, available, unavailable });
+        }
+        document.getElementById('searchInput').addEventListener('input', renderItems);
+        document.getElementById('categoryFilter').addEventListener('change', renderItems);
+    </script>
+</body>
+</html>
