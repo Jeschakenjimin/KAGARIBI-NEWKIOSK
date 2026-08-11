@@ -156,10 +156,26 @@
         const dynamicThreshold = new Date();
         dynamicThreshold.setHours(dynamicThreshold.getHours() - 24);
 
-        db.collection("orders")
-          .where("status", "==", "Pending")
-          .where("timestamp", ">=", dynamicThreshold)
-          .onSnapshot(snap => {
+        log("[KITCHEN] Firebase initializing...");
+        log("[KITCHEN] Connecting to Firebase...");
+
+        const ordersQuery = db.collection("orders")
+          .where("status", "==", "Pending");
+
+        log("[KITCHEN] Fetching existing orders...");
+        ordersQuery.get().then(snapshot => {
+            log(`[KITCHEN] Existing orders received: ${snapshot.size}`);
+            if (snapshot.size === 0) {
+                log("[KITCHEN] No Pending orders found in 'orders' path with timestamp >= 24h.");
+            }
+        }).catch(error => {
+            console.error("KITCHEN initial fetch error:", error);
+            log(`[KITCHEN] Existing orders fetch failed: ${error.message}`);
+        });
+
+        log("[KITCHEN] Starting realtime listener...");
+        ordersQuery.onSnapshot(snap => {
+            log(`[KITCHEN] Realtime listener active. Snapshot size: ${snap.size}`);
             document.getElementById('conn-status').innerHTML = "🟢 Live";
             const rackPending = document.getElementById('rack-pending');
             const rackPreparing = document.getElementById('rack-preparing');
@@ -210,6 +226,14 @@
             const sortedTables = Object.keys(tableGroups).map(key => {
                 return { tableName: key, ...tableGroups[key] };
             }).sort((a, b) => a.earliestTime - b.earliestTime);
+
+            snap.docChanges().forEach(change => {
+                if (change.type === "added") {
+                    const order = change.doc.data();
+                    log(`[KITCHEN] NEW ORDER RECEIVED: ${change.doc.id}`);
+                    log(`[KITCHEN] Order status: ${order.status || order.processStep || 'unknown'}`);
+                }
+            });
 
             sortedTables.forEach(group => {
                 const tableName = group.tableName;
@@ -275,7 +299,8 @@
             });
         }, error => {
             console.error("Firebase Snapshot Error (Check if Index is missing):", error);
-            log("⚠️ Filter applied. If history is broken, please check F12 Console to generate the Google Index link.");
+            log(`[KITCHEN] Firebase listener error: ${error.message}`);
+            document.getElementById('conn-status').innerHTML = "🔴 Error";
         });
 
         async function toggleItemDone(itemId, targetDocId, itemName, itemNotes, itemQty, itemAddons = "") {

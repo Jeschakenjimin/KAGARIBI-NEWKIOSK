@@ -42,6 +42,9 @@
         }
 
         .modal-box { 
+            position: relative;
+            z-index: 2001;
+            pointer-events: auto;
             /* Semi-transparent black */
             background: rgba(18, 18, 18, 0.55); 
             
@@ -393,8 +396,8 @@
             <div id="modal-content"></div>
             <textarea id="special-notes" class="special-notes-input" placeholder="Notes: (e.g. No ice, extra spicy, no sauce)"></textarea>
             <div style="margin-top: 20px;">
-                <button class="pay-btn" onclick="addToCartFinal()">ADD TO CART</button>
-                <button class="pay-btn" onclick="closeModals()" style="background:gray; border:1px solid #444; color:white;">CANCEL</button>
+                <button type="button" class="pay-btn" onclick="addToCartFinal()">ADD TO CART</button>
+                <button type="button" class="pay-btn" onclick="closeModals()" style="background:gray; border:1px solid #444; color:white;">CANCEL</button>
             </div>
         </div>
     </div>
@@ -1434,8 +1437,7 @@
     let addonsHtml = "";
     if (selectedItem.addons) {
         addonsHtml = `
-        <div style="text-al
-        ign: left; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px;">
+        <div style="text-align: left; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px;">
             <p style="color: var(--gold); font-weight: bold; margin-bottom: 10px; font-size: 0.9rem;">EXTRA ADD-ONS / 追加オプション:</p>
             ${selectedItem.addons.map(add => {
                 const addonLabel = add.name + (add.jname ? ` / ${add.jname}` : (ADDON_LABELS[add.name] ? ` / ${ADDON_LABELS[add.name]}` : ''));
@@ -1696,16 +1698,20 @@
     try {
         // 1. SEND TO KITCHEN
         // This creates the permanent record for the staff.
-        await db.collection("orders").add({
-            table: tableNumber, 
-            method: method, 
-            items: cart, 
+        const orderData = {
+            table: tableNumber,
+            method: method,
+            items: cart,
             status: "Pending",
             subtotal: subtotal,
-            serviceCharge: subtotal * 0.05, 
+            serviceCharge: subtotal * 0.05,
             total: grandTotal, // Always use the grand total here
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        };
+
+        console.log('[KIOSK] Sending order to Firebase:', orderData);
+        const orderRef = await db.collection("orders").add(orderData);
+        console.log('[KIOSK] Order created:', orderRef.id);
 
         // 2. THE VANISHING SIGNAL
         // We DELETE the session document. 
