@@ -37,7 +37,7 @@
             opacity: 0; 
             transition: opacity 0.5s ease-in; 
             display: flex;
-            height: 100vh;
+            min-height: 100vh;
             overflow: hidden;
         }
 
@@ -107,6 +107,66 @@
             overflow-y: auto;
             padding: 30px 40px;
             position: relative;
+        }
+
+        @page { size: A4 portrait; margin: 15mm; }
+
+        @media print {
+            body, html {
+                width: 100% !important;
+                height: auto !important;
+                overflow: visible !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                display: block !important;
+            }
+            .main-content {
+                padding: 0 !important;
+                overflow: visible !important;
+            }
+            #daily-report {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 20px !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+                background: white !important;
+            }
+            .analytics-grid {
+                grid-template-columns: 1fr !important;
+                gap: 20px !important;
+            }
+            .chart-scroll-container,
+            .table-container,
+            .feedback-list-container {
+                overflow: visible !important;
+                height: auto !important;
+                max-height: none !important;
+            }
+            .chart-inner-wrapper {
+                min-height: auto !important;
+            }
+            .controls, .sidebar, .no-print {
+                display: none !important;
+            }
+            table {
+                width: 100% !important;
+                font-size: 0.85rem !important;
+                border-collapse: collapse !important;
+            }
+            th, td {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            .stat-card, .payment-breakdown, .chart-container, .table-container {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            thead { display: table-header-group; }
+            tfoot { display: table-footer-group; }
         }
 
         .header-top {
@@ -196,6 +256,20 @@
         td { border-bottom: 1px dashed #e4e6ef; padding: 15px; font-size: 0.9rem; vertical-align: middle; }
         tr:last-child td { border-bottom: none; }
         td:nth-child(3) { max-width: 250px; white-space: normal; word-wrap: break-word; line-height: 1.5; color: var(--text-muted); }
+
+        @media print {
+            html, body { overflow: visible !important; height: auto !important; }
+            body { min-height: auto !important; }
+            .main-content, .chart-scroll-container, .table-container, #daily-report { overflow: visible !important; max-height: none !important; }
+            #daily-report { width: 100% !important; margin: 0; padding: 0; }
+            .chart-inner-wrapper { height: auto !important; }
+            .stat-card, .chart-container, .payment-breakdown, .table-container, .record-card { page-break-inside: avoid; break-inside: avoid; }
+            tr, th, td { page-break-inside: avoid; break-inside: avoid; }
+            table { page-break-after: auto; }
+            thead { display: table-header-group; }
+            tfoot { display: table-footer-group; }
+            .feedback-list-container { max-height: none !important; overflow: visible !important; }
+        }
         
         .badge { padding: 6px 12px; border-radius: 6px; font-weight: 700; font-size: 0.7rem; color: white; text-transform: uppercase; display: inline-block; }
         .b-gcash { background: rgba(0, 125, 254, 0.1); color: #007DFE; }
@@ -604,15 +678,7 @@
         }
 
         function generatePDF() {
-            const element = document.getElementById('daily-report');
-            const opt = { 
-                margin: 0.5, 
-                filename: 'Sales_Report.pdf', 
-                image: { type: 'jpeg', quality: 0.98 }, 
-                html2canvas: { scale: 2, backgroundColor: '#ffffff' }, 
-                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } 
-            };
-            html2pdf().set(opt).from(element).save();
+            window.print();
         }
 
         function generateExcel() {
