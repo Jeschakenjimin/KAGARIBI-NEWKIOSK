@@ -181,16 +181,15 @@
             <h2>KAGARIBI <span>ADMIN</span></h2>
         </div>
         <ul class="nav-menu">
-            <li><a href="dailysales.html">ðŸ“Š Daily Sales</a></li>
-            <li><a href="monthly-report.html">ðŸ“… Monthly Report</a></li>
-            <li><a href="inventory.html">ðŸ“¦ Inventory</a></li>
-            <li><a href="banquet-inventory.html">ðŸ“¦Banquet Inventory</a></li>
-            <li><a href="reservations.html">ðŸ“ Reservation</a></li>
-            <li class="active"><a href="#">ðŸ“„ Reservation Record </a></li>
-            
+            <li><a href="dailysales.html">📊 Daily Sales</a></li>
+            <li><a href="monthly-report.html">📈 Monthly Report</a></li>
+            <li><a href="inventory.html">📦 Inventory</a></li>
+            <li><a href="banquet-inventory.html">📦 Banquet Inventory</a></li>
+            <li><a href="reservations.html">📝 Reservation</a></li>
+            <li class="active"><a href="#">📄 Reservation Record </a></li>
         </ul>
         <div class="sidebar-footer" style="padding: 20px;">
-            <button class="btn-logout" onclick="adminLogout()">ðŸšª Logout</button>
+            <button class="btn-logout" onclick="adminLogout()">🚪 Logout</button>
         </div>
     </aside>
 
@@ -425,13 +424,13 @@
             list.innerHTML = data.map(res => `
                 <div class="record-card" id="card-${res.id}">
                     <div class="guest-info">
-                        <span class="time-pill">ðŸ•’ ${res.time}</span>
+                        <span class="time-pill">⏱️ ${res.time}</span>
                         <h3>${res.name}</h3>
                         <div class="details-text">
-                            <strong>ðŸ‘¥ ${res.guests} Guests</strong> &nbsp;|&nbsp; ðŸ“ž ${res.phone}<br>
+                            <strong>👥 ${res.guests} Guests</strong> &nbsp;|&nbsp; 📞 ${res.phone}<br>
                             <small style="letter-spacing:1px;">CODE: ${res.reservationNumber || res.resNumber || res.code || res.id || '---'}</small>
                         </div>
-                        ${res.requests ? `<div class="special-request">ðŸ’¬ Note: ${res.requests}</div>` : ''}
+                        ${res.requests ? `<div class="special-request">📝 Note: ${res.requests}</div>` : ''}
                     </div>
                     
                     <div class="action-buttons">
