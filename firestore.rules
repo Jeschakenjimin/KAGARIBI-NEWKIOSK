@@ -19,7 +19,7 @@ service cloud.firestore {
     // Only admins can update/delete orders.
     match /orders/{orderId} {
       allow create: if isValidOrder();
-      allow read: if isAdmin() || resource.data.status == "Pending";
+      allow read: if isAdmin() || resource.data.status in ["Pending", "Served"];
       allow update, delete: if isAdmin();
     }
 

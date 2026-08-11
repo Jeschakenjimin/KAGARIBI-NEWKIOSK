@@ -235,6 +235,32 @@
 
         .pay-btn {
             width: 100%; padding: 10px; background: #27ae60; color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
+        .order-status-panel { background: #fffbeb; color: #1f2937; border: 1px solid #fcd34d; border-radius: 16px; padding: 14px; margin: 11px 15px 0; box-shadow: 0 10px 20px rgba(249, 204, 36, 0.12); overflow: hidden; transition: max-height 0.25s ease, padding 0.25s ease, margin 0.25s ease; max-height: 96px; }
+        .order-status-panel.collapsed { max-height: 96px; padding-bottom: 10px; margin-bottom: 0; }
+        .order-status-panel.open { max-height: 520px; }
+        .order-status-toggle { position: absolute; top: 14px; right: 16px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #fde68a; color: #92400e; border: none; border-radius: 999px; padding: 8px 12px; font-weight: 700; cursor: pointer; box-shadow: 0 8px 20px rgba(249, 204, 36, 0.22); transition: transform 0.16s ease; z-index: 10050; pointer-events: auto; touch-action: manipulation; }
+        .order-status-toggle:hover { transform: translateY(-1px); }
+        .order-status-summary { pointer-events: auto; z-index: 10049; touch-action: manipulation; }
+        #order-status-container { position: relative; z-index: 10048; }
+        .order-status-summary { display: flex; justify-content: space-between; align-items: center; gap:12px; flex-wrap:wrap; cursor: pointer; }
+        .order-status-summary-text { display:flex; flex-direction:column; gap:4px; }
+        .order-status-summary-small { font-size:0.75rem; letter-spacing:1px; text-transform:uppercase; color:#92400e; }
+        .order-status-items { margin-top: 14px; display: block; gap: 10px; max-height: 280px; overflow-y: auto; padding-right: 10px; }
+        .order-status-items::-webkit-scrollbar { width: 8px; }
+        .order-status-items::-webkit-scrollbar-thumb { background: rgba(107, 114, 128, 0.35); border-radius: 999px; }
+        .order-section { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 12px; margin-bottom: 12px; }
+        .order-section-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .order-section-title { font-size: 0.95rem; font-weight: 800; color: #111827; }
+        .order-section-meta { font-size: 0.78rem; color: #6b7280; }
+        .item-status-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; background: #f8fafc; border-radius: 14px; border: 1px solid #e5e7eb; }
+        .item-status-left { display: flex; flex-direction: column; gap: 4px; max-width: calc(100% - 120px); }
+        .item-status-name { font-size: 0.95rem; font-weight: 800; color: #111827; }
+        .item-status-subtext { font-size: 0.82rem; color: #374151; line-height: 1.3; }
+        .item-status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 800; text-transform: uppercase; }
+        .item-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .item-status-pending { background: #fef3c7; color: #92400e; }
+        .item-status-cooking { background: #fed7aa; color: #b45309; }
+        .item-status-served { background: #d1fae5; color: #166534; }
 
         .logo-wrapper { width: 90px; height: 90px; margin: 0 auto; border-radius: 50%; padding: 5px; background: white; border: 4px solid var(--gold); display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .loading-bar { width: 100%; height: 6px; background: #eee; border-radius: 3px; margin-top: 15px; overflow: hidden; }
@@ -369,6 +395,20 @@
             </div>
 
             <div class="category-scroll" id="cat-scroll"></div>
+            <div id="order-status-container" style="position:relative;">
+                <button id="order-status-toggle" class="order-status-toggle" type="button" style="display:none;" onclick="toggleOrderStatusPanel()">📋 Order Status</button>
+                <div id="order-status-panel" class="order-status-panel collapsed" style="display:none;">
+                    <div class="order-status-summary" onclick="toggleOrderStatusPanel()">
+                        <div class="order-status-summary-text">
+                            <div class="order-status-summary-small">ORDER STATUS</div>
+                            <div id="order-status-number" style="font-weight:800; margin-top:4px; color:#111;">Order #----</div>
+                        </div>
+                        <div id="order-status-pill" class="status-pill"><span class="status-dot"></span><span id="order-status-label">PENDING</span></div>
+                    </div>
+                    <div id="order-status-message" class="status-message" style="margin-top:10px; font-size:0.88rem;">Your order has been received and is waiting to be prepared.</div>
+                    <div id="order-status-items" class="order-status-items"></div>
+                </div>
+            </div>
         </header>
 
         <main class="menu-container">
@@ -1104,6 +1144,9 @@
 
         let cart = []; let tableNumber = ""; let selectedItem = null; let tempQty = 1;
         let unsubscribeCart = null;
+        let orderStatusUnsubscribe = null;
+        let currentOrderId = sessionStorage.getItem('currentOrderId') || null;
+        let currentTableNumber = sessionStorage.getItem('currentTableNumber') || null;
         let itemIndexToDelete = null;
 
         window.onload = () => {
@@ -1114,6 +1157,15 @@
         console.log("Customer scanned QR for Table: " + tableFromUrl);
     } else {
         sessionStorage.removeItem('scannedTable');
+    }
+
+    if (currentTableNumber) {
+        tableNumber = currentTableNumber;
+        console.log('[STATUS] Resuming order tracking for table', tableNumber);
+        findActiveOrderForTable(tableNumber);
+    } else if (currentOrderId) {
+        console.log('[STATUS] Resuming order tracking for order id', currentOrderId);
+        resumeOrderTrackingByOrderId(currentOrderId);
     }
 };
 
@@ -1128,6 +1180,8 @@
         const savedTable = sessionStorage.getItem('scannedTable');
         if (savedTable) {
             tableNumber = "Table " + savedTable;
+            currentTableNumber = tableNumber;
+            sessionStorage.setItem('currentTableNumber', currentTableNumber);
             startLiveSync(tableNumber); // Connect their cart
             proceed(); // Skip the modal and go straight to the menu!
             return; // Stop the function here so the modal doesn't pop up
@@ -1159,8 +1213,10 @@
     } else {
         tableNumber = "Table " + t; 
     }
+    sessionStorage.setItem('currentTableNumber', tableNumber);
 
     startLiveSync(tableNumber);
+    findActiveOrderForTable(tableNumber);
     proceed();
 }
 
@@ -1172,6 +1228,7 @@
                         updateCartUI(); 
                     }
                 });
+            findActiveOrderForTable(tableId);
         }
         
 
@@ -1690,6 +1747,16 @@
         function openMethodSelection() { document.getElementById('method-modal').style.display = 'flex'; }
         function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
 
+        function makeOrderItem(item) {
+            return {
+                ...item,
+                status: "Pending",
+                completedQty: 0,
+                isDone: false,
+                itemKey: `item-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
+            };
+        }
+
         async function processOrder(method) {
     if (cart.length === 0) return; 
 
@@ -1701,7 +1768,7 @@
         const orderData = {
             table: tableNumber,
             method: method,
-            items: cart,
+            items: cart.map(makeOrderItem),
             status: "Pending",
             subtotal: subtotal,
             serviceCharge: subtotal * 0.05,
@@ -1711,7 +1778,10 @@
 
         console.log('[KIOSK] Sending order to Firebase:', orderData);
         const orderRef = await db.collection("orders").add(orderData);
-        console.log('[KIOSK] Order created:', orderRef.id);
+        currentOrderId = orderRef.id;
+        sessionStorage.setItem('currentOrderId', currentOrderId);
+        findActiveOrderForTable(tableNumber);
+        console.log('[KIOSK] Order created:', currentOrderId);
 
         // 2. THE VANISHING SIGNAL
         // We DELETE the session document. 
@@ -1723,7 +1793,7 @@
         updateCartUI(); // This clears your screen immediately
 
         // 4. SHOW SUCCESS
-        showSuccessWithRating();
+        showSuccessWithRating(currentOrderId);
         
         // Close the cart overlay after a delay
         setTimeout(() => {
@@ -1761,6 +1831,258 @@
         async function submitRating(stars) {
             await db.collection("feedback").add({ rating: stars, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
             location.reload();
+        }
+
+        function normalizeOrderItemStatus(item, orderProcessStep) {
+            if (item.isDone === true || (Number(item.completedQty) || 0) >= (Number(item.qty) || 1)) return "Served";
+            if (item.status === "Served") return "Served";
+            if (item.status === "Cooking") return "Cooking";
+            if (orderProcessStep === "Preparing") return "Cooking";
+            if ((Number(item.completedQty) || 0) > 0) return "Cooking";
+            return "Pending";
+        }
+
+        function getCustomerStatusMeta(orders) {
+            const orderList = Array.isArray(orders) ? orders : [orders];
+            const items = orderList.flatMap(order => {
+                return (Array.isArray(order.items) ? order.items : []).map(item => ({ ...item, processStep: order.processStep }));
+            });
+            const hasCooking = items.some(item => normalizeOrderItemStatus(item, item.processStep || "Pending") === "Cooking");
+            const allServed = items.length > 0 && items.every(item => normalizeOrderItemStatus(item, item.processStep || "Pending") === "Served");
+
+            if (allServed) {
+                return {
+                    label: "SERVED",
+                    message: "Your orders are finished and ready.",
+                    dotColor: "#16a34a"
+                };
+            }
+            if (hasCooking) {
+                return {
+                    label: "COOKING",
+                    message: "Some items are being prepared by the kitchen.",
+                    dotColor: "#f97316"
+                };
+            }
+            return {
+                label: "PENDING",
+                message: "New orders are waiting to be prepared.",
+                dotColor: "#f59e0b"
+            };
+        }
+
+        let isOrderStatusOpen = false;
+
+        function renderOrderStatusPanel() {
+            const panel = document.getElementById('order-status-panel');
+            const toggle = document.getElementById('order-status-toggle');
+            const numberEl = document.getElementById('order-status-number');
+            const messageEl = document.getElementById('order-status-message');
+            const summary = document.querySelector('.order-status-summary');
+
+            if (!panel || !toggle || !numberEl || !messageEl) return;
+            panel.style.display = 'block';
+            toggle.style.display = 'inline-flex';
+            toggle.style.pointerEvents = 'auto';
+            toggle.style.touchAction = 'manipulation';
+            toggle.innerText = isOrderStatusOpen ? '📋 Hide Status' : '📋 Order Status';
+            panel.classList.toggle('open', isOrderStatusOpen);
+            panel.classList.toggle('collapsed', !isOrderStatusOpen);
+            panel.style.maxHeight = isOrderStatusOpen ? '520px' : '96px';
+            panel.style.overflow = 'hidden';
+            numberEl.innerText = `YOUR ORDERS`;
+            messageEl.innerText = "Tracking your active orders for this table.";
+            toggle.onclick = toggleOrderStatusPanel;
+            toggle.ontouchstart = toggleOrderStatusPanel;
+            if (summary) {
+                summary.onclick = toggleOrderStatusPanel;
+                summary.ontouchstart = toggleOrderStatusPanel;
+            }
+        }
+
+        function toggleOrderStatusPanel() {
+            const panel = document.getElementById('order-status-panel');
+            const toggle = document.getElementById('order-status-toggle');
+            if (!panel || !toggle) return;
+
+            isOrderStatusOpen = !isOrderStatusOpen;
+            panel.style.display = 'block';
+            panel.classList.toggle('open', isOrderStatusOpen);
+            panel.classList.toggle('collapsed', !isOrderStatusOpen);
+            panel.style.maxHeight = isOrderStatusOpen ? '520px' : '96px';
+            panel.style.overflow = 'hidden';
+            document.getElementById('order-status-message').style.display = isOrderStatusOpen ? 'block' : 'none';
+            document.getElementById('order-status-items').style.display = isOrderStatusOpen ? 'block' : 'none';
+            toggle.innerText = isOrderStatusOpen ? '📋 Hide Status' : '📋 Order Status';
+
+            if (isOrderStatusOpen && latestOrderStatusOrders.length > 0) {
+                renderOrderStatusItems(latestOrderStatusOrders);
+            }
+        }
+
+        window.toggleOrderStatusPanel = toggleOrderStatusPanel;
+        window.renderOrderStatusPanel = renderOrderStatusPanel;
+
+        function renderOrderStatusItems(orders) {
+            const list = document.getElementById('order-status-items');
+            if (!list) return;
+            list.innerHTML = '';
+
+            const orderList = Array.isArray(orders) ? orders : [orders];
+            if (orderList.length === 0) {
+                list.innerHTML = `<div class="item-status-row"><div class="item-status-left"><div class="item-status-name">No active orders found for this table.</div></div></div>`;
+                return;
+            }
+
+            list.innerHTML = orderList.map(order => {
+                const orderId = order.id || '';
+                const orderTime = order.timestamp?.toDate?.();
+                const orderHeader = `
+                    <div class="order-section-header">
+                        <div class="order-section-title">ORDER #${orderId.slice(-4).toUpperCase()}</div>
+                        <div class="order-section-meta">${orderTime ? orderTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</div>
+                    </div>
+                `;
+
+                const orderItems = Array.isArray(order.items) ? order.items : [];
+                const itemRows = orderItems.map(item => {
+                    const status = normalizeOrderItemStatus(item, order.processStep);
+                    const statusMeta = {
+                        Pending: { label: 'PENDING', subtext: 'Waiting to be prepared', color: '#fbbf24', bg: '#fef3c7', text: '#92400e' },
+                        Cooking: { label: 'COOKING', subtext: 'Being prepared', color: '#16a34a', bg: '#d1fae5', text: '#166534' },
+                        Served: { label: 'SERVED', subtext: 'Ready / served', color: '#3b82f6', bg: '#dbeafe', text: '#1e40af' }
+                    }[status] || { label: status.toUpperCase(), subtext: '', color: '#6b7280', bg: '#f3f4f6', text: '#374151' };
+
+                    const qtyText = Number(item.qty || 1) > 1 ? ` × ${item.qty}` : "";
+                    return `
+                        <div class="item-status-row">
+                            <div class="item-status-left">
+                                <div class="item-status-name">${item.name}${qtyText}</div>
+                                <div class="item-status-subtext">${statusMeta.subtext}</div>
+                            </div>
+                            <div class="item-status-pill" style="background:${statusMeta.bg}; color:${statusMeta.text};">
+                                <span class="item-status-dot" style="background:${statusMeta.color};"></span>${statusMeta.label}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="order-section">
+                        ${orderHeader}
+                        ${itemRows}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateOrderStatusDisplay(orders) {
+            const panel = document.getElementById('order-status-panel');
+            const numberEl = document.getElementById('order-status-number');
+            const labelEl = document.getElementById('order-status-label');
+            const messageEl = document.getElementById('order-status-message');
+            const mainLabelEl = document.getElementById('success-status-label');
+            const mainMessageEl = document.getElementById('success-status-message');
+            const successTextEl = document.getElementById('success-status-text');
+
+            if (!panel || !numberEl || !labelEl || !messageEl) return;
+
+            const meta = getCustomerStatusMeta(orders);
+            panel.style.display = 'block';
+            numberEl.innerText = `YOUR ORDERS`;
+            labelEl.innerText = meta.label;
+            messageEl.innerText = meta.message;
+            document.querySelectorAll('.status-dot').forEach(dot => dot.style.background = meta.dotColor);
+            if (mainLabelEl) mainLabelEl.innerText = meta.label;
+            if (mainMessageEl) mainMessageEl.innerText = meta.message;
+            if (successTextEl) successTextEl.innerText = `Your order is ${meta.label.toLowerCase()}.`;
+            renderOrderStatusItems(orders);
+
+            console.log('[STATUS] Table', tableNumber, 'status updated to', meta.label);
+        }
+
+        let latestOrderStatusOrders = [];
+
+        function startOrderStatusListener(tableId) {
+            if (!tableId) return;
+            if (orderStatusUnsubscribe) orderStatusUnsubscribe();
+
+            const query = db.collection('orders').where('table', '==', tableId);
+            orderStatusUnsubscribe = query.onSnapshot(snapshot => {
+                const orders = snapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .filter(order => order.status !== 'Completed')
+                    .sort((a, b) => {
+                        const ta = a.timestamp?.toDate?.getTime?.() || a.timestamp || 0;
+                        const tb = b.timestamp?.toDate?.getTime?.() || b.timestamp || 0;
+                        return ta - tb;
+                    });
+
+                latestOrderStatusOrders = orders;
+
+                if (orders.length === 0) {
+                    console.log('[STATUS] No active orders found for', tableId);
+                    clearCurrentOrder();
+                    return;
+                }
+
+                currentOrderId = orders[orders.length - 1].id;
+                sessionStorage.setItem('currentOrderId', currentOrderId);
+                renderOrderStatusPanel();
+                updateOrderStatusDisplay(orders);
+                console.log('[STATUS] Realtime orders update for', tableId, 'orders', orders.map(o => o.id));
+            }, error => {
+                console.error('[STATUS] Status listener error:', error);
+            });
+        }
+
+        function stopOrderStatusListener() {
+            if (orderStatusUnsubscribe) {
+                orderStatusUnsubscribe();
+                orderStatusUnsubscribe = null;
+            }
+        }
+
+        async function findActiveOrderForTable(tableId) {
+            if (!tableId) return;
+            console.log('[STATUS] Subscribing active orders for', tableId);
+            startOrderStatusListener(tableId);
+        }
+
+        async function resumeOrderTrackingByOrderId(orderId) {
+            try {
+                const orderDoc = await db.collection('orders').doc(orderId).get();
+                if (orderDoc.exists) {
+                    const order = orderDoc.data();
+                    const targetTable = order?.table;
+                    if (targetTable) {
+                        tableNumber = targetTable;
+                        currentTableNumber = targetTable;
+                        sessionStorage.setItem('currentTableNumber', targetTable);
+                        findActiveOrderForTable(targetTable);
+                        return;
+                    }
+                }
+                console.warn('[STATUS] Could not resolve table for order id', orderId);
+                stopOrderStatusListener();
+            } catch (error) {
+                console.error('[STATUS] Failed to resume tracking for order id', orderId, error);
+            }
+        }
+
+        function clearCurrentOrder() {
+            sessionStorage.removeItem('currentOrderId');
+            currentOrderId = null;
+            stopOrderStatusListener();
+            const panel = document.getElementById('order-status-panel');
+            const toggle = document.getElementById('order-status-toggle');
+            if (panel) {
+                panel.style.display = 'none';
+                panel.classList.remove('open');
+                panel.classList.add('collapsed');
+            }
+            if (toggle) toggle.style.display = 'none';
+            isOrderStatusOpen = false;
         }
 
         function goBackToOrderType() {

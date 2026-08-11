@@ -83,6 +83,11 @@
         .check-btn { background: #27ae60; color: white; border: 1px solid #ddd; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; }
         .btn-prepare { width: 100%; padding: 10px; background: #FFC107; color: black; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; }
         .btn-done { width: 100%; padding: 10px; background: #27ae60; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .item-status-pill { padding: 4px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; display: inline-flex; align-items: center; gap: 6px; }
+        .item-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .item-status-pending { background: #fef3c7; color: #92400e; }
+        .item-status-cooking { background: #d1fae5; color: #166534; }
+        .item-status-served { background: #dbeafe; color: #1e40af; }
 
         .footer-system { background: #000; padding: 5px 15px; border-top: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
         #debug-log { font-family: monospace; font-size: 0.7rem; color: #0f0; height: 40px; overflow-y: auto; flex: 1; }
@@ -126,6 +131,19 @@
         let lastCount = 0;
         
         const processingItems = new Set();
+
+        function normalizeItemStatus(item, orderProcessStep) {
+            if (item.isDone === true || (Number(item.completedQty) || 0) >= (Number(item.qty) || 1)) {
+                return 'Served';
+            }
+            if (orderProcessStep === 'Preparing') {
+                return 'Cooking';
+            }
+            if (item.status === 'Cooking' || (Number(item.completedQty) || 0) > 0) {
+                return 'Cooking';
+            }
+            return 'Pending';
+        }
 
         function log(msg) { 
             const t = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
@@ -184,7 +202,7 @@
             rackPending.innerHTML = "";
             rackPreparing.innerHTML = "";
             activeOrders = [];
-            let tableGroups = {}; 
+            let orderGroups = {}; 
 
             const sortedDocs = [];
             snap.forEach(doc => sortedDocs.push(doc));
@@ -200,32 +218,18 @@
                 const tableName = order.table || "Take Out";
                 const orderTime = order.timestamp?.toDate() || new Date();
 
-                if (!tableGroups[tableName]) {
-                    tableGroups[tableName] = { 
-                        items: [], 
-                        earliestTime: orderTime, 
-                        docIds: [], 
-                        processStep: order.processStep || "Pending" 
-                    };
-                } else {
-                    if (orderTime < tableGroups[tableName].earliestTime) {
-                        tableGroups[tableName].earliestTime = orderTime;
-                    }
-                }
-
-                if (order.processStep === "Preparing") tableGroups[tableName].processStep = "Preparing";
-                
-                const itemsWithDocId = order.items.map(i => ({ ...i, _docId: doc.id }));
-                tableGroups[tableName].items.push(...itemsWithDocId);
-                
-                if (!tableGroups[tableName].docIds.includes(doc.id)) {
-                    tableGroups[tableName].docIds.push(doc.id);
-                }
+                orderGroups[doc.id] = {
+                    orderId: doc.id,
+                    tableName,
+                    items: order.items.map(i => ({ ...i, _docId: doc.id })),
+                    orderTime,
+                    processStep: order.processStep || "Pending",
+                    status: order.status || "Pending",
+                    docIds: [doc.id]
+                };
             });
 
-            const sortedTables = Object.keys(tableGroups).map(key => {
-                return { tableName: key, ...tableGroups[key] };
-            }).sort((a, b) => a.earliestTime - b.earliestTime);
+            const sortedOrders = Object.values(orderGroups).sort((a, b) => a.orderTime - b.orderTime);
 
             snap.docChanges().forEach(change => {
                 if (change.type === "added") {
@@ -235,7 +239,7 @@
                 }
             });
 
-            sortedTables.forEach(group => {
+            sortedOrders.forEach(group => {
                 const tableName = group.tableName;
                 const itemCounts = {};
                 
@@ -258,16 +262,16 @@
                 
                 if (activeItems.length === 0) return; 
 
-                const tableId = tableName.replace(/\s+/g, '');
-                activeOrders.push({ id: tableId, time: group.earliestTime });
+                const ticketId = group.orderId;
+                activeOrders.push({ id: ticketId, time: group.orderTime });
 
                 const ticket = document.createElement('div');
                 ticket.className = "ticket";
-                ticket.id = `ticket-${tableId}`;
+                ticket.id = `ticket-${ticketId}`;
                 
                 ticket.innerHTML = `
                     <div class="time-meta">
-                        <span class="timer-container" id="timer-${tableId}">0:00</span>
+                        <span class="timer-container" id="timer-${ticketId}">0:00</span>
                     </div>
                     <h2>${tableName}</h2>
                     <div class="badge-row">
@@ -275,7 +279,7 @@
                     </div>
                     <ul class="item-list">
                         ${activeItems.map((i, index) => {
-                            const itemId = `item-${tableId}-${index}`;
+                            const itemId = `item-${ticketId}-${index}`;
                             const notesStr = (i.notes || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
                             const nameStr = i.name.replace(/'/g, "\\'").replace(/"/g, "&quot;");
                             const addonsParam = i._addOnsText.replace(/'/g, "\\'").replace(/"/g, "&quot;");
@@ -287,13 +291,18 @@
                                     ${i.jname ? `<span class="item-subtitle">${i.jname}</span>` : ''}
                                     ${i._addOnsText ? `<span class="addon-box">➕ ADD: ${i._addOnsText}</span>` : ''}
                                     ${i.notes ? `<div class="notes-box">NOTE: ${i.notes}</div>` : ''}
+                                    <div class="item-status-pill ${normalizeItemStatus(i, group.processStep) === 'Served' ? 'item-status-served' : normalizeItemStatus(i, group.processStep) === 'Cooking' ? 'item-status-cooking' : 'item-status-pending'}">
+                                        <span class="item-status-dot" style="background:${normalizeItemStatus(i, group.processStep) === 'Served' ? '#3b82f6' : normalizeItemStatus(i, group.processStep) === 'Cooking' ? '#16a34a' : '#fbbf24'}"></span>${normalizeItemStatus(i, group.processStep).toUpperCase()}
+                                    </div>
                                 </div>
-                                <button class="check-btn" onclick="toggleItemDone('${itemId}', '${i._docId}', '${nameStr}', '${notesStr}', ${i.qty}, '${addonsParam}')">✓</button>
+                                <div style="display:flex; gap:6px; align-items:center;">
+                                    <button class="check-btn" onclick="toggleItemDone('${itemId}', '${i._docId}', '${nameStr}', '${notesStr}', ${i.qty}, '${addonsParam}')">✓</button>
+                                </div>
                             </li>
                             `;
                         }).join('')}
                     </ul>
-                    ${group.processStep === 'Pending' ? `<button class="btn-prepare" onclick="startPrep('${group.docIds.join(',')}')">👨‍🍳 START PREPARING</button>` : ''}
+                    ${group.processStep === 'Pending' ? `<button class="btn-prepare" onclick="startPrep('${group.docIds[0]}')">👨‍🍳 START PREPARING</button>` : ''}
                 `;
                 (group.processStep === "Preparing" ? rackPreparing : rackPending).appendChild(ticket);
             });
@@ -410,10 +419,10 @@
                                 const completed = (item.completedQty || 0) + 1;
 
                                 if (completed >= currentQty) {
-                                    return { ...item, completedQty: completed, isDone: true };
+                                    return { ...item, completedQty: completed, isDone: true, status: 'Served' };
                                 } else {
                                     activeItemCount++; 
-                                    return { ...item, completedQty: completed };
+                                    return { ...item, completedQty: completed, status: 'Cooking' };
                                 }
                             }
                             if (item.isDone !== true) {
@@ -423,8 +432,13 @@
                         });
 
                         if (updated) {
-                            const payload = { items: updatedItems };
-                            if (activeItemCount === 0) {
+                            const anyCooking = updatedItems.some(item => item.status === 'Cooking' && item.isDone !== true);
+                            const allServed = updatedItems.every(item => item.isDone === true || (Number(item.completedQty) || 0) >= (Number(item.qty) || 1));
+                            const payload = {
+                                items: updatedItems,
+                                processStep: anyCooking ? 'Preparing' : (allServed ? 'Preparing' : 'Pending')
+                            };
+                            if (allServed) {
                                 payload.status = "Served";
                                 payload.servedAt = firebase.firestore.FieldValue.serverTimestamp();
                             }
