@@ -1,7 +1,7 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <base href="/">
+    <base href="./">
     <meta charset="UTF-8">
     <meta name="google-site-verification" content="0zC3FfybV_8OXbcH8KL_r1yCflzQKsPQ7vFuSO6js7E" />
     <title>Admin Sales History & Analytics</title>
@@ -300,9 +300,9 @@
         </div>
         <ul class="nav-menu">
             <li class="active"><a href="#">📊 Daily Sales</a></li>
-            <li><a href="monthly-report.html">📈 Monthly Report</a></li>
+            <li><a href="monthly-report.html">📅 Monthly Report</a></li>
             <li><a href="inventory.html">📦 Inventory</a></li>
-            <li><a href="banquet-inventory.html">📦 Banquet Inventory</a></li>
+            <li><a href="banquet-inventory.html">📦Banquet Inventory</a></li>
             <li><a href="reservations.html">📝 Reservation</a></li>
             <li><a href="records.html">📄 Reservation Record</a></li>
         </ul>
@@ -389,7 +389,7 @@
                     <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 15px;">
                         <div class="stat-card card-yellow">
                             <small style="color: #664d03;">Avg Rating</small>
-                            <div id="avg-rating" style="font-size: 1.4rem; font-weight: 800; color: #664d03; margin-top: 5px;">0.0 â˜…</div>
+                            <div id="avg-rating" style="font-size: 1.4rem; font-weight: 800; color: #664d03; margin-top: 5px;">0.0 ★</div>
                         </div>
                         <div class="feedback-list-container">
                             <small style="font-weight: 700; color: #a1a5b7; font-size: 0.65rem; display: block; margin-bottom: 5px;">RECENT FEEDBACK</small>
@@ -429,7 +429,7 @@
         let currentDaySalesData = []; // Array variable to track data safely across components
         const dateSelector = document.getElementById('date-selector');
         
-        // SAFE TIMEZONE LOCK: Pulls precise local date matching Asia/Manila (UTC+8)
+        // 🇵🇭 SAFE TIMEZONE LOCK: Pulls precise local date matching Asia/Manila (UTC+8)
         function setToday() { 
             const now = new Date(); 
             const phDateStr = now.toLocaleDateString('en-US', {
@@ -444,7 +444,7 @@
         }
         setToday();
 
-        // SAFE TIMEZONE LOCK: Forces timestamps into local PH 12-hour values cleanly
+        // 🇵🇭 SAFE TIMEZONE LOCK: Forces timestamps into local PH 12-Hour values cleanly
         function formatTo12HourAMPM(dateObj) {
             return dateObj.toLocaleTimeString('en-US', {
                 timeZone: 'Asia/Manila',
@@ -489,7 +489,7 @@
             if (!auth.currentUser) return;
             const selectedDate = dateSelector.value;
             
-            // SAFE TIMEZONE LOCK: Configures query filters to align precisely to PH midnight/closing boundaries
+            // 🇵🇭 SAFE TIMEZONE LOCK: Configures query filters to align precisely to PH midnight/closing boundaries
             const start = new Date(`${selectedDate}T00:00:00+08:00`);
             const end = new Date(`${selectedDate}T23:59:59.999+08:00`);
             

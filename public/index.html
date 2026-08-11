@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <base href="/">
+    <base href="./">
     <meta charset="UTF-8">
     <meta name="google-site-verification" content="0zC3FfybV_8OXbcH8KL_r1yCflzQKsPQ7vFuSO6js7E" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -462,9 +462,9 @@
 
     <div id="table-entry" class="modal-overlay">
         <div class="modal-box">
-            <h3 style="margin-top:0">Table Number</h3>
+            <h3 id="table-title" style="margin-top:0">Table Number</h3>
             <input type="number" id="table-input" placeholder="0" pattern="\d*" style="width: 100px; height: 60px; font-size: 2rem; text-align: center; margin: 15px 0; border: 2px solid var(--gold); border-radius: 10px; background: #333; color: white;">
-            <button class="pay-btn" onclick="saveTableAndStart()" style="background: var(--deep-red);">CONTINUE</button>
+            <button type="button" class="pay-btn" onclick="saveTableAndStart()" style="background: var(--deep-red);">CONTINUE</button>
             <p onclick="goBackToOrderType()" style="color: #888; cursor: pointer; margin-top: 15px; font-size: 0.9rem; text-decoration: underline;">Change Order Type</p>
         </div>
     </div>
@@ -1382,7 +1382,7 @@
 
     // --- ORIGINAL LOGIC --- (Runs for Take Out, or if there is no QR table)
     const modal = document.getElementById('table-entry');
-    const title = modal.querySelector('h2');
+    const title = modal ? modal.querySelector('#table-title') : null;
     
     // Safety check: only change if elements exist
     if (title) {
@@ -1395,15 +1395,25 @@
 }
 
         function saveTableAndStart() { 
-    let t = document.getElementById('table-input').value; 
-    if(!t) return alert("Please enter a number");
+    const t = document.getElementById('table-input').value.trim(); 
+    if (!t) {
+        alert("Please enter a number");
+        return;
+    }
 
-    // Check what mode we are in
+    if (!orderType) {
+        alert("Please choose Dine In or Take Out before continuing.");
+        return;
+    }
+
+    // Determine the formatted table/queue label
     if (orderType === "Take Out") {
         tableNumber = "Take Out #" + t; 
     } else {
         tableNumber = "Table " + t; 
     }
+
+    console.log('[ACTION] saveTableAndStart', { orderType, tableNumber });
     sessionStorage.setItem('currentTableNumber', tableNumber);
 
     startLiveSync(tableNumber);
