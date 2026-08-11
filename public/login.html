@@ -59,6 +59,7 @@
         // 1. If user is already logged in, send them straight to inventory!
         auth.onAuthStateChanged(user => { 
             if (user) {
+                // After successful admin login, go to the admin dashboard (Daily Sales)
                 window.location.href = "dailysales.html"; 
             }
         });

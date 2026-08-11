@@ -65,8 +65,7 @@
         .nav-menu { list-style: none; padding: 20px 0; margin: 0; flex-grow: 1; }
         .nav-menu li { padding: 5px 20px; }
         .nav-menu a { display: flex; align-items: center; padding: 12px 15px; color: #9899ac; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 0.95rem; transition: 0.3s; }
-        .nav-menu a:hover, .nav-menu li.active a { background: var(--sidebar-hover); color: white; }
-        .nav-menu li.active a { border-left: 4px solid var(--primary); background: rgba(211, 15, 15, 0.1); color: var(--primary); }
+        .nav-menu a:hover, .nav-menu li.active a { background: var(--primary); color: white; box-shadow: 0 2px 8px rgba(211,15,15,0.12); }
 
         /* Main Content Layout */
         .main-content { flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding: 30px 40px; }
@@ -174,6 +173,7 @@
         <ul class="nav-menu">
             <li><a href="dailysales.html">📊 Daily Sales</a></li>
             <li><a href="monthly-report.html">📅 Monthly Report</a></li>
+            <li><a href="menu-availability.html">🗂️ Menu Availability</a></li>
             <li class="active"><a href="#">📦 Inventory</a></li>
             <li><a href="banquet-inventory.html">📦Banquet Inventory</a></li>
             <li><a href="reservations.html">📝 Reservation</a></li>

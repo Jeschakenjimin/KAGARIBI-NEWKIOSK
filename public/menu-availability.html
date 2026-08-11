@@ -21,8 +21,7 @@
         .nav-menu { list-style: none; padding: 20px 0; margin: 0; flex-grow: 1; }
         .nav-menu li { padding: 5px 20px; }
         .nav-menu a { display: flex; padding: 12px 15px; color: #9899ac; text-decoration: none; border-radius: 8px; font-weight: 600; transition: 0.3s; }
-        .nav-menu a:hover, .nav-menu li.active a { background: #2b2b40; color: white; }
-        .nav-menu li.active a { border-left: 4px solid var(--primary); color: var(--primary); }
+        .nav-menu a:hover, .nav-menu li.active a { background: var(--primary); color: white; box-shadow: 0 2px 8px rgba(211,15,15,0.12); }
         .main-content { flex-grow: 1; overflow-y: auto; padding: 30px 40px; }
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .search-box { margin-bottom: 20px; display: flex; gap: 10px; }
@@ -61,21 +60,12 @@
     </style>
 </head>
 <body>
-    <div id="login-overlay">
-        <div class="login-box">
-            <h2>ADMIN LOGIN</h2>
-            <input type="text" id="admin-email" placeholder="Email">
-            <input type="password" id="admin-password" placeholder="Password">
-            <button class="btn-login" onclick="checkLogin()">Unlock Menu Management</button>
-            <p id="login-error"></p>
-        </div>
-    </div>
+    <!-- Menu availability now relies on the central admin login page (login.html).
+         Sidebar simplified to show only a Back to Menu link as requested. -->
     <aside class="sidebar">
         <div class="sidebar-header"><h2>KAGARIBI <span>ADMIN</span></h2></div>
         <ul class="nav-menu">
-            <li><a href="dailysales.html">📊 Sales</a></li>
-            <li><a href="inventory.html">📦 Inventory</a></li>
-            <li class="active"><a href="#">🍽️ Menu Availability</a></li>
+            <li class="active"><a href="#" onclick="backToMenu(event)">⬅️ Back to Menu</a></li>
         </ul>
         <div class="sidebar-footer">
             <button class="btn-logout" onclick="adminLogout()">🚪 Logout</button>
@@ -125,11 +115,6 @@
         ];
         let allMenuItems = [];
         let tempAdminMode = false;
-        // Temporary fallback credentials kept for emergency only; not used by default.
-        const TEMP_ADMIN_FALLBACKS = [
-            { email: 'adminme@gmail.com', password: 'admin80910' },
-            { email: 'admin@gmail.com', password: '12345' }
-        ];
 
         function getMenuData() {
             if (typeof MENU_DATABASE !== 'undefined') {
@@ -138,35 +123,15 @@
             return FALLBACK_MENU_DATA;
         }
 
-        function handleAdminLogin(fallbackMode = false) {
-            tempAdminMode = fallbackMode;
-            document.getElementById('login-overlay').style.display = 'none';
-            loadMenuItems();
-        }
-
-        async function checkLogin() {
-            const email = document.getElementById('admin-email').value;
-            const pass = document.getElementById('admin-password').value;
-            try {
-                await auth.signInWithEmailAndPassword(email, pass);
-            } catch (err) {
-                // Do not auto-fallback to local-mode. Require valid Firebase credentials.
-                document.getElementById('login-error').innerText = err.message + ' (Firebase auth required)';
-                document.getElementById('login-error').style.display = 'block';
-            }
-        }
         function adminLogout() {
             // Sign out of Firebase and reload to require login again
-            auth.signOut().then(() => location.reload());
+            auth.signOut().then(() => location.href = 'login.html');
         }
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                document.getElementById('login-overlay').style.display = 'none';
-                loadMenuItems();
-            } else {
-                document.getElementById('login-overlay').style.display = 'flex';
-            }
-        });
+
+        // Since admin login is handled via `login.html`, this page assumes the
+        // user arrives already authenticated (login.html redirects here after auth).
+        // Attempt to load data immediately; if unauthenticated, Firestore calls will fail
+        // and the UI will fall back to local read-only mode.
         function loadLocalAvailability() {
             try {
                 const stored = localStorage.getItem('menuAvailabilityFallback');
@@ -335,6 +300,30 @@
         }
         document.getElementById('searchInput').addEventListener('input', renderItems);
         document.getElementById('categoryFilter').addEventListener('change', renderItems);
+
+        // Ensure the menu loads when the page is opened. Login is handled by login.html,
+        // but this page will attempt to load data regardless and fall back to local data.
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                // Show a quick initializing status
+                setSyncStatus('Initializing', new Date());
+            } catch (e) { /* ignore */ }
+            // Call the loader; it handles Firestore errors and local fallback.
+            loadMenuItems();
+        });
+    </script>
+    <script>
+        function backToMenu(e) {
+            e.preventDefault();
+            try {
+                // If auth is available and user logged in, go to admin dashboard; otherwise go to login
+                if (typeof auth !== 'undefined') {
+                    const user = auth.currentUser;
+                    if (user) return window.location.href = 'dailysales.html';
+                }
+            } catch (err) { /* ignore */ }
+            window.location.href = 'login.html';
+        }
     </script>
 </body>
 </html>
