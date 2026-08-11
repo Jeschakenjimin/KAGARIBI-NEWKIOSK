@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -11,26 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
 
-    <script>
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyCz_69H0GEPWYkbLtB1wku1rtccGHrlScc",
-            authDomain: "kagaribi-kiosk-web.firebaseapp.com",
-            projectId: "kagaribi-kiosk-web",
-            storageBucket: "kagaribi-kiosk-web.firebasestorage.app",
-            messagingSenderId: "1096577138191",
-            appId: "1:1096577138191:web:7ce4fa4bbeaa6e13f6ad7a",
-            measurementId: "G-C3WN7GK9QM"
-        };
-
-        // Initialize Firebase globally using CDN Compat SDK
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-    </script>
+    <script src="firebase-config.js"></script>
 
     <style>
         
@@ -140,22 +121,22 @@
             <h2>KAGARIBI <span>ADMIN</span></h2>
         </div>
         <ul class="nav-menu">
-            <li><a href="history.html">📊 Daily Sales</a></li>
-            <li><a href="monthly-report.html">📅 Monthly Report</a></li>
-            <li><a href="inventory.html">📦 Inventory</a></li> 
-            <li><a href="banquet-inventory.html">📦Banquet Inventory</a></li>
-            <li><a href="reservations.html">📝 Reservation</a></li>
-            <li class="active"><a href="#">📄 Reservation Record </a></li>
+            <li><a href="history.html">ðŸ“Š Daily Sales</a></li>
+            <li><a href="monthly-report.html">ðŸ“… Monthly Report</a></li>
+            <li><a href="inventory.html">ðŸ“¦ Inventory</a></li> 
+            <li><a href="banquet-inventory.html">ðŸ“¦Banquet Inventory</a></li>
+            <li><a href="reservations.html">ðŸ“ Reservation</a></li>
+            <li class="active"><a href="#">ðŸ“„ Reservation Record </a></li>
         </ul>
         <div class="sidebar-footer" style="padding: 20px;">
-            <button style="width:100%; background:transparent; border:1px solid rgba(255,255,255,0.2); color:white; padding:12px; border-radius:8px; cursor:pointer;" onclick="logoutUser()">🚪 Logout</button>
+            <button style="width:100%; background:transparent; border:1px solid rgba(255,255,255,0.2); color:white; padding:12px; border-radius:8px; cursor:pointer;" onclick="logoutUser()">ðŸšª Logout</button>
         </div>
     </aside>
 
     <main class="main-content">
         <header class="header-top">
             <h1>Finished Records</h1>
-            <button class="btn-back" onclick="window.location.href='records.html'">← Back to Monitor</button>
+            <button class="btn-back" onclick="window.location.href='records.html'">â† Back to Monitor</button>
         </header>
 
         <div class="stats-grid">
@@ -256,8 +237,8 @@
                     <div class="guest-info">
                         <h3>${d.name}</h3>
                         <div class="details-text">
-                            <span class="date-badge">📅 ${d.formattedDate}</span> at <strong>${d.time}</strong> 
-                            &nbsp;|&nbsp; 👥 <strong>${d.guests} Guests</strong>
+                            <span class="date-badge">ðŸ“… ${d.formattedDate}</span> at <strong>${d.time}</strong> 
+                            &nbsp;|&nbsp; ðŸ‘¥ <strong>${d.guests} Guests</strong>
                         </div>
                     </div>
                     <div style="text-align: right;">

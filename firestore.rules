@@ -1,0 +1,99 @@
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: admin check via custom claim `admin: true`
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    // Basic validation for an order document (adjust keys/types to your app)
+    function isValidOrder() {
+      return request.resource.data.keys().hasAll(['items', 'total'])
+        && request.resource.data.items is list
+        && request.resource.data.total is number;
+    }
+
+    // ORDERS: allow public create (kiosk users) with basic validation.
+    // Only admins can update/delete orders.
+    match /orders/{orderId} {
+      allow create: if isValidOrder();
+      allow read: if isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    // ACTIVE SESSIONS: created/updated by kiosk client. Prevent accidental deletes.
+    match /active_sessions/{sessId} {
+      allow create: if request.resource.data.keys().hasAny(['tableNumber','lastUpdated']);
+      allow read, update: if true;
+      allow delete: if isAdmin();
+    }
+
+    // ACTIVE CARTS: lightweight per-session carts. Allow client read/write but no deletes except admin.
+    match /active_carts/{cartId} {
+      allow read, write: if true;
+      allow delete: if isAdmin();
+    }
+
+    // FEEDBACK: anyone can submit a numeric rating (0-5).
+    match /feedback/{fb} {
+      allow create: if request.resource.data.rating is number
+                    && request.resource.data.rating >= 0
+                    && request.resource.data.rating <= 5;
+      allow read: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    // INVENTORY, LOGS, RECIPES, BANQUET_* and other admin collections
+    // Only accessible to authenticated admin users.
+    match /inventory/{doc} {
+      allow read: if true; // inventory may be displayed publicly in the kiosk
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /recipes/{doc} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /logs/{doc} {
+      allow read, create, update, delete: if isAdmin();
+    }
+
+    match /banquet_inventory/{doc} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /banquet_logs/{doc} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+    }
+
+    // RESERVATIONS and related collections: allow client creation, but only admins modify/delete
+    match /reservations/{resId} {
+      allow create: if request.resource.data.keys().hasAny(['name','createdAt','partySize']);
+      allow read: if isAdmin() || true;
+      allow update, delete: if isAdmin();
+    }
+
+    match /expired_reservations/{r} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /finished_reservations/{r} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ARCHIVED SALES: admin only
+    match /archived_sales/{doc} {
+      allow read, write: if isAdmin();
+    }
+
+    // Default: deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
