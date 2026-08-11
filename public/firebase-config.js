@@ -1,12 +1,12 @@
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCz_69H0GEPWYkbLtB1wku1rtccGHrlScc",
-  authDomain: "kagaribi-kiosk-web.firebaseapp.com",
-  projectId: "kagaribi-kiosk-web",
-  storageBucket: "kagaribi-kiosk-web.firebasestorage.app",
-  messagingSenderId: "1096577138191",
-  appId: "1:1096577138191:web:7ce4fa4bbeaa6e13f6ad7a",
-  measurementId: "G-C3WN7GK9QM"
+  apiKey: "AIzaSyAYPxqPLi99eU43pF4fcPFBM2HmCLaQOVs",
+  authDomain: "kagaribi-kiosk-web-f8314.firebaseapp.com",
+  projectId: "kagaribi-kiosk-web-f8314",
+  storageBucket: "kagaribi-kiosk-web-f8314.firebasestorage.app",
+  messagingSenderId: "771486373618",
+  appId: "1:771486373618:web:a472ccf959be7b5f72e26b",
+  measurementId: "G-B51M10XVML"
 };
 
 // Initialize Firebase globally using CDN Compat SDK

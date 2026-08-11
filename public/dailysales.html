@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -13,26 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-    <script>
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyCz_69H0GEPWYkbLtB1wku1rtccGHrlScc",
-            authDomain: "kagaribi-kiosk-web.firebaseapp.com",
-            projectId: "kagaribi-kiosk-web",
-            storageBucket: "kagaribi-kiosk-web.firebasestorage.app",
-            messagingSenderId: "1096577138191",
-            appId: "1:1096577138191:web:7ce4fa4bbeaa6e13f6ad7a",
-            measurementId: "G-C3WN7GK9QM"
-        };
-
-        // Initialize Firebase globally using CDN Compat SDK
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-    </script>
+    <script src="firebase-config.js"></script>
 
     <style>
         /* Base Variables & Reset */
@@ -243,15 +224,15 @@
             <h2>KAGARIBI <span>ADMIN</span></h2>
         </div>
         <ul class="nav-menu">
-            <li class="active"><a href="#">📊 Daily Sales</a></li>
-            <li><a href="monthly-report.html">📅 Monthly Report</a></li>
-            <li><a href="inventory.html">📦 Inventory</a></li>
-            <li><a href="banquet-inventory.html">📦Banquet Inventory</a></li>
-            <li><a href="reservations.html">📝 Reservation</a></li>
-            <li><a href="records.html">📄 Reservation Record</a></li>
+            <li class="active"><a href="#">ðŸ“Š Daily Sales</a></li>
+            <li><a href="monthly-report.html">ðŸ“… Monthly Report</a></li>
+            <li><a href="inventory.html">ðŸ“¦ Inventory</a></li>
+            <li><a href="banquet-inventory.html">ðŸ“¦Banquet Inventory</a></li>
+            <li><a href="reservations.html">ðŸ“ Reservation</a></li>
+            <li><a href="records.html">ðŸ“„ Reservation Record</a></li>
         </ul>
         <div class="sidebar-footer">
-            <button class="btn-logout" onclick="adminLogout()">🚪 Logout</button>
+            <button class="btn-logout" onclick="adminLogout()">ðŸšª Logout</button>
         </div>
     </aside>
 
@@ -260,8 +241,8 @@
             <h1>Kagaribi Sales Overview</h1>
             <div class="controls">
                 <input type="date" id="date-selector">
-                <button class="btn-excel" onclick="generateExcel()">📊 Export Excel</button>
-                <button class="btn-pdf" onclick="generatePDF()">📄 Export PDF</button>
+                <button class="btn-excel" onclick="generateExcel()">ðŸ“Š Export Excel</button>
+                <button class="btn-pdf" onclick="generatePDF()">ðŸ“„ Export PDF</button>
             </div>
         </header>
 
@@ -282,58 +263,58 @@
                 <div class="summary-box">
                     <div class="stat-card card-green">
                         <small>Total Business Revenue</small>
-                        <div class="amount" id="grand-total">₱0.00</div>
+                        <div class="amount" id="grand-total">â‚±0.00</div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div class="stat-card card-blue">
                             <small>Total Profit</small>
-                            <div class="amount" id="total-profit" style="font-size: 1.4rem;">₱0.00</div>
+                            <div class="amount" id="total-profit" style="font-size: 1.4rem;">â‚±0.00</div>
                         </div>
                         <div class="stat-card card-purple">
                             <small> Total Service Charge </small>
-                            <div class="amount" id="total-service-fee" style="font-size: 1.4rem;">₱0.00</div>
+                            <div class="amount" id="total-service-fee" style="font-size: 1.4rem;">â‚±0.00</div>
                         </div>
                     </div>
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div class="stat-card card-red">
                             <small>Total VAT Amount</small>
-                            <div class="amount" id="total-vat" style="font-size: 1.4rem;">₱0.00</div>
+                            <div class="amount" id="total-vat" style="font-size: 1.4rem;">â‚±0.00</div>
                         </div>
                         <div class="stat-card card-teal">
                             <small>Total Discounts PWD/Senior (20%)</small>
-                            <div class="amount" id="total-discount" style="font-size: 1.4rem;">₱0.00</div>
+                            <div class="amount" id="total-discount" style="font-size: 1.4rem;">â‚±0.00</div>
                         </div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 15px; margin-top: 15px;">
                         <div class="stat-card card-orange">
                             <small>Total Corkage (Outside Alcohol)</small>
-                            <div class="amount" id="total-corkage" style="font-size: 1.4rem;">₱0.00</div>
+                            <div class="amount" id="total-corkage" style="font-size: 1.4rem;">â‚±0.00</div>
                         </div>
                     </div>
 
                     <div class="payment-breakdown">
                         <div class="breakdown-item">
                             <small>Cash</small>
-                            <div id="cash-sum">₱0</div>
+                            <div id="cash-sum">â‚±0</div>
                         </div>
                         <div class="breakdown-divider"></div>
                         <div class="breakdown-item">
                             <small style="color: #007DFE;">GCash</small>
-                            <div id="gcash-sum">₱0</div>
+                            <div id="gcash-sum">â‚±0</div>
                         </div>
                         <div class="breakdown-divider"></div>
                         <div class="breakdown-item">
                             <small style=" color: #27ae60;">Card</small>
-                            <div id="maya-sum">₱0</div>
+                            <div id="maya-sum">â‚±0</div>
                         </div>
                     </div>
                     
                     <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 15px;">
                         <div class="stat-card card-yellow">
                             <small style="color: #664d03;">Avg Rating</small>
-                            <div id="avg-rating" style="font-size: 1.4rem; font-weight: 800; color: #664d03; margin-top: 5px;">0.0 ★</div>
+                            <div id="avg-rating" style="font-size: 1.4rem; font-weight: 800; color: #664d03; margin-top: 5px;">0.0 â˜…</div>
                         </div>
                         <div class="feedback-list-container">
                             <small style="font-weight: 700; color: #a1a5b7; font-size: 0.65rem; display: block; margin-bottom: 5px;">RECENT FEEDBACK</small>
@@ -373,7 +354,7 @@
         let currentDaySalesData = []; // Array variable to track data safely across components
         const dateSelector = document.getElementById('date-selector');
         
-        // 🇵🇭 SAFE TIMEZONE LOCK: Pulls precise local date matching Asia/Manila (UTC+8)
+        // ðŸ‡µðŸ‡­ SAFE TIMEZONE LOCK: Pulls precise local date matching Asia/Manila (UTC+8)
         function setToday() { 
             const now = new Date(); 
             const phDateStr = now.toLocaleDateString('en-US', {
@@ -388,7 +369,7 @@
         }
         setToday();
 
-        // 🇵🇭 SAFE TIMEZONE LOCK: Forces timestamps into local PH 12-Hour values cleanly
+        // ðŸ‡µðŸ‡­ SAFE TIMEZONE LOCK: Forces timestamps into local PH 12-Hour values cleanly
         function formatTo12HourAMPM(dateObj) {
             return dateObj.toLocaleTimeString('en-US', {
                 timeZone: 'Asia/Manila',
@@ -433,7 +414,7 @@
             if (!auth.currentUser) return;
             const selectedDate = dateSelector.value;
             
-            // 🇵🇭 SAFE TIMEZONE LOCK: Configures query filters to align precisely to PH midnight/closing boundaries
+            // ðŸ‡µðŸ‡­ SAFE TIMEZONE LOCK: Configures query filters to align precisely to PH midnight/closing boundaries
             const start = new Date(`${selectedDate}T00:00:00+08:00`);
             const end = new Date(`${selectedDate}T23:59:59.999+08:00`);
             
@@ -532,32 +513,32 @@
                                     ${payMethod.includes('MAYA') ? 'CARD' : payMethod}
                                 </span>
                             </td>
-                            <td style="color:#e67e22;">₱${foodCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                            <td style="color:#8e44ad;">₱${serviceFee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                            <td style="color:#c0392b;">₱${vatAmt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                            <td style="color:#16a085;">₱${discountAmt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                            <td style="color:#7f8c8d; font-size: 0.8rem; font-weight: 600;">${discountIdsDisplay}</td> <td style="color:#d35400; font-weight:600;">₱${parseFloat(corkageAmt).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                            <td style="color:#27ae60; font-weight:600;">₱${grossProfit.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                            <td style="text-align:right; font-weight:700; color:#181c32;">₱${businessTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td style="color:#e67e22;">â‚±${foodCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td style="color:#8e44ad;">â‚±${serviceFee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td style="color:#c0392b;">â‚±${vatAmt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td style="color:#16a085;">â‚±${discountAmt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td style="color:#7f8c8d; font-size: 0.8rem; font-weight: 600;">${discountIdsDisplay}</td> <td style="color:#d35400; font-weight:600;">â‚±${parseFloat(corkageAmt).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td style="color:#27ae60; font-weight:600;">â‚±${grossProfit.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td style="text-align:right; font-weight:700; color:#181c32;">â‚±${businessTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
                         </tr>`;
                 });
 
-                document.getElementById('grand-total').innerText = "₱" + grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2});
-                document.getElementById('total-profit').innerText = "₱" + totalProfit.toLocaleString(undefined, {minimumFractionDigits: 2});
-                document.getElementById('cash-sum').innerText = "₱" + sums.CASH.toLocaleString();
-                document.getElementById('gcash-sum').innerText = "₱" + sums.GCASH.toLocaleString();
-                document.getElementById('maya-sum').innerText = "₱" + sums.MAYA.toLocaleString();
+                document.getElementById('grand-total').innerText = "â‚±" + grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2});
+                document.getElementById('total-profit').innerText = "â‚±" + totalProfit.toLocaleString(undefined, {minimumFractionDigits: 2});
+                document.getElementById('cash-sum').innerText = "â‚±" + sums.CASH.toLocaleString();
+                document.getElementById('gcash-sum').innerText = "â‚±" + sums.GCASH.toLocaleString();
+                document.getElementById('maya-sum').innerText = "â‚±" + sums.MAYA.toLocaleString();
                 
                 const vatElement = document.getElementById('total-vat');
-                if(vatElement) vatElement.innerText = "₱" + totalVat.toLocaleString(undefined, {minimumFractionDigits: 2});
+                if(vatElement) vatElement.innerText = "â‚±" + totalVat.toLocaleString(undefined, {minimumFractionDigits: 2});
                 
                 const discountElement = document.getElementById('total-discount');
-                if(discountElement) discountElement.innerText = "₱" + totalDiscount.toLocaleString(undefined, {minimumFractionDigits: 2});
+                if(discountElement) discountElement.innerText = "â‚±" + totalDiscount.toLocaleString(undefined, {minimumFractionDigits: 2});
                 const corkageElement = document.getElementById('total-corkage');
-                if(corkageElement) corkageElement.innerText = "₱" + totalCorkage.toLocaleString(undefined, {minimumFractionDigits: 2});
+                if(corkageElement) corkageElement.innerText = "â‚±" + totalCorkage.toLocaleString(undefined, {minimumFractionDigits: 2});
                 const serviceFeeElement = document.getElementById('total-service-fee');
                 if(serviceFeeElement) {
-                    serviceFeeElement.innerText = "₱" + totalServiceFee.toLocaleString(undefined, {minimumFractionDigits: 2});
+                    serviceFeeElement.innerText = "â‚±" + totalServiceFee.toLocaleString(undefined, {minimumFractionDigits: 2});
                 }
                 
                 updateScrollableChart(itemCounts);
@@ -569,7 +550,7 @@
             let totalStars = 0;
             allSnap.forEach(doc => totalStars += doc.data().rating);
             const allTimeAvg = allSnap.size > 0 ? (totalStars / allSnap.size).toFixed(1) : "0.0";
-            document.getElementById('avg-rating').innerHTML = `${allTimeAvg} ★ <div style="font-size:0.7rem; font-weight:normal; color: rgba(255,255,255,0.8); margin-top: 3px;">${allSnap.size} reviews</div>`;
+            document.getElementById('avg-rating').innerHTML = `${allTimeAvg} â˜… <div style="font-size:0.7rem; font-weight:normal; color: rgba(255,255,255,0.8); margin-top: 3px;">${allSnap.size} reviews</div>`;
 
             const selectedDate = dateSelector.value;
             const start = new Date(`${selectedDate}T00:00:00+08:00`);
@@ -583,7 +564,7 @@
             dailySnap.forEach(doc => {
                 const data = doc.data();
                 const time = data.timestamp ? formatTo12HourAMPM(data.timestamp.toDate()) : "Now";
-                historyHTML += `<div class="feedback-item"><span style="color:#f1c40f; letter-spacing: 2px;">${"★".repeat(data.rating)}</span><span style="color:#a1a5b7;">${time}</span></div>`;
+                historyHTML += `<div class="feedback-item"><span style="color:#f1c40f; letter-spacing: 2px;">${"â˜…".repeat(data.rating)}</span><span style="color:#a1a5b7;">${time}</span></div>`;
             });
             document.getElementById('rating-history-list').innerHTML = historyHTML || "<p style='color:#ccc; font-size:0.8rem; margin:0;'>No feedback today.</p>";
         }
