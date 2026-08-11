@@ -1565,7 +1565,8 @@
             const modalImg = document.querySelector('.modal-food-img');
             const cartBar = document.getElementById('cart-bar');
             const qtySelect = document.getElementById('temp-qty-val');
-            tempQty = qtySelect ? parseInt(qtySelect.value) : 1;
+            // If a dedicated qty input exists, use it; otherwise preserve the temporary quantity
+            tempQty = qtySelect ? parseInt(qtySelect.value) : tempQty;
             
             // 1. --- OPTION LOGIC ---
             const selectedOption = document.querySelector('.item-option:checked');
