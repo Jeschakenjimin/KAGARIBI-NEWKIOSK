@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="firebase-config.js"></script>
-    <script src="menu-data.js"></script>
+    <script src="../menu-data.js"></script>
     <style>
         * { box-sizing: border-box; }
         :root { --primary: #D30F0F; --sidebar-bg: #1e1e2d; --bg-color: #f3f6f9; --card-bg: #ffffff; --text-main: #3f4254; --text-muted: #a1a5b7; }
@@ -84,6 +84,7 @@
     <main class="main-content">
         <header class="header-top">
             <h1>Menu Item Availability</h1>
+            <div id="syncStatus" style="font-size:0.9rem; color:#666; margin-top:8px;">Mode: unknown</div>
         </header>
         <div class="stats-bar">
             <div class="stat-card">
@@ -124,10 +125,11 @@
         ];
         let allMenuItems = [];
         let tempAdminMode = false;
-        const TEMP_ADMIN_FALLBACK = {
-            email: 'adminme@gmail.com',
-            password: 'admin80910'
-        };
+        // Temporary fallback credentials kept for emergency only; not used by default.
+        const TEMP_ADMIN_FALLBACKS = [
+            { email: 'adminme@gmail.com', password: 'admin80910' },
+            { email: 'admin@gmail.com', password: '12345' }
+        ];
 
         function getMenuData() {
             if (typeof MENU_DATABASE !== 'undefined') {
@@ -148,27 +150,20 @@
             try {
                 await auth.signInWithEmailAndPassword(email, pass);
             } catch (err) {
-                if (email === TEMP_ADMIN_FALLBACK.email && pass === TEMP_ADMIN_FALLBACK.password) {
-                    handleAdminLogin(true);
-                    return;
-                }
-                document.getElementById('login-error').innerText = err.message;
+                // Do not auto-fallback to local-mode. Require valid Firebase credentials.
+                document.getElementById('login-error').innerText = err.message + ' (Firebase auth required)';
                 document.getElementById('login-error').style.display = 'block';
             }
         }
         function adminLogout() {
-            if (tempAdminMode) {
-                tempAdminMode = false;
-                location.reload();
-                return;
-            }
+            // Sign out of Firebase and reload to require login again
             auth.signOut().then(() => location.reload());
         }
         auth.onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('login-overlay').style.display = 'none';
                 loadMenuItems();
-            } else if (!tempAdminMode) {
+            } else {
                 document.getElementById('login-overlay').style.display = 'flex';
             }
         });
@@ -193,20 +188,26 @@
             try {
                 allMenuItems = JSON.parse(JSON.stringify(getMenuData()));
                 let availabilityMap = {};
-                if (!tempAdminMode) {
+                try {
                     const doc = await db.collection('menu-availability').doc('items').get();
                     availabilityMap = doc.exists ? (doc.data().availability || {}) : {};
-                } else {
-                    availabilityMap = loadLocalAvailability();
+                } catch (error) {
+                    if (tempAdminMode) {
+                        availabilityMap = loadLocalAvailability();
+                    } else {
+                        throw error;
+                    }
                 }
                 allMenuItems.forEach(item => {
                     item.isAvailable = availabilityMap.hasOwnProperty(item.id) ? availabilityMap[item.id] : true;
                 });
                 renderItems();
                 populateCategories();
-                updateStats();
+                        updateStats();
+                        setSyncStatus('Firestore', new Date());
             } catch (error) {
-                console.error('Error:', error);
+                console.error('Error loading availability from Firestore:', error);
+                // Load local availability for display only; do not auto-enable fallback mode.
                 allMenuItems = JSON.parse(JSON.stringify(getMenuData()));
                 const availabilityMap = loadLocalAvailability();
                 allMenuItems.forEach(item => {
@@ -215,11 +216,30 @@
                 renderItems();
                 populateCategories();
                 updateStats();
-                if (!tempAdminMode) {
-                    tempAdminMode = true;
-                    console.warn('Firebase unavailable; switched to local fallback mode.');
-                }
+                setSyncStatus('Local (read-only)', new Date());
             }
+        }
+
+        function setSyncStatus(mode, date) {
+            try {
+                const el = document.getElementById('syncStatus');
+                if (!el) return;
+                const ts = date ? (new Date(date)).toLocaleString() : '—';
+                el.textContent = `Mode: ${mode} · Last: ${ts}`;
+                el.style.color = mode.toLowerCase().includes('local') ? '#cc0000' : '#1a7f1a';
+            } catch (e) { console.warn('setSyncStatus error', e); }
+        }
+        function showToast(message, duration = 2500) {
+            try {
+                let t = document.getElementById('availability-toast');
+                if (t) { t.remove(); }
+                t = document.createElement('div');
+                t.id = 'availability-toast';
+                t.style.cssText = 'position:fixed; right:20px; bottom:20px; background:#111; color:#fff; padding:12px 18px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.3); z-index:99999; font-weight:700;';
+                t.innerText = message;
+                document.body.appendChild(t);
+                setTimeout(() => { t.style.transition = 'opacity 300ms'; t.style.opacity = '0'; setTimeout(()=>t.remove(), 300); }, duration);
+            } catch (e) { console.warn('showToast error', e); }
         }
         function renderItems() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
@@ -271,26 +291,38 @@
             allMenuItems.forEach(item => {
                 availabilityMap[item.id] = item.isAvailable;
             });
+            let firestoreFailed = false;
             try {
-                if (!tempAdminMode) {
-                    await db.collection('menu-availability').doc('items').set({
-                        availability: availabilityMap,
-                        lastUpdated: new Date(),
-                        updatedBy: auth.currentUser ? auth.currentUser.email : 'admin'
-                    });
-                } else {
-                    saveLocalAvailability(availabilityMap);
-                }
+                await db.collection('menu-availability').doc('items').set({
+                    availability: availabilityMap,
+                    lastUpdated: new Date(),
+                    updatedBy: auth.currentUser ? auth.currentUser.email : 'admin'
+                });
             } catch (error) {
-                console.error('Error:', error);
-                if (tempAdminMode) {
-                    saveLocalAvailability(availabilityMap);
-                } else {
-                    alert('Error updating item availability');
-                }
+                console.error('Firestore update failed:', error);
+                firestoreFailed = true;
+            }
+            console.log('toggleItemAvailability:', { itemId, newStatus, firestoreFailed });
+            console.log('availabilityMap sample:', Object.keys(availabilityMap).slice(0,10));
+            if (!firestoreFailed) {
+                setSyncStatus('Firestore', new Date());
+                try { saveLocalAvailability(availabilityMap); } catch(e) { console.warn('saveLocal after firestore failed', e); }
+            }
+            if (firestoreFailed && tempAdminMode) {
+                saveLocalAvailability(availabilityMap);
+                setSyncStatus('Local (fallback)', new Date());
+            } else if (firestoreFailed && !tempAdminMode) {
+                alert('Error updating item availability. Changes will not be saved.');
             }
             updateStats();
             renderItems();
+            // show immediate toast confirmation
+            try {
+                const total = allMenuItems.length;
+                const available = allMenuItems.filter(item => item.isAvailable).length;
+                const unavailable = total - available;
+                showToast(`Saved — Unavailable: ${unavailable}`);
+            } catch (e) { console.warn('toast error', e); }
         }
         function updateStats() {
             const total = allMenuItems.length;
@@ -299,6 +331,7 @@
             document.getElementById('totalItems').textContent = total;
             document.getElementById('availableCount').textContent = available;
             document.getElementById('unavailableCount').textContent = unavailable;
+            console.log('updateStats:', { total, available, unavailable });
         }
         document.getElementById('searchInput').addEventListener('input', renderItems);
         document.getElementById('categoryFilter').addEventListener('change', renderItems);

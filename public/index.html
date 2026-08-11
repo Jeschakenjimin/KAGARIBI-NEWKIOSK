@@ -235,6 +235,52 @@
     pointer-events: none;
 }
 
+/* Unavailable modal overlay */
+.modal-food-img-wrapper {
+    position: relative;
+    width: 100%;
+    display: block;
+}
+.modal-food-img-wrapper.unavailable::after {
+    content: 'UNAVAILABLE';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffe082;
+    font-size: 2.3rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    background: rgba(0, 0, 0, 0.35);
+    transform: rotate(-18deg);
+    opacity: 1;
+    pointer-events: none;
+}
+.modal-food-img-wrapper.unavailable {
+    overflow: hidden;
+}
+.modal-unavailable-badge {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 15;
+    background: rgba(206, 17, 38, 0.95);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+}
+.pay-btn.add-disabled {
+    background: #666 !important;
+    cursor: not-allowed !important;
+    opacity: 0.65 !important;
+    pointer-events: none !important;
+}
+
         .qty-controls { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 15px; background: rgba(255,255,255,0.08); padding: 12px 10px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.16); }
         .qty-btn { width: 46px; height: 46px; border-radius: 16px; border: 1px solid rgba(245, 158, 11, 0.4); background: #f59e0b; color: #fff; font-size: 1rem; font-weight: 700; line-height: 1; cursor: pointer; transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, color 120ms ease; }
         .qty-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 16px rgba(0,0,0,0.16); }
@@ -1149,27 +1195,63 @@
             }
         });
 
-        // Load availability from Firestore on page load
+        // Keep a Firestore listener so menu availability updates appear live
+        let availabilityListenerUnsubscribe = null;
+        const LOCAL_AVAILABILITY_KEY = 'menuAvailabilityFallback';
+
+        function loadLocalAvailability() {
+            try {
+                const stored = localStorage.getItem(LOCAL_AVAILABILITY_KEY);
+                return stored ? JSON.parse(stored) : {};
+            } catch (error) {
+                console.warn('Could not parse local availability:', error);
+                return {};
+            }
+        }
+
+        function applyAvailabilityMap(availabilityMap) {
+            MENU.forEach(item => {
+                item.isAvailable = availabilityMap.hasOwnProperty(item.id) ? availabilityMap[item.id] : true;
+            });
+            const activeCategory = document.querySelector('.cat-btn.active');
+            if (activeCategory) {
+                const categoryName = activeCategory.id.replace('cat-', '');
+                renderMenu(categoryName);
+            }
+        }
+
+        window.addEventListener('storage', event => {
+            if (event.key === LOCAL_AVAILABILITY_KEY) {
+                try {
+                    const availabilityMap = event.newValue ? JSON.parse(event.newValue) : {};
+                    applyAvailabilityMap(availabilityMap);
+                } catch (err) {
+                    console.warn('Failed to sync local availability from storage event:', err);
+                }
+            }
+        });
+
+        // Load availability from Firestore on page load and keep syncing changes
         async function loadMenuAvailability() {
             try {
-                const doc = await db.collection('menu-availability').doc('items').get();
-                if (doc.exists) {
-                    const availabilityMap = doc.data().availability || {};
-                    MENU.forEach(item => {
-                        if (availabilityMap.hasOwnProperty(item.id)) {
-                            item.isAvailable = availabilityMap[item.id];
-                        }
-                    });
-                    // Refresh menu display if already rendered
-                    const activeCategory = document.querySelector('.cat-btn.active');
-                    if (activeCategory) {
-                        const categoryName = activeCategory.id.replace('cat-', '');
-                        renderMenu(categoryName);
-                    }
+                if (availabilityListenerUnsubscribe) {
+                    availabilityListenerUnsubscribe();
+                    availabilityListenerUnsubscribe = null;
                 }
+
+                availabilityListenerUnsubscribe = db.collection('menu-availability').doc('items')
+                    .onSnapshot(doc => {
+                        const availabilityMap = doc.exists ? doc.data().availability || {} : loadLocalAvailability();
+                        applyAvailabilityMap(availabilityMap);
+                    }, error => {
+                        console.log('Note: Could not listen to Firestore availability updates:', error);
+                        const fallbackAvailability = loadLocalAvailability();
+                        applyAvailabilityMap(fallbackAvailability);
+                    });
             } catch (error) {
                 console.log('Note: Could not load availability from Firestore:', error);
-                // Continue with default (all available)
+                const fallbackAvailability = loadLocalAvailability();
+                applyAvailabilityMap(fallbackAvailability);
             }
         }
 
@@ -1451,7 +1533,7 @@
 
         // 2. RENDER THE CARD: Then append the normal item code layout directly behind it
         htmlElementString += `
-        <div class="card menu-anim ${!i.isAvailable ? 'unavailable' : ''}" onclick="openItemModal(${i.id})" style="animation-delay: ${idx * 0.05}s; position: relative;">
+        <div class="card menu-anim ${!i.isAvailable ? 'unavailable' : ''}" onclick="${i.isAvailable ? `openItemModal(${i.id})` : 'return false;'}" style="animation-delay: ${idx * 0.05}s; position: relative; cursor: ${i.isAvailable ? 'pointer' : 'not-allowed'};">
             ${i.isBestSeller ? `<div style="position: absolute; top: 10px; left: 10px; background: #ce1126; color: white; font-size: 0.6rem; padding: 4px 9px; border-radius: 4px; font-weight: bold; z-index: 5;">BEST SELLER</div>` : ''}
             ${!i.isAvailable ? `<div class="unavailable-overlay">
                 <div class="sold-out-badge">
@@ -1474,8 +1556,8 @@
                 
                 <div>
                     <div style="color: #ce1126; font-weight: 800; font-size: 1.2rem; margin-bottom: 8px;">₱${i.price}</div>
-                    <button style="width: 100%; background: var(--gold); color: black; border: none; padding: 10px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; cursor: pointer;">
-                        Add to Order
+                    <button style="width: 100%; background: ${i.isAvailable ? 'var(--gold)' : '#ccc'}; color: ${i.isAvailable ? 'black' : '#666'}; border: none; padding: 10px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; cursor: ${i.isAvailable ? 'pointer' : 'not-allowed'};" ${i.isAvailable ? '' : 'disabled'}>
+                        ${i.isAvailable ? 'Add to Order' : 'Unavailable'}
                     </button>
                 </div>
             </div>
@@ -1525,11 +1607,7 @@
     selectedItem = MENU.find(m => m.id === id);
     
     // Check if item is available
-    if (!selectedItem.isAvailable) {
-        alert(`❌ ${selectedItem.jname || selectedItem.name} is currently SOLD OUT.\n\nPlease select another item.`);
-        return;
-    }
-    
+    const isUnavailable = !selectedItem.isAvailable;
     tempQty = 1;
     document.getElementById('special-notes').value = "";
 
@@ -1577,7 +1655,10 @@
 
     // 3. Render the Modal
     document.getElementById('modal-content').innerHTML = `
-        <img src="${selectedItem.img}" class="modal-food-img">
+        <div class="modal-food-img-wrapper${isUnavailable ? ' unavailable' : ''}">
+            <img src="${selectedItem.img}" class="modal-food-img">
+            ${isUnavailable ? '<div class="modal-unavailable-badge">UNAVAILABLE</div>' : ''}
+        </div>
         <div style="text-align: center; margin: 5px 0 10px;">
             <h2 style="margin: 0 0 4px; color: white;">${selectedItem.name}</h2>
             ${selectedItem.jname ? `<div style="color: var(--gold); font-size: 1.4rem; font-weight: 700; letter-spacing: 0.02em; margin-bottom: 6px;">${selectedItem.jname}</div>` : ''}
@@ -1593,6 +1674,10 @@
                     <button type="button" class="qty-btn${tempQty === q ? ' active' : ''}" data-qty="${q}" onclick="manualQtyUpdate(${q})">${q}</button>
                 `).join('')}
             </div>
+        </div>
+        <div style="margin-top: 20px;">
+            <button class="pay-btn${isUnavailable ? ' add-disabled' : ''}" onclick="${isUnavailable ? 'void(0)' : 'addToCartFinal()'}">${isUnavailable ? 'Unavailable' : 'ADD TO CART'}</button>
+            <button class="pay-btn" onclick="closeModals()" style="background:gray; border:1px solid #444; color:white;">CANCEL</button>
         </div>`;
         
     document.getElementById('item-modal').style.display = 'flex';
@@ -2094,8 +2179,14 @@ function handleSearch(query) {
     // Maps out the layout while safely maintaining the "Add to Order" button structure
     gridContainer.innerHTML = searchResults.map((i, idx) => {
         return `
-        <div class="card menu-anim" onclick="openItemModal(${i.id})" style="animation-delay: ${idx * 0.03}s; position: relative; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;">
+        <div class="card menu-anim ${!i.isAvailable ? 'unavailable' : ''}" onclick="${i.isAvailable ? `openItemModal(${i.id})` : 'return false;'}" style="animation-delay: ${idx * 0.03}s; position: relative; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; cursor: ${i.isAvailable ? 'pointer' : 'not-allowed'};">
             ${i.isBestSeller ? `<div class="badge" style="position: absolute; top: 10px; left: 10px; background: #ce1126; color: white; font-size: 0.6rem; padding: 4px 9px; border-radius: 4px; font-weight: bold; z-index: 5;">BEST SELLER</div>` : ''}
+            ${!i.isAvailable ? `<div class="unavailable-overlay">
+                <div class="sold-out-badge">
+                    <div style="font-size: 1.2rem; margin-bottom: 4px;">🚫</div>
+                    SOLD OUT
+                </div>
+            </div>` : ''}
             
             <div>
                 <div class="card-img">
@@ -2112,8 +2203,8 @@ function handleSearch(query) {
                 <div class="price-row" style="margin-bottom: 8px;">
                     <div class="price" style="color: #ce1126; font-weight: 800; font-size: 1.15rem;">₱${(i.price || 0).toFixed(2)}</div>
                 </div>
-                <button class="add-btn" style="width: 100%; background: var(--gold, #FFC107); color: black; border: none; padding: 8px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; cursor: pointer;">
-                    Add to Order
+                <button class="add-btn" style="width: 100%; background: ${i.isAvailable ? 'var(--gold, #FFC107)' : '#ccc'}; color: ${i.isAvailable ? 'black' : '#666'}; border: none; padding: 8px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; cursor: ${i.isAvailable ? 'pointer' : 'not-allowed'};" ${i.isAvailable ? '' : 'disabled'}>
+                    ${i.isAvailable ? 'Add to Order' : 'Unavailable'}
                 </button>
             </div>
         </div>`;
