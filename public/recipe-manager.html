@@ -182,7 +182,7 @@
 <body>
 
     <div class="container">
-        <h2>🍣 Recipe Editor</h2>
+        <h2> Recipe Editor</h2>
         
         <div class="top-controls">
             <div style="flex: 2;">
@@ -201,17 +201,17 @@
 
         <div class="action-buttons">
             <button class="btn btn-success" onclick="manualAddRow()">+ Add Ingredient</button>
-            <button class="btn btn-primary" onclick="saveRecipeToFirebase()">💾 Save / Update Recipe</button>
+            <button class="btn btn-primary" onclick="saveRecipeToFirebase()"> Save / Update Recipe</button>
             
-            <button class="btn btn-discard" onclick="clearForm()" style="margin-left: auto;">❌ Cancel / Discard</button>
+            <button class="btn btn-discard" onclick="clearForm()" style="margin-left: auto;"> Cancel / Discard</button>
         </div>
     </div>
 
     <div class="container">
-        <h2>📋 Existing Recipes & Ingredients</h2>
+        <h2> Existing Recipes & Ingredients</h2>
         
         <div class="form-group">
-            <input type="text" id="search-bar" class="search-bar-input" placeholder="🔍 Search for a recipe..." oninput="filterRecipes()">
+            <input type="text" id="search-bar" class="search-bar-input" placeholder=" Search for a recipe..." oninput="filterRecipes()">
         </div>
 
         <div class="recipe-grid" id="recipes-list">
@@ -220,7 +220,7 @@
     </div>
 
     <div class="container">
-        <h2>📦 Master Ingredient Inventory <span id="total-ingredients-count" style="font-size: 1rem; color: #666; font-weight: normal;"></span></h2>
+        <h2> Master Ingredient Inventory <span id="total-ingredients-count" style="font-size: 1rem; color: #666; font-weight: normal;"></span></h2>
         <p style="font-size: 0.9rem; color: #666; margin-top: -15px; margin-bottom: 20px;">
             A complete list of all unique ingredients in your database and the menu items that use them.
         </p>
@@ -278,7 +278,7 @@
                     
                     const editBtn = document.createElement('button');
                     editBtn.className = "btn btn-outline";
-                    editBtn.innerText = "✏️ Edit Recipe";
+                    editBtn.innerText = " Edit Recipe";
                     editBtn.onclick = () => loadRecipeIntoForm(recipeId, ingredients);
                     
                     header.appendChild(editBtn);
@@ -487,17 +487,17 @@
                     ingredients: ingredientsArray
                 });
                 
-                alert(`✅ Recipe for ${recipeId} saved successfully!`);
+                alert(` Recipe for ${recipeId} saved successfully!`);
                 clearForm();
                 
                 loadExistingRecipes();
                 
             } catch (error) {
                 console.error("Error saving recipe:", error);
-                alert("❌ Failed to save recipe. Check the Console (F12) for details.");
+                alert(" Failed to save recipe. Check the Console (F12) for details.");
             } finally {
                 const saveBtn = document.querySelector('.btn-primary');
-                saveBtn.innerText = "💾 Save / Update Recipe";
+                saveBtn.innerText = " Save / Update Recipe";
                 saveBtn.disabled = false;
             }
         }

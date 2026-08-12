@@ -175,7 +175,7 @@
         <div class="column">
             <div class="column-header pending-header">
                 <div class="header-spacer"></div>
-                <div class="header-title">📥 Pending</div>
+                <div class="header-title"> Pending</div>
                 <div class="pagination-controls" id="pending-pagination"></div>
             </div>
             <div class="ticket-grid" id="grid-pending"></div>
@@ -184,7 +184,7 @@
         <div class="column">
             <div class="column-header preparing-header">
                 <div class="header-spacer"></div>
-                <div class="header-title">🔥 Preparing</div>
+                <div class="header-title"> Preparing</div>
                 <div class="pagination-controls" id="preparing-pagination"></div>
             </div>
             <div id="prep-summary-bar" class="prep-summary-bar" style="display: none;"></div>
@@ -344,7 +344,7 @@
                 activeTimers.push({ id: tableId, start: group.time });
 
                 const namesDisplay = group.customerNames.length > 0 
-                    ? `<br><span style="font-size: 0.9rem; font-weight: normal; color: #666;">👤 ${group.customerNames.join(', ')}</span>` 
+                    ? `<br><span style="font-size: 0.9rem; font-weight: normal; color: #666;"> ${group.customerNames.join(', ')}</span>` 
                     : '';
 
                 ticket.innerHTML = `

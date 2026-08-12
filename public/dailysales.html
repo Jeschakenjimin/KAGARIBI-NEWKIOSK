@@ -295,16 +295,16 @@
             <h2>KAGARIBI <span>ADMIN</span></h2>
         </div>
         <ul class="nav-menu">
-            <li class="active"><a href="#">📊 Daily Sales</a></li>
-            <li><a href="monthly-report.html">📅 Monthly Report</a></li>
-            <li><a href="menu-availability.html">🗂️ Menu Availability</a></li>
-            <li><a href="inventory.html">📦 Inventory</a></li>
-            <li><a href="banquet-inventory.html">📦Banquet Inventory</a></li>
-            <li><a href="reservations.html">📝 Reservation</a></li>
-            <li><a href="records.html">📄 Reservation Record</a></li>
+            <li class="active"><a href="#"> Daily Sales</a></li>
+            <li><a href="monthly-report.html"> Monthly Report</a></li>
+            <li><a href="menu-availability.html"> Menu Availability</a></li>
+            <li><a href="inventory.html"> Inventory</a></li>
+            <li><a href="banquet-inventory.html">Banquet Inventory</a></li>
+            <li><a href="reservations.html"> Reservation</a></li>
+            <li><a href="records.html"> Reservation Record</a></li>
         </ul>
         <div class="sidebar-footer">
-            <button class="btn-logout" onclick="adminLogout()">🚪 Logout</button>
+            <button class="btn-logout" onclick="adminLogout()"> Logout</button>
         </div>
     </aside>
 
@@ -313,8 +313,8 @@
             <h1>Kagaribi Sales Overview</h1>
             <div class="controls">
                 <input type="date" id="date-selector">
-                <button class="btn-excel" onclick="generateExcel()">📊 Export Excel</button>
-                <button class="btn-pdf" onclick="generatePDF()">📄 Export PDF</button>
+                <button class="btn-excel" onclick="generateExcel()"> Export Excel</button>
+                <button class="btn-pdf" onclick="generatePDF()"> Export PDF</button>
             </div>
         </header>
 
@@ -386,7 +386,7 @@
                     <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 15px;">
                         <div class="stat-card card-yellow">
                             <small style="color: #664d03;">Avg Rating</small>
-                            <div id="avg-rating" style="font-size: 1.4rem; font-weight: 800; color: #664d03; margin-top: 5px;">0.0 ★</div>
+                            <div id="avg-rating" style="font-size: 1.4rem; font-weight: 800; color: #664d03; margin-top: 5px;">0.0 </div>
                         </div>
                         <div class="feedback-list-container">
                             <small style="font-weight: 700; color: #a1a5b7; font-size: 0.65rem; display: block; margin-bottom: 5px;">RECENT FEEDBACK</small>
@@ -622,7 +622,7 @@
             let totalStars = 0;
             allSnap.forEach(doc => totalStars += doc.data().rating);
             const allTimeAvg = allSnap.size > 0 ? (totalStars / allSnap.size).toFixed(1) : "0.0";
-            document.getElementById('avg-rating').innerHTML = `${allTimeAvg} ★ <div style="font-size:0.7rem; font-weight:normal; color: rgba(255,255,255,0.8); margin-top: 3px;">${allSnap.size} reviews</div>`;
+            document.getElementById('avg-rating').innerHTML = `${allTimeAvg}  <div style="font-size:0.7rem; font-weight:normal; color: rgba(255,255,255,0.8); margin-top: 3px;">${allSnap.size} reviews</div>`;
 
             const selectedDate = dateSelector.value;
             const start = new Date(`${selectedDate}T00:00:00+08:00`);
@@ -636,7 +636,7 @@
             dailySnap.forEach(doc => {
                 const data = doc.data();
                 const time = data.timestamp ? formatTo12HourAMPM(data.timestamp.toDate()) : "Now";
-                historyHTML += `<div class="feedback-item"><span style="color:#f1c40f; letter-spacing: 2px;">${"★".repeat(data.rating)}</span><span style="color:#a1a5b7;">${time}</span></div>`;
+                historyHTML += `<div class="feedback-item"><span style="color:#f1c40f; letter-spacing: 2px;">${"".repeat(data.rating)}</span><span style="color:#a1a5b7;">${time}</span></div>`;
             });
             document.getElementById('rating-history-list').innerHTML = historyHTML || "<p style='color:#ccc; font-size:0.8rem; margin:0;'>No feedback today.</p>";
         }

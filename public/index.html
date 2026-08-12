@@ -445,7 +445,7 @@
 <body>
     
     <div id="splash" onclick="showDining()">
-        <div style="font-size: 5rem;">🏮</div>
+        <div style="font-size: 5rem;"></div>
         <h2 style="letter-spacing: 2px;">KAGARIBI</h2>
         <div style="background: var(--gold); color: black; padding: 12px 25px; border-radius: 30px; font-weight: bold; margin-top: 20px; box-shadow: 0 4px 10px rgba(255,193,7,0.3);">TOUCH TO START</div>
         <div onclick="window.location.href='reservation.html'" style="background: var(--gold); color: black; padding: 12px 38px; border-radius: 30px; font-weight: bold; margin-top: 20px; box-shadow: 0 4px 10px rgba(255,193,7,0.3);">
@@ -456,8 +456,8 @@
 
     <div id="dining">
         <h2 style="color: var(--gold); font-family: 'Fredoka';">Order Type</h2>
-        <div class="choice-btn" onclick="startApp('Dine In')"><span style="font-size:3rem;">🍽️</span><br><h3>DINE IN</h3></div>
-        <div class="choice-btn" onclick="startApp('Take Out')"><span style="font-size:3rem;">🥡</span><br><h3>TAKE OUT</h3></div>
+        <div class="choice-btn" onclick="startApp('Dine In')"><span style="font-size:3rem;"></span><br><h3>DINE IN</h3></div>
+        <div class="choice-btn" onclick="startApp('Take Out')"><span style="font-size:3rem;"></span><br><h3>TAKE OUT</h3></div>
     </div>
 
     <div id="table-entry" class="modal-overlay">
@@ -474,7 +474,7 @@
             <div style="display:flex; justify-content:space-between; align-items: flex-start; padding: 12px 15px 8px 15px;">
                 <div style="display:flex; flex-direction: column; gap: 4px;">
                     <div style="display:flex; align-items:center; gap:6px;">
-                        <span style="font-size: 1.1rem;">🏮</span>
+                        <span style="font-size: 1.1rem;"></span>
                         <b style="color:var(--gold); font-size: 1.3rem; letter-spacing: 1px; font-family: 'Fredoka'; line-height: 1;">KAGARIBI</b>
                     </div>
                     <div style="padding-left: 22px; display: flex; flex-direction: column; gap: 2px;">
@@ -487,7 +487,7 @@
 
             <div class="category-scroll" id="cat-scroll"></div>
             <div id="order-status-container" style="position:relative;">
-                <button id="order-status-toggle" class="order-status-toggle" type="button" style="display:none;" onclick="toggleOrderStatusPanel()">📋 Order Status</button>
+                <button id="order-status-toggle" class="order-status-toggle" type="button" style="display:none;" onclick="toggleOrderStatusPanel()"> Order Status</button>
                 <div id="order-status-panel" class="order-status-panel collapsed" style="display:none;">
                     <div class="order-status-summary" onclick="toggleOrderStatusPanel()">
                         <div class="order-status-summary-text">
@@ -505,7 +505,7 @@
         <main class="menu-container">
             <div id="best-seller-section" style="margin-bottom: 20px;">
                 <h2 id="best-seller-text" style="color: #1a1a1a; font-size: 1.4rem; border-left: 4px solid #ce1126; padding-left: 10px; display: flex; align-items: center; gap: 8px;">
-                    🔥 Best Sellers
+                     Best Sellers
                 </h2>
             </div>
             <div class="grid" id="grid"></div>
@@ -518,7 +518,7 @@
 
         <div class="bottom-search-bar" style="position: fixed; inset: auto 0 0 0; z-index: 999; background: rgba(255,255,255,0.95); box-shadow: 0 -8px 20px rgba(0,0,0,0.08); padding: 12px 16px; display: flex; gap: 10px; align-items: center; justify-content: flex-end; backdrop-filter: blur(10px);">
             <input type="text" id="bottom-search-input" placeholder="Search food items..." oninput="triggerBottomSearch()" style="flex: 1; min-width: 0; padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 28px; font-size: 0.95rem; outline: none; box-sizing: border-box; background: #fff; color: #1a1a1a; display: none;">
-            <button id="bottom-search-button" onclick="onBottomSearchClick()" style="background: #fbbf24; color: #1f2937; border: none; border-radius: 999px; padding: 14px 16px; font-size: 1.35rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">🔍</button>
+            <button id="bottom-search-button" onclick="onBottomSearchClick()" style="background: #fbbf24; color: #1f2937; border: none; border-radius: 999px; padding: 14px 16px; font-size: 1.35rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.08);"></button>
         </div>
     </div>
 
@@ -539,7 +539,7 @@
         <span>YOUR SELECTION</span>
         <div style="display: flex; align-items: center; gap: 15px;">
             <button onclick="confirmClearCart()" style="background: #ce1126; color: white; border: none; padding: 8px 12px; border-radius: 8px; display: flex; align-items: center; gap: 5px; font-size: 0.8rem; cursor: pointer;">
-                <span>🗑️</span> Clear
+                <span></span> Clear
             </button>
             <span onclick="toggleCart(false)" style="font-size:1.8rem; color:#888; cursor: pointer;">&times;</span>
         </div>
@@ -569,7 +569,7 @@
 
     <div id="delete-modal" class="modal-overlay">
         <div class="modal-box" style="background: #1a1a1a; border: 1.5px solid var(--gold);">
-            <div style="font-size: 3rem; margin-bottom: 10px;">🗑️</div>
+            <div style="font-size: 3rem; margin-bottom: 10px;"></div>
             <h3 style="color: white; margin-bottom: 10px;">Remove Item?</h3>
             <p id="delete-msg" style="color: #aaa; font-size: 0.9rem; margin-bottom: 20px;"></p>
             <div style="display: flex; gap: 10px;">
@@ -593,7 +593,7 @@
         overlay.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.9); color:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:24px; z-index:9999; text-align:center;';
         overlay.innerHTML = `
             <div style="max-width: 460px; padding: 0 15px;">
-                <div style="font-size: 100px; margin-bottom: 24px;">⚠️</div>
+                <div style="font-size: 100px; margin-bottom: 24px;"></div>
                 <h1 style="font-size: 34px; font-weight: 700; margin-bottom: 14px; color: #ffcc00;">Session Expired</h1>
                 <p style="font-size: 18px; color: #e5e5e5; line-height: 1.6; margin-bottom: 28px;">
                     Your session has ended due to inactivity. Please scan the QR code to start a new order.
@@ -1493,67 +1493,67 @@
     // Change title based on category
     if (cat === "Popular") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Best Sellers";
+        bestSellerText.innerHTML = " Best Sellers";
     } else if (cat === "Donburi") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Donburi";    
+        bestSellerText.innerHTML = " Donburi";    
     } else if (cat === "Agemono") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Agemono";
+        bestSellerText.innerHTML = " Agemono";
     } else if (cat === "Tenpura") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Tenpura";
+        bestSellerText.innerHTML = " Tenpura";
     } else if (cat === "Ramen") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Ramen";
+        bestSellerText.innerHTML = " Ramen";
     } else if (cat === "Salad") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Salad";
+        bestSellerText.innerHTML = " Salad";
     } else if (cat === "Soba/Udon") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Soba/Udon";
+        bestSellerText.innerHTML = " Soba/Udon";
     } else if (cat === "Grilled Fish") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Grilled Fish";
+        bestSellerText.innerHTML = " Grilled Fish";
     } else if (cat === "Makimono") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Makimono";
+        bestSellerText.innerHTML = " Makimono";
     } else if (cat === "Yakisoba/Takoyaki") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Yakisoba/Takoyaki";
+        bestSellerText.innerHTML = " Yakisoba/Takoyaki";
     } else if (cat === "Ippin-Ryouri") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Ippin-Ryouri";
+        bestSellerText.innerHTML = " Ippin-Ryouri";
     } else if (cat === "Drinks/Dessert") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Drinks/Dessert";
+        bestSellerText.innerHTML = " Drinks/Dessert";
     } else if (cat === "Chahan-Kare Rice ETC") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Chahan-Kare Rice";
+        bestSellerText.innerHTML = " Chahan-Kare Rice";
     } else if (cat === "Sashimi") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Sashimi";
+        bestSellerText.innerHTML = " Sashimi";
     } else if (cat === "Appetizer") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Appetizer";
+        bestSellerText.innerHTML = " Appetizer";
     } else if (cat === "Snacks") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Snacks";
+        bestSellerText.innerHTML = " Snacks";
     } else if (cat === "Lunch Set") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Lunch Set";
+        bestSellerText.innerHTML = " Lunch Set";
     } else if (cat === "Chicken Dishes") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Chicken Dishes";
+        bestSellerText.innerHTML = " Chicken Dishes";
     } else if (cat === "Chinese Dishes") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Chinese Dishes";
+        bestSellerText.innerHTML = " Chinese Dishes";
     } else if (cat === "Add-ons") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Add-ons";
+        bestSellerText.innerHTML = " Add-ons";
     } else if (cat === "Yakitori") {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = "🔥 Yakitori";
+        bestSellerText.innerHTML = " Yakitori";
     } else  {
         bestSellerHeader.style.display = 'none';
     }
@@ -1570,7 +1570,7 @@
         if (currentMinutes < startMinutes || currentMinutes > endMinutes) {
             document.getElementById('grid').innerHTML = `
                 <div style="grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: #555; background: #fff; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-top: 20px;">
-                    <div style="font-size: 3.5rem; margin-bottom: 15px;">🚫</div>
+                    <div style="font-size: 3.5rem; margin-bottom: 15px;"></div>
                     <h3 style="color: #ce1126; font-size: 1.4rem; margin: 0 0 10px 0; font-weight: bold;">ORDER WINDOW CLOSED</h3>
                     <p style="font-size: 0.95rem; color: #666; margin: 0 0 6px 0; line-height: 1.5;">
                         This exclusive menu is only available from <b style="color: #333;">11:30 AM to 3:00 PM</b><br>
@@ -1593,11 +1593,11 @@
         // Create an empty string to accumulate our HTML layout elements
         let htmlElementString = "";
 
-        // 🌟 1. INTERCEPT: If this special flag is found, inject the option title block first
+        //  1. INTERCEPT: If this special flag is found, inject the option title block first
         if (i.isOptionHeader) {
             htmlElementString += `
             <div class="option-break-title" style="grid-column: 1 / -1; width: 100%; margin: 25px 0 10px 0; padding-top: 15px; border-top: 1px dashed rgba(0,0,0,0.15); text-align: left;">
-                <h3 style="color: #ce1126; font-weight: 800; font-size: 1.3rem; margin: 0 0 4px 0;">✨ Extra Upgrades </h3>
+                <h3 style="color: #ce1126; font-weight: 800; font-size: 1.3rem; margin: 0 0 4px 0;"> Extra Upgrades </h3>
                 <p style="font-size: 0.8rem; color: #666; margin: 0 0 10px 0;">Select additional for your items below:</p>
             </div>`;
         }
@@ -1608,7 +1608,7 @@
             ${i.isBestSeller ? `<div style="position: absolute; top: 10px; left: 10px; background: #ce1126; color: white; font-size: 0.6rem; padding: 4px 9px; border-radius: 4px; font-weight: bold; z-index: 5;">BEST SELLER</div>` : ''}
             ${!i.isAvailable ? `<div class="unavailable-overlay">
                 <div class="sold-out-badge">
-                    <div style="font-size: 1.2rem; margin-bottom: 4px;">🚫</div>
+                    <div style="font-size: 1.2rem; margin-bottom: 4px;"></div>
                     SOLD OUT
                 </div>
             </div>` : ''}
@@ -2033,15 +2033,15 @@
             const successModal = document.getElementById('success-modal');
             successModal.innerHTML = `
                 <div class="modal-box" style="background:white; color:black; border-radius:25px; width: 85%;">
-                    <div class="logo-wrapper"><div style="font-size:3rem">🏮</div></div>
+                    <div class="logo-wrapper"><div style="font-size:3rem"></div></div>
                     <h2 style="margin:15px 0 5px; color: var(--deep-red);">ORDER PLACED!</h2>
                     <p>Kitchen is preparing your food.</p>
                     <div class="star-rating">
-                        <input type="radio" id="star5" name="rating" value="5" onclick="submitRating(5)"/><label for="star5">★</label>
-                        <input type="radio" id="star4" name="rating" value="4" onclick="submitRating(4)"/><label for="star4">★</label>
-                        <input type="radio" id="star3" name="rating" value="3" onclick="submitRating(3)"/><label for="star3">★</label>
-                        <input type="radio" id="star2" name="rating" value="2" onclick="submitRating(2)"/><label for="star2">★</label>
-                        <input type="radio" id="star1" name="rating" value="1" onclick="submitRating(1)"/><label for="star1">★</label>
+                        <input type="radio" id="star5" name="rating" value="5" onclick="submitRating(5)"/><label for="star5"></label>
+                        <input type="radio" id="star4" name="rating" value="4" onclick="submitRating(4)"/><label for="star4"></label>
+                        <input type="radio" id="star3" name="rating" value="3" onclick="submitRating(3)"/><label for="star3"></label>
+                        <input type="radio" id="star2" name="rating" value="2" onclick="submitRating(2)"/><label for="star2"></label>
+                        <input type="radio" id="star1" name="rating" value="1" onclick="submitRating(1)"/><label for="star1"></label>
                     </div>
                     <div class="loading-bar"><div class="progress"></div></div>
                 </div>`;
@@ -2106,7 +2106,7 @@
             toggle.style.display = 'inline-flex';
             toggle.style.pointerEvents = 'auto';
             toggle.style.touchAction = 'manipulation';
-            toggle.innerText = isOrderStatusOpen ? '📋 Hide Status' : '📋 Order Status';
+            toggle.innerText = isOrderStatusOpen ? ' Hide Status' : ' Order Status';
             panel.classList.toggle('open', isOrderStatusOpen);
             panel.classList.toggle('collapsed', !isOrderStatusOpen);
             panel.style.maxHeight = isOrderStatusOpen ? '520px' : '96px';
@@ -2134,7 +2134,7 @@
             panel.style.overflow = 'hidden';
             document.getElementById('order-status-message').style.display = isOrderStatusOpen ? 'block' : 'none';
             document.getElementById('order-status-items').style.display = isOrderStatusOpen ? 'block' : 'none';
-            toggle.innerText = isOrderStatusOpen ? '📋 Hide Status' : '📋 Order Status';
+            toggle.innerText = isOrderStatusOpen ? ' Hide Status' : ' Order Status';
 
             if (isOrderStatusOpen && latestOrderStatusOrders.length > 0) {
                 renderOrderStatusItems(latestOrderStatusOrders);
@@ -2356,7 +2356,7 @@ function startKioskListener(tableId) {
             else if (snapshot.empty && hasActiveOrder === true) {
                 hasActiveOrder = false; 
 
-                // 🛑 NEW LOGIC: Only show the reset message/reload if it's NOT the restaurant tablet
+                //  NEW LOGIC: Only show the reset message/reload if it's NOT the restaurant tablet
                 if (!isPermanentKiosk) {
                     showResetMessage();
                     setTimeout(() => {
@@ -2487,7 +2487,7 @@ function handleSearch(query) {
     if (clearBtn) clearBtn.style.display = cleanQuery.length > 0 ? 'block' : 'none';
 
     if (cleanQuery === "") {
-        if (bestSellerText) bestSellerText.innerHTML = `🔥 Best Sellers`;
+        if (bestSellerText) bestSellerText.innerHTML = ` Best Sellers`;
         const activeCatBtn = document.querySelector('.cat-btn.active');
         const activeCat = activeCatBtn ? activeCatBtn.id.replace('cat-', '') : CATEGORIES[0].name;
         renderMenu(activeCat);
@@ -2496,7 +2496,7 @@ function handleSearch(query) {
 
     if (bestSellerHeader && bestSellerText) {
         bestSellerHeader.style.display = 'block';
-        bestSellerText.innerHTML = `🔍 Search Results for "${query}"`;
+        bestSellerText.innerHTML = ` Search Results for "${query}"`;
     }
 
     const searchResults = MENU.filter(item => 
@@ -2524,7 +2524,7 @@ function handleSearch(query) {
             ${i.isBestSeller ? `<div class="badge" style="position: absolute; top: 10px; left: 10px; background: #ce1126; color: white; font-size: 0.6rem; padding: 4px 9px; border-radius: 4px; font-weight: bold; z-index: 5;">BEST SELLER</div>` : ''}
             ${!i.isAvailable ? `<div class="unavailable-overlay">
                 <div class="sold-out-badge">
-                    <div style="font-size: 1.2rem; margin-bottom: 4px;">🚫</div>
+                    <div style="font-size: 1.2rem; margin-bottom: 4px;"></div>
                     SOLD OUT
                 </div>
             </div>` : ''}

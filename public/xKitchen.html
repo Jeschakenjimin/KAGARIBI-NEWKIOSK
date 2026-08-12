@@ -99,12 +99,12 @@
     <body>
 
         <div id="audio-unlock">
-            <button class="start-btn" onclick="unlockAudio()">👨‍🍳 START KITCHEN MONITOR</button>
+            <button class="start-btn" onclick="unlockAudio()">‍ START KITCHEN MONITOR</button>
         </div>
 
         <div class="header">
             <h1>Kitchen Rack</h1>
-            <div id="conn-status">🟡 Connecting...</div>
+            <div id="conn-status"> Connecting...</div>
         </div>
 
         <div id="debug-log">System Ready.</div>
@@ -163,7 +163,7 @@
 
             // SYNC LOGIC: LISTENING FOR PENDING RUNNING TABS
             db.collection("orders").where("status", "==", "Pending").onSnapshot(snap => {
-                document.getElementById('conn-status').innerHTML = "🟢 Live";
+                document.getElementById('conn-status').innerHTML = " Live";
                 const rack = document.getElementById('rack');
                 const summaryBar = document.getElementById('summary-bar');
                 

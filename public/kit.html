@@ -101,10 +101,10 @@
 <body>
 
     <div id="audio-unlock">
-        <button style="padding: 20px 40px; background: #D30F0F; color: white; border: none; border-radius: 50px; cursor: pointer; font-weight: bold;" onclick="unlockAudio()">👨‍🍳 START KITCHEN CONTROL</button>
+        <button style="padding: 20px 40px; background: #D30F0F; color: white; border: none; border-radius: 50px; cursor: pointer; font-weight: bold;" onclick="unlockAudio()">‍ START KITCHEN CONTROL</button>
     </div>
 
-    <button id="remote-zoom-btn" class="zoom-btn">🔍 Zoom Out Compact</button>
+    <button id="remote-zoom-btn" class="zoom-btn"> Zoom Out Compact</button>
 
     <div class="main-layout">
         <div class="column">
@@ -119,7 +119,7 @@
 
     <div class="footer-system">
         <div id="debug-log">System Initializing...</div>
-        <div id="conn-status">🟡 Connecting...</div>
+        <div id="conn-status"> Connecting...</div>
     </div>
 
     <audio id="ding" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"></audio>
@@ -195,7 +195,7 @@
         log("[KITCHEN] Starting realtime listener...");
         ordersQuery.onSnapshot(snap => {
             log(`[KITCHEN] Realtime listener active. Snapshot size: ${snap.size}`);
-            document.getElementById('conn-status').innerHTML = "🟢 Live";
+            document.getElementById('conn-status').innerHTML = " Live";
             const rackPending = document.getElementById('rack-pending');
             const rackPreparing = document.getElementById('rack-preparing');
             if (snap.size > lastCount) { sound.play().catch(()=>{}); }
@@ -290,27 +290,27 @@
                                 <div class="item-text" id="text-${itemId}">
                                     <span class="qty-badge">${i.qty}x</span> ${i.name}
                                     ${i.jname ? `<span class="item-subtitle">${i.jname}</span>` : ''}
-                                    ${i._addOnsText ? `<span class="addon-box">➕ ADD: ${i._addOnsText}</span>` : ''}
+                                    ${i._addOnsText ? `<span class="addon-box"> ADD: ${i._addOnsText}</span>` : ''}
                                     ${i.notes ? `<div class="notes-box">NOTE: ${i.notes}</div>` : ''}
                                     <div class="item-status-pill ${normalizeItemStatus(i, group.processStep) === 'Served' ? 'item-status-served' : normalizeItemStatus(i, group.processStep) === 'Cooking' ? 'item-status-cooking' : 'item-status-pending'}">
                                         <span class="item-status-dot" style="background:${normalizeItemStatus(i, group.processStep) === 'Served' ? '#3b82f6' : normalizeItemStatus(i, group.processStep) === 'Cooking' ? '#16a34a' : '#fbbf24'}"></span>${normalizeItemStatus(i, group.processStep).toUpperCase()}
                                     </div>
                                 </div>
                                 <div style="display:flex; gap:6px; align-items:center;">
-                                    <button class="check-btn" onclick="toggleItemDone('${itemId}', '${i._docId}', '${nameStr}', '${notesStr}', ${i.qty}, '${addonsParam}')">✓</button>
+                                    <button class="check-btn" onclick="toggleItemDone('${itemId}', '${i._docId}', '${nameStr}', '${notesStr}', ${i.qty}, '${addonsParam}')"></button>
                                 </div>
                             </li>
                             `;
                         }).join('')}
                     </ul>
-                    ${group.processStep === 'Pending' ? `<button class="btn-prepare" onclick="startPrep('${group.docIds[0]}')">👨‍🍳 START PREPARING</button>` : ''}
+                    ${group.processStep === 'Pending' ? `<button class="btn-prepare" onclick="startPrep('${group.docIds[0]}')">‍ START PREPARING</button>` : ''}
                 `;
                 (group.processStep === "Preparing" ? rackPreparing : rackPending).appendChild(ticket);
             });
         }, error => {
             console.error("Firebase Snapshot Error (Check if Index is missing):", error);
             log(`[KITCHEN] Firebase listener error: ${error.message}`);
-            document.getElementById('conn-status').innerHTML = "🔴 Error";
+            document.getElementById('conn-status').innerHTML = " Error";
         });
 
         async function toggleItemDone(itemId, targetDocId, itemName, itemNotes, itemQty, itemAddons = "") {
@@ -450,12 +450,12 @@
 
                 processingItems.delete(trackKey);
                 setTimeout(() => localStorage.removeItem('processing_' + trackKey), 3000); 
-                log(`✅ Successfully checked off 1x ${itemName}`);
+                log(` Successfully checked off 1x ${itemName}`);
                 if (parentTicket) parentTicket.classList.remove('locked');
 
             } catch (e) {
                 console.error("Transaction error:", e);
-                log(`❌ Failed to process ${itemName}`);
+                log(` Failed to process ${itemName}`);
                 processingItems.delete(trackKey);
                 localStorage.removeItem('processing_' + trackKey); 
                 
