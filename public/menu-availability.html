@@ -65,10 +65,16 @@
     <aside class="sidebar">
         <div class="sidebar-header"><h2>KAGARIBI <span>ADMIN</span></h2></div>
         <ul class="nav-menu">
-            <li class="active"><a href="#" onclick="backToMenu(event)">⬅️ Back to Menu</a></li>
+            <li><a href="dailysales.html"> Daily Sales</a></li>
+            <li><a href="monthly-report.html"> Monthly Report</a></li>
+            <li class="active"><a href="#"> Menu Availability</a></li>
+            <li><a href="inventory.html"> Inventory</a></li>
+            <li><a href="banquet-inventory.html">Banquet Inventory</a></li>
+            <li><a href="reservations.html"> Reservation</a></li>
+            <li><a href="records.html"> Reservation Record</a></li>
         </ul>
         <div class="sidebar-footer">
-            <button class="btn-logout" onclick="adminLogout()">🚪 Logout</button>
+            <button class="btn-logout" onclick="adminLogout()"> Logout</button>
         </div>
     </aside>
     <main class="main-content">
@@ -233,7 +239,7 @@
                             </label>
                         </div>
                         <div class="status-badge ${item.isAvailable ? 'status-available' : 'status-unavailable'}">
-                            ${item.isAvailable ? '✓ Available' : '✗ Sold Out'}
+                            ${item.isAvailable ? ' Available' : ' Sold Out'}
                         </div>
                     </div>
                 </div>

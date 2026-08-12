@@ -668,7 +668,7 @@
     <header class="header">
         <div class="header-content">
             <div class="logo-section">
-                <span class="logo-icon">🏮</span>
+                <span class="logo-icon"></span>
                 <div class="logo-text">KAGARIBI</div>
             </div>
             <div style="display: flex; gap: 10px;">
@@ -679,7 +679,7 @@
     </header>
 
     <section class="hero">
-        <div class="hero-icon">🍱</div>
+        <div class="hero-icon"></div>
         <h1 class="hero-title">RESERVATIONS</h1>
         <p class="hero-subtitle">Secure your table at Kagaribi</p>
         <p class="hero-subtitle" style="margin-top: 10px; font-size: 0.9rem; color: var(--gold);">⏰ Reservations must be made at least 3 days in advance</p>
@@ -693,7 +693,7 @@
             </div>
 
             <div id="availabilityBanner" class="availability-banner available">
-                ✅ <span id="availableTablesText">15 tables available</span> for selected date
+                 <span id="availableTablesText">15 tables available</span> for selected date
             </div>
 
             <form id="reservationForm">
@@ -717,7 +717,7 @@
                     <input type="date" class="form-input" id="reservationDate" required>
                     <div style="background: rgba(206, 17, 38, 0.1); border-left: 4px solid var(--deep-red); padding: 10px 12px; border-radius: 6px; margin-top: 10px;">
                         <p style="font-size: 0.85rem; color: var(--deep-red); margin: 0; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 1.2rem;">⚠️</span>
+                            <span style="font-size: 1.2rem;"></span>
                             <span>Reservations must be made at least <strong>3 days in advance</strong></span>
                         </p>
                     </div>
@@ -750,17 +750,17 @@
     <section class="info-section">
         <div class="info-grid">
             <div class="info-card">
-                <div class="info-icon">📍</div>
+                <div class="info-icon"></div>
                 <h3 class="info-title">Location</h3>
                 <p class="info-text">Paseo De Carmona, Carmona, Philipines, 4117</p>
             </div>
             <div class="info-card">
-                <div class="info-icon">🕐</div>
+                <div class="info-icon"></div>
                 <h3 class="info-title">Hours</h3>
                 <p class="info-text">Mon-Sun: 11:00 AM - 11:00 PM<br>Last seating at 9:00 PM</p>
             </div>
             <div class="info-card">
-                <div class="info-icon">📞</div>
+                <div class="info-icon"></div>
                 <h3 class="info-title">Contact</h3>
                 <p class="info-text">+63 917 184 0423<br></p>
             </div>
@@ -769,7 +769,7 @@
 
     <div id="successModal" class="modal-overlay">
         <div class="modal-box">
-            <div class="modal-icon">✅</div>
+            <div class="modal-icon"></div>
             <h2 class="modal-title">Reservation Confirmed!</h2>
             <p class="modal-text">Thank you f
                 or choosing Kagaribi. We've sent a confirmation to your phone and email.</p>
@@ -794,7 +794,7 @@
     <div id="settingsModal" class="settings-modal">
         <div class="settings-box">
             <div class="settings-header">
-                <div class="settings-title">⚙️ Reservation Settings</div>
+                <div class="settings-title"> Reservation Settings</div>
                 <p class="settings-subtitle">Customize your reservation system</p>
             </div>
 
@@ -803,7 +803,7 @@
                 <p class="setting-description">How many tables are available for each time slot (11:00 AM, 12:00 PM, etc.)</p>
                 <input type="number" id="settingTablesPerSlot" class="setting-input" min="1" max="100" value="15">
                 <div class="setting-preview">
-                    💡 Example: If set to 15, each time slot can accept up to 15 reservations
+                     Example: If set to 15, each time slot can accept up to 15 reservations
                 </div>
             </div>
 
@@ -812,7 +812,7 @@
                 <p class="setting-description">Show orange "limited availability" warning when this many or fewer tables remain</p>
                 <input type="number" id="settingLimitedThreshold" class="setting-input" min="1" max="50" value="5">
                 <div class="setting-preview">
-                    💡 Example: If set to 5, time slots with 5 or fewer tables left will appear in orange
+                     Example: If set to 5, time slots with 5 or fewer tables left will appear in orange
                 </div>
             </div>
 
@@ -821,13 +821,13 @@
                 <p class="setting-description">Total tables shown in daily availability banner</p>
                 <input type="number" id="settingTotalTables" class="setting-input" min="1" max="100" value="15">
                 <div class="setting-preview">
-                    💡 This is shown in the "X tables available for selected date" banner
+                     This is shown in the "X tables available for selected date" banner
                 </div>
             </div>
 
             <div class="settings-buttons">
-                <button class="settings-btn-cancel" onclick="closeSettings()">✕ Cancel</button>
-                <button class="save-settings-btn" onclick="saveSettings()">💾 Save</button>
+                <button class="settings-btn-cancel" onclick="closeSettings()"> Cancel</button>
+                <button class="save-settings-btn" onclick="saveSettings()"> Save</button>
             </div>
         </div>
     </div>
@@ -923,7 +923,7 @@
                 const minDateString = minDate.toISOString().split('T')[0];
                 dateInput.value = minDateString;
                 
-                alert('⚠️ Invalid Date!\n\nReservations must be made at least 3 days in advance.\n\nEarliest available date: ' + minDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }));
+                alert(' Invalid Date!\n\nReservations must be made at least 3 days in advance.\n\nEarliest available date: ' + minDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }));
             }
             
             updateAvailability();
@@ -1003,13 +1003,13 @@ async function updateAvailability() {
 
     // 1. Validation Logic
     if (!selectedTime) {
-        alert('⚠️ Please select a time slot');
+        alert(' Please select a time slot');
         return;
     }
 
     const selectedDate = document.getElementById('reservationDate').value;
     if (!selectedDate) {
-        alert('⚠️ Please select a date');
+        alert(' Please select a date');
         return;
     }
 
@@ -1041,7 +1041,7 @@ async function updateAvailability() {
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        console.log('✅ Reservation saved to Firebase!');
+        console.log(' Reservation saved to Firebase!');
 
         // 5. Success UI
         showConfirmation({
@@ -1055,22 +1055,22 @@ async function updateAvailability() {
         renderTimeSlots();
 
     } catch (err) {
-        console.error("❌ Firebase Error:", err);
-        alert('❌ Could not save your reservation. Please check your connection.');
+        console.error(" Firebase Error:", err);
+        alert(' Could not save your reservation. Please check your connection.');
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Reserve Now';
     }
 }
         function sendSMS(phone, reservation) {
-            console.log(`📱 SMS sent to ${phone}:`);
+            console.log(` SMS sent to ${phone}:`);
             console.log(`Kagaribi Reservation: ${reservation.code}`);
             console.log(`Date: ${reservation.formattedDate} at ${reservation.time}`);
         }
 
         function sendEmail(email, reservation) {
             if (!email) return;
-            console.log(`📧 Email sent to ${email}`);
+            console.log(` Email sent to ${email}`);
         }
 
         function showConfirmation(data) {
@@ -1169,22 +1169,22 @@ async function updateAvailability() {
 
             // Validate inputs
             if (newTablesPerSlot < 1 || newTablesPerSlot > 100) {
-                alert('⚠️ Tables per time slot must be between 1 and 100');
+                alert(' Tables per time slot must be between 1 and 100');
                 return;
             }
 
             if (newLimitedThreshold < 1 || newLimitedThreshold > 50) {
-                alert('⚠️ Limited availability threshold must be between 1 and 50');
+                alert(' Limited availability threshold must be between 1 and 50');
                 return;
             }
 
             if (newTotalTables < 1 || newTotalTables > 100) {
-                alert('⚠️ Total tables must be between 1 and 100');
+                alert(' Total tables must be between 1 and 100');
                 return;
             }
 
             if (newLimitedThreshold > newTablesPerSlot) {
-                alert('⚠️ Warning threshold cannot be greater than tables per slot');
+                alert(' Warning threshold cannot be greater than tables per slot');
                 return;
             }
 
@@ -1208,7 +1208,7 @@ async function updateAvailability() {
 
             // Close modal and show success
             closeSettings();
-            alert('✅ Settings saved!\n\nTables per slot: ' + newTablesPerSlot + '\nLimited warning at: ' + newLimitedThreshold + ' or fewer\nTotal tables: ' + newTotalTables);
+            alert(' Settings saved!\n\nTables per slot: ' + newTablesPerSlot + '\nLimited warning at: ' + newLimitedThreshold + ' or fewer\nTotal tables: ' + newTotalTables);
         }
 
         window.addEventListener('DOMContentLoaded', init);

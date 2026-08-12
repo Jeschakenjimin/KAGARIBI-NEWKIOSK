@@ -117,7 +117,7 @@
 
     <div class="header">
         <h1>Billing Dashboard</h1>
-        <div id="status">🟢 Live Sync Active</div>
+        <div id="status"> Live Sync Active</div>
     </div>
 
     <div id="billing-notification" class="notification-banner"></div>
@@ -148,7 +148,7 @@
         
         <div style="position: relative; margin-bottom: 20px;">
     <input type="password" id="void-pin" placeholder="••••" style="width: 100%; box-sizing: border-box; padding: 12px 40px 12px 12px; border-radius: 8px; border: 1px solid #444; background: #000; color: white; text-align: center; font-size: 1.5rem; letter-spacing: 5px;">
-    <span onclick="toggleVisibility('void-pin')" style="position: absolute; right: 15px; top: 15px; cursor: pointer; color: #888;">👁</span>
+    <span onclick="toggleVisibility('void-pin')" style="position: absolute; right: 15px; top: 15px; cursor: pointer; color: #888;"></span>
 </div>
         <div class="calc-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <button class="calc-btn" style="background: #444;" onclick="document.getElementById('void-modal').style.display='none'">CANCEL</button>
@@ -165,7 +165,7 @@
         
         <div style="position: relative; margin-bottom: 20px;">
     <input type="password" id="cancel-item-pin" placeholder="••••" style="width: 100%; box-sizing: border-box; padding: 12px 40px 12px 12px; border-radius: 8px; border: 1px solid #444; background: #000; color: white; text-align: center; font-size: 1.5rem; letter-spacing: 5px;">
-    <span onclick="toggleVisibility('cancel-item-pin')" style="position: absolute; right: 15px; top: 15px; cursor: pointer; color: #888;">👁</span>
+    <span onclick="toggleVisibility('cancel-item-pin')" style="position: absolute; right: 15px; top: 15px; cursor: pointer; color: #888;"></span>
 </div>
         
         <div class="calc-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -262,12 +262,12 @@
                     const card = document.createElement('div');
                     card.className = "table-card";
                     card.innerHTML = `
-    <button class="void-all-btn" onclick="voidWholeTable('${tableId}', ${JSON.stringify(data.docIds).replace(/"/g, '&quot;')})">✕</button>
+    <button class="void-all-btn" onclick="voidWholeTable('${tableId}', ${JSON.stringify(data.docIds).replace(/"/g, '&quot;')})"></button>
     
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2>${tableId} ${badgeHtml}</h2> 
         <span class="status-badge" style="background:${data.allServed ? 'var(--success)' : '#444'}">
-            ${data.allServed ? '✓ Ready' : '⌛ Cooking'}
+            ${data.allServed ? ' Ready' : '⌛ Cooking'}
         </span>
     </div>
 
@@ -280,7 +280,7 @@
         return `
             <div class="item-row" style="align-items: flex-start;">
                 <span style="flex: 1;">
-                    <button class="cancel-btn" onclick="cancelSingleItem('${item.docId}', ${item.index}, '${item.name}')">🗑️</button>
+                    <button class="cancel-btn" onclick="cancelSingleItem('${item.docId}', ${item.index}, '${item.name}')"></button>
                     <b style="font-size: 1rem;">${item.qty}x ${displayName}</b>
                     <div style="font-size: 0.75rem; color: var(--gold); margin-left: 30px;">${addonText}</div>
                 </span>

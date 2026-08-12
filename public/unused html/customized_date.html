@@ -378,12 +378,12 @@
                     const card = document.createElement('div');
                     card.className = "table-card";
                     card.innerHTML = `
-    <button class="void-all-btn" onclick="voidWholeTable('${tableId}', ${JSON.stringify(data.docIds).replace(/"/g, '&quot;')})">✕</button>
+    <button class="void-all-btn" onclick="voidWholeTable('${tableId}', ${JSON.stringify(data.docIds).replace(/"/g, '&quot;')})"></button>
     
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
         <h2>${tableId} ${badgeHtml}</h2> 
         <span class="status-badge" style="background:${data.allServed ? 'var(--success)' : '#444'}">
-            ${data.allServed ? '✓ Ready' : '⌛ Cooking'}
+            ${data.allServed ? ' Ready' : '⌛ Cooking'}
         </span>
     </div>
 
@@ -396,7 +396,7 @@
         return `
             <div class="item-row" style="align-items: flex-start; margin-bottom: 6px;">
                 <span style="flex: 1;">
-                    <button class="cancel-btn" onclick="cancelSingleItem('${item.docId}', ${item.index}, '${item.name}')">🗑️</button>
+                    <button class="cancel-btn" onclick="cancelSingleItem('${item.docId}', ${item.index}, '${item.name}')"></button>
                     <b style="font-size: 0.95rem;">${item.qty}x ${displayName}</b>
                     <div style="font-size: 0.75rem; color: var(--gold); margin-left: 28px;">${addonText}</div>
                 </span>
@@ -444,7 +444,7 @@
             <div style="margin-top: 8px; border-top: 1px dashed #26262b; padding-top: 8px; background: rgba(211,15,15,0.02); padding: 6px; border-radius: 4px;">
                 <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #a1a5b7; font-weight: bold; cursor: pointer;">
                     <input type="checkbox" id="backdate-toggle-${tableId}" onchange="document.getElementById('backdate-inputs-${tableId}').style.display = this.checked ? 'flex' : 'none'">
-                    ⚠️ Override Date / Backdate Print
+                     Override Date / Backdate Print
                 </label>
                 <div id="backdate-inputs-${tableId}" style="display: none; gap: 8px; margin-top: 6px;">
                     <input type="date" id="backdate-day-${tableId}" value="2026-05-10" style="flex: 1; background:#000; border: 1px dashed var(--primary-red); color: #fff; padding: 4px; font-size: 11px; border-radius: 4px; outline:none;">
