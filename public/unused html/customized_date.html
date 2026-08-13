@@ -611,12 +611,11 @@
                 seniorPortion, regularPortion, beerPortion, corkagePortion, discountIdsArray 
             } = activeCheckoutData;
 
-            let isFirstPrint = false;
             if (!window.printTracker[tableId]) {
-                isFirstPrint = true;
                 window.printTracker[tableId] = {
                     docRef: db.collection("archived_sales").doc(),
-                    invoiceNo: Math.floor(1000 + Math.random() * 9000)
+                    invoiceNo: Math.floor(1000 + Math.random() * 9000),
+                    printedOnce: false
                 };
             }
 
@@ -696,16 +695,20 @@
             printArea.style.display = 'block';
             
             const executePrintAction = () => {
-                if (isFirstPrint) {
-                    setTimeout(() => { document.getElementById('print-receipt').style.display = 'none'; }, 1000);
-                } else {
-                    finishDatabaseTasks(tableId, group, paid, myChange, method, finalTotal, sc, vat, discount, vatable, vatExempt, newSaleRef, invoiceNo, seniorPortion, regularPortion, beerPortion, corkagePortion, discountIdsArray, targetPrintDate); 
-                    delete window.printTracker[tableId]; 
-                }
+                const tracker = window.printTracker[tableId];
+                if (!tracker) return;
+                if (!tracker.printedOnce) { tracker.printedOnce = true; return; }
+
+                finishDatabaseTasks(tableId, group, paid, myChange, method, finalTotal, sc, vat, discount, vatable, vatExempt, newSaleRef, invoiceNo, seniorPortion, regularPortion, beerPortion, corkagePortion, discountIdsArray, targetPrintDate);
+                delete window.printTracker[tableId];
+
+                setTimeout(() => { document.getElementById('print-receipt').style.display = 'none'; }, 1000);
             };
-            
-            window.print();
-            executePrintAction();
+
+            // Print two identical copies and invoke the handler after each print
+            try { window.print(); } catch (e) {}
+            try { executePrintAction(); } catch (e) {}
+            setTimeout(() => { try { window.print(); } catch (e) {} try { executePrintAction(); } catch (e) {} }, 600);
         }
 
         async function finishDatabaseTasks(tableId, group, paid, change, method, finalTotalToSave, serviceCharge, vatAmount, discountAmount, vatableSales, vatExemptSales, newSaleRef, invoiceNo, seniorPort, regularPort, beerPort, corkagePort, discountIdsArray, resolvedTimestamp) {
