@@ -619,13 +619,11 @@ async function finishCheckout() {
         seniorPortion, regularPortion, beerPortion, corkagePortion, discountIdsArray // NEW
     } = activeCheckoutData;
 
-    let isFirstPrint = false;
-    
     if (!window.printTracker[tableId]) {
-        isFirstPrint = true;
         window.printTracker[tableId] = {
             docRef: db.collection("archived_sales").doc(),
-            invoiceNo: Math.floor(1000 + Math.random() * 9000)
+            invoiceNo: Math.floor(1000 + Math.random() * 9000),
+            printedOnce: false
         };
     }
 
@@ -772,35 +770,25 @@ async function finishCheckout() {
         try { delete window.printTracker[tableId]; } catch (e) { /* ignore */ }
     };
     
-    // Print two identical copies: invoke the print dialog twice, then run post-print actions
-    const printTwiceThen = (callback) => {
-        try {
-            window.print();
-        } catch (e) {
-            // ignore
-        }
-        // Small delay to let the first print job start before calling print again
+    // Print two identical copies: call print then immediately invoke the print handler,
+    // wait a short delay, then print again and invoke the handler a second time.
+    const printTwoCopies = () => {
+        try { window.print(); } catch (e) {}
+        // After first print, run the print handler to mark printedOnce
+        try { executePrintAction(); } catch (e) {}
+
         setTimeout(() => {
-            try {
-                window.print();
-            } catch (e) {
-                // ignore
-            }
-            if (typeof callback === 'function') callback();
+            try { window.print(); } catch (e) {}
+            // After second print, run the handler to finalize DB tasks
+            try { executePrintAction(); } catch (e) {}
         }, 600);
     };
 
     if (qrImg) {
-        qrImg.onload = () => {
-            printTwiceThen(executePrintAction);
-        };
-        setTimeout(() => {
-            if (!qrImg.complete) {
-                printTwiceThen(executePrintAction);
-            }
-        }, 2000);
+        qrImg.onload = () => { printTwoCopies(); };
+        setTimeout(() => { if (!qrImg.complete) printTwoCopies(); }, 2000);
     } else {
-        printTwiceThen(executePrintAction);
+        printTwoCopies();
     }
 }
 
