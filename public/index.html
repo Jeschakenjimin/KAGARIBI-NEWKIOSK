@@ -332,6 +332,8 @@
             width: 100%; padding: 10px; background: #27ae60; color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
         .order-status-panel { background: #fffbeb; color: #1f2937; border: 1px solid #fcd34d; border-radius: 16px; padding: 14px; margin: 11px 15px 0; box-shadow: 0 10px 20px rgba(249, 204, 36, 0.12); overflow: hidden; transition: max-height 0.25s ease, padding 0.25s ease, margin 0.25s ease; max-height: 96px; }
         .order-status-panel.collapsed { max-height: 96px; padding-bottom: 10px; margin-bottom: 0; }
+        .order-status-panel.collapsed .order-status-summary-text { display: none; }
+        .order-status-panel.collapsed .status-pill { display: none; }
         .order-status-panel.open { max-height: 520px; }
         .order-status-toggle { position: absolute; top: 14px; right: 16px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #fde68a; color: #92400e; border: none; border-radius: 999px; padding: 8px 12px; font-weight: 700; cursor: pointer; box-shadow: 0 8px 20px rgba(249, 204, 36, 0.22); transition: transform 0.16s ease; z-index: 10050; pointer-events: auto; touch-action: manipulation; }
         .order-status-toggle:hover { transform: translateY(-1px); }
@@ -492,7 +494,7 @@
             <!-- categories moved to left sidebar for vertical scroll -->
             <div id="order-status-container" style="position:relative;">
                 <button id="order-status-toggle" class="order-status-toggle" type="button" style="display:none;" onclick="toggleOrderStatusPanel()"> Order Status</button>
-                <div id="order-status-panel" class="order-status-panel collapsed" style="display:none;">
+                <div id="order-status-panel" class="order-status-panel collapsed" style="display:none; opacity:0; visibility:hidden;" data-visible="false">
                     <div class="order-status-summary" onclick="toggleOrderStatusPanel()">
                         <div class="order-status-summary-text">
                             <div class="order-status-summary-small">ORDER STATUS</div>
@@ -500,8 +502,8 @@
                         </div>
                         <div id="order-status-pill" class="status-pill"><span class="status-dot"></span><span id="order-status-label">PENDING</span></div>
                     </div>
-                    <div id="order-status-message" class="status-message" style="margin-top:10px; font-size:0.88rem;">Your order has been received and is waiting to be prepared.</div>
-                    <div id="order-status-items" class="order-status-items"></div>
+                    <div id="order-status-message" class="status-message" style="margin-top:10px; font-size:0.88rem; display:none;">Your order has been received and is waiting to be prepared.</div>
+                    <div id="order-status-items" class="order-status-items" style="display:none;"></div>
                 </div>
             </div>
         </header>
@@ -1748,7 +1750,7 @@
         <div style="text-align: center; margin: 5px 0 10px;">
             <h2 style="margin: 0 0 4px; color: white;">${selectedItem.name}</h2>
             ${selectedItem.jname ? `<div style="color: var(--gold); font-size: 1.4rem; font-weight: 700; letter-spacing: 0.02em; margin-bottom: 6px;">${selectedItem.jname}</div>` : ''}
-            <div style="color: #ce1126; font-weight: 800; font-size: 1.25rem; margin-bottom: 10px;">₱${selectedItem.price}</div>
+            <div style="color: white; font-weight: 800; font-size: 1.25rem; margin-bottom: 10px;">₱${selectedItem.price}</div>
         </div>
         
         ${optionsHtml}
@@ -2113,17 +2115,25 @@
             const summary = document.querySelector('.order-status-summary');
 
             if (!panel || !toggle || !numberEl || !messageEl) return;
+            
             panel.style.display = 'block';
+            panel.style.opacity = '1';
+            panel.style.visibility = 'visible';
+            panel.setAttribute('data-visible', 'true');
+            
             toggle.style.display = 'inline-flex';
             toggle.style.pointerEvents = 'auto';
             toggle.style.touchAction = 'manipulation';
             toggle.innerText = isOrderStatusOpen ? ' Hide Status' : ' Order Status';
+            
             panel.classList.toggle('open', isOrderStatusOpen);
             panel.classList.toggle('collapsed', !isOrderStatusOpen);
             panel.style.maxHeight = isOrderStatusOpen ? '520px' : '96px';
             panel.style.overflow = 'hidden';
+            
             numberEl.innerText = `YOUR ORDERS`;
             messageEl.innerText = "Tracking your active orders for this table.";
+            
             toggle.onclick = toggleOrderStatusPanel;
             toggle.ontouchstart = toggleOrderStatusPanel;
             if (summary) {
@@ -2138,13 +2148,24 @@
             if (!panel || !toggle) return;
 
             isOrderStatusOpen = !isOrderStatusOpen;
+            
+            // Ensure panel is always visible for transition
             panel.style.display = 'block';
+            panel.style.opacity = '1';
+            panel.style.visibility = 'visible';
+            panel.setAttribute('data-visible', 'true');
+            
             panel.classList.toggle('open', isOrderStatusOpen);
             panel.classList.toggle('collapsed', !isOrderStatusOpen);
             panel.style.maxHeight = isOrderStatusOpen ? '520px' : '96px';
             panel.style.overflow = 'hidden';
-            document.getElementById('order-status-message').style.display = isOrderStatusOpen ? 'block' : 'none';
-            document.getElementById('order-status-items').style.display = isOrderStatusOpen ? 'block' : 'none';
+            
+            const messageEl = document.getElementById('order-status-message');
+            const itemsEl = document.getElementById('order-status-items');
+            
+            messageEl.style.display = isOrderStatusOpen ? 'block' : 'none';
+            itemsEl.style.display = isOrderStatusOpen ? 'block' : 'none';
+            
             toggle.innerText = isOrderStatusOpen ? ' Hide Status' : ' Order Status';
 
             if (isOrderStatusOpen && latestOrderStatusOrders.length > 0) {
