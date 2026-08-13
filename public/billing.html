@@ -749,20 +749,27 @@ async function finishCheckout() {
 
     // 4. Final Execution
     printArea.style.display = 'block';
+    // Start database tasks asynchronously so the UI is not blocked by printing or network latency.
+    // We fire-and-forget here; errors will be logged and user notified separately.
+    (async () => {
+        try {
+            await finishDatabaseTasks(tableId, group, paid, myChange, method, finalTotal, sc, vat, discount, vatable, vatExempt, newSaleRef, invoiceNo, seniorPortion, regularPortion, beerPortion, corkagePortion, discountIdsArray);
+            console.log('[Billing] Async DB tasks completed for', tableId);
+        } catch (err) {
+            console.error('[Billing] Async DB tasks failed:', err);
+            showBillingNotification('Background save failed. See console for details.', 'error');
+        }
+    })();
     const qrImg = document.getElementById('qr-code');
     
     const executePrintAction = () => {
-        if (isFirstPrint) {
-            setTimeout(() => {
-                document.getElementById('print-receipt').style.display = 'none';
-                document.getElementById('print-receipt').innerHTML = "";
-            }, 1000);
-        } else {
-            // Passing the array to database function
-            finishDatabaseTasks(tableId, group, paid, myChange, method, finalTotal, sc, vat, discount, vatable, vatExempt, newSaleRef, invoiceNo, seniorPortion, regularPortion, beerPortion, corkagePortion, discountIdsArray); 
-            
-            delete window.printTracker[tableId]; 
-        }
+        // Do not block UI waiting for database; DB tasks were started async above.
+        setTimeout(() => {
+            document.getElementById('print-receipt').style.display = 'none';
+            document.getElementById('print-receipt').innerHTML = "";
+        }, 1000);
+        // free the print tracker immediately so UI can re-use the table id
+        try { delete window.printTracker[tableId]; } catch (e) { /* ignore */ }
     };
     
     // Print two identical copies: invoke the print dialog twice, then run post-print actions
