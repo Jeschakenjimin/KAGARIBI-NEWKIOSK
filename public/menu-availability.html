@@ -122,11 +122,35 @@
         let allMenuItems = [];
         let tempAdminMode = false;
 
-        function getMenuData() {
-            if (typeof MENU_DATABASE !== 'undefined') {
-                return MENU_DATABASE;
-            }
-            return FALLBACK_MENU_DATA;
+        async function getMenuData() {
+                    // Prefer the in-page MENU_DATABASE if available. If it's missing or appears truncated
+                    // (deployed kiosk sometimes serves an older cached file), attempt to fetch the latest
+                    // `menu-data.js` with cache-bypass and evaluate it to get the full array.
+                    try {
+                        if (typeof MENU_DATABASE !== 'undefined' && Array.isArray(MENU_DATABASE) && MENU_DATABASE.length > 100) {
+                            return MENU_DATABASE;
+                        }
+                    } catch (e) { /* ignore */ }
+
+                    // Try to fetch the latest menu-data.js and evaluate it safely
+                    try {
+                        const resp = await fetch('menu-data.js?ts=' + Date.now(), { cache: 'no-store' });
+                        if (resp && resp.ok) {
+                            const txt = await resp.text();
+                            // Evaluate in a function scope and return MENU_DATABASE
+                            const fn = new Function(txt + '\nreturn typeof MENU_DATABASE !== "undefined" ? MENU_DATABASE : null;');
+                            const fetched = fn();
+                            if (Array.isArray(fetched) && fetched.length > 0) {
+                                console.log('Loaded menu-data.js dynamically, count=', fetched.length);
+                                return fetched;
+                            }
+                        }
+                    } catch (err) {
+                        console.warn('Dynamic fetch of menu-data.js failed', err);
+                    }
+
+                    // Final fallback to embedded small sample
+                    return FALLBACK_MENU_DATA;
         }
 
         function adminLogout() {
@@ -157,7 +181,7 @@
 
         async function loadMenuItems() {
             try {
-                allMenuItems = JSON.parse(JSON.stringify(getMenuData()));
+                    allMenuItems = JSON.parse(JSON.stringify(await getMenuData()));
                 let availabilityMap = {};
                 try {
                     const doc = await db.collection('menu-availability').doc('items').get();
