@@ -97,11 +97,13 @@
         #mode-title { letter-spacing: 1px; margin-top: -2px; }
 
         .category-scroll { 
-            display: flex; overflow-x: auto; gap: 10px; padding: 15px 10px; 
-            scrollbar-width: none; -webkit-overflow-scrolling: touch;
+            display: flex; flex-direction: column; overflow-y: auto; gap: 8px; padding: 12px 8px;
+            scrollbar-width: thin; -webkit-overflow-scrolling: touch;
             position: relative; 
+            height: 100%;
         }
-        .category-scroll::-webkit-scrollbar { display: none; }
+        .category-scroll::-webkit-scrollbar { width: 8px; }
+        .category-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 6px; }
         
         #cat-highlight {
             position: absolute;
@@ -113,28 +115,28 @@
         }
 
         .cat-btn { 
-            flex: 0 0 auto; 
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
-            gap: 2px;
-            padding: 8px 10px;
-            border-radius: 12px; 
+            gap: 6px;
+            padding: 14px 16px;
+            border-radius: 10px; 
             background: transparent !important; 
             border: 1px solid transparent; 
             color: black; 
-            font-size: 0.8rem;
+            font-size: 1.05rem;
             line-height: 1.2;
-            min-width: 74px;
+            width: 100%;
+            box-sizing: border-box;
             position: relative;
             z-index: 1;
-            text-align: center;
+            text-align: left;
         }
 
         .cat-btn.active { color: var(--gold); font-weight: bold; }
-        .cat-btn .cat-main { font-size: 0.78rem; }
-        .cat-btn .cat-sub { font-size: 0.62rem; opacity: 0.72; }
+        .cat-btn .cat-main { font-size: 1.18rem; font-weight: 800; }
+        .cat-btn .cat-sub { font-size: 0.95rem; opacity: 0.85; margin-top: 4px; }
 
         @keyframes slideUpFade {
             from { opacity: 0; transform: translateY(15px); }
@@ -142,7 +144,9 @@
         }
         .menu-anim { animation: slideUpFade 0.4s ease forwards; }
 
-        .menu-container { padding: 15px; padding-bottom: 180px; }
+        .menu-container { padding: 15px; padding-bottom: 180px; display: flex; gap: 18px; align-items: flex-start; }
+        .category-sidebar { width: 160px; flex: 0 0 160px; position: sticky; top: 72px; align-self: flex-start; height: calc(100vh - 84px); }
+        .grid-wrapper { flex: 1 1 auto; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         
         /* The Card itself */
@@ -485,7 +489,7 @@
                 <button onclick="location.reload()" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color:#777; font-size:0.6rem; padding: 4px 8px; border-radius: 6px;">RESTART</button>
             </div>
 
-            <div class="category-scroll" id="cat-scroll"></div>
+            <!-- categories moved to left sidebar for vertical scroll -->
             <div id="order-status-container" style="position:relative;">
                 <button id="order-status-toggle" class="order-status-toggle" type="button" style="display:none;" onclick="toggleOrderStatusPanel()"> Order Status</button>
                 <div id="order-status-panel" class="order-status-panel collapsed" style="display:none;">
@@ -503,12 +507,17 @@
         </header>
 
         <main class="menu-container">
+            <aside class="category-sidebar">
+                <div class="category-scroll" id="cat-scroll"></div>
+            </aside>
+            <div class="grid-wrapper">
             <div id="best-seller-section" style="margin-bottom: 20px;">
                 <h2 id="best-seller-text" style="color: #1a1a1a; font-size: 1.4rem; border-left: 4px solid #ce1126; padding-left: 10px; display: flex; align-items: center; gap: 8px;">
                      Best Sellers
                 </h2>
             </div>
-            <div class="grid" id="grid"></div>
+                <div class="grid" id="grid"></div>
+            </div>
         </main>
         
         <div class="cart-bar" id="cart-bar" onclick="toggleCart(true)">

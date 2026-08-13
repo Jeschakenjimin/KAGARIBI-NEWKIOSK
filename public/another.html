@@ -105,6 +105,7 @@
             overflow-y: auto;
             padding: 30px 40px;
             position: relative;
+            transition: opacity 0.22s ease;
         }
 
         .header-top {
@@ -216,6 +217,105 @@
                 <button class="btn-confirm" onclick="confirmAdminLogout()">Yes, Logout</button>
             </div>
         </div>
+            <script>
+                // SPA-style admin navigation: intercept sidebar clicks and load pages into .main-content
+                (function(){
+                    const nav = document.querySelectorAll('.nav-menu a');
+                    const main = document.querySelector('.main-content');
+
+                    function setActiveLink(href){
+                        document.querySelectorAll('.nav-menu li').forEach(li => li.classList.remove('active'));
+                        const a = document.querySelector(`.nav-menu a[href="${href}"]`);
+                        if(a && a.parentElement) a.parentElement.classList.add('active');
+                    }
+
+                    async function loadIntoMain(url, push=true){
+                        try{
+                            main.style.opacity = 0.3;
+                            const res = await fetch(url, {cache: 'no-store'});
+                            if(!res.ok) throw new Error('Network response not ok');
+                            const text = await res.text();
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(text, 'text/html');
+                            const newMain = doc.querySelector('.main-content');
+                            if(newMain){
+                                // replace content
+                                main.innerHTML = newMain.innerHTML;
+                                document.title = doc.title || document.title;
+                                // inject common overlays/modals from fetched page so scripts can reference them
+                                const overlayIds = ['admin-login-overlay','staff-login-overlay','logout-modal-overlay','pinModal','editModal','editModal','modal-overlay','logout-modal-overlay'];
+                                overlayIds.forEach(id => {
+                                    const srcEl = doc.getElementById(id);
+                                    if(srcEl && !document.getElementById(id)) {
+                                        document.body.appendChild(srcEl.cloneNode(true));
+                                    }
+                                });
+
+                                // execute fetched scripts (external first, then inline)
+                                const allScripts = Array.from(doc.querySelectorAll('script'));
+                                const external = allScripts.filter(s => s.src);
+                                const inline = allScripts.filter(s => !s.src);
+
+                                // Load external scripts in order, skipping ones already present
+                                for (const s of external) {
+                                    if (s.src && !document.querySelector(`script[src="${s.src}"]`)) {
+                                        await new Promise((resolve) => {
+                                            const tag = document.createElement('script');
+                                            tag.src = s.src;
+                                            tag.async = false;
+                                            tag.onload = () => resolve();
+                                            tag.onerror = () => resolve();
+                                            document.head.appendChild(tag);
+                                        });
+                                    }
+                                }
+
+                                // Run inline scripts (skip this SPA loader to avoid double-initialization)
+                                for (const s of inline) {
+                                    const txt = s.textContent || '';
+                                    if (txt.includes('SPA-style admin navigation')) continue; // skip our loader
+                                    const tag = document.createElement('script');
+                                    try { tag.appendChild(document.createTextNode(txt)); } catch(e) { tag.text = txt; }
+                                    document.body.appendChild(tag);
+                                }
+
+                                // small scroll to top and fade in
+                                main.scrollTop = 0;
+                                setTimeout(()=> main.style.opacity = 1, 80);
+                                if(push) history.pushState({url:url}, '', url);
+                            } else {
+                                // fallback full navigation if we couldn't extract content
+                                window.location.href = url;
+                            }
+                        } catch(e){
+                            console.error('Failed to load', e);
+                            window.location.href = url; // fallback
+                        }
+                    }
+
+                    nav.forEach(a => {
+                        const href = a.getAttribute('href');
+                        // ignore external links and anchors
+                        if(!href || href.startsWith('http') || href.startsWith('#')) return;
+                        a.addEventListener('click', function(ev){
+                            ev.preventDefault();
+                            const target = this.getAttribute('href');
+                            setActiveLink(target);
+                            loadIntoMain(target, true);
+                        });
+                    });
+
+                    // handle back/forward
+                    window.addEventListener('popstate', (e) => {
+                        const url = (e.state && e.state.url) || location.pathname.split('/').pop();
+                        if(url) loadIntoMain(url, false);
+                    });
+
+                    // initial activation for current path
+                    const initial = location.pathname.split('/').pop() || 'dailysales.html';
+                    setActiveLink(initial);
+                })();
+            </script>
     </div>
 
     <aside class="sidebar no-print">
