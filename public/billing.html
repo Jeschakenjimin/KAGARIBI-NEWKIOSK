@@ -30,6 +30,13 @@
     .item-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .cancel-btn { background: none; border: none; color: #555; cursor: pointer; font-size: 1rem; padding: 0 8px; }
     .cancel-btn:hover { color: var(--deep-red); }
+    .cancel-btn { background: none; border: none; color: #aaa; cursor: pointer; font-size: 0.9rem; padding: 0; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; }
+    .cancel-btn svg { width:18px; height:18px; }
+    .cancel-btn:hover { color: var(--deep-red); background: rgba(255,255,255,0.03); }
+    .void-table-btn { background: none; border: 1px solid #333; color: #ccc; padding:6px; border-radius: 6px; cursor: pointer; display:inline-flex; gap:8px; align-items:center; justify-content:center; }
+    .void-table-btn svg { width:16px; height:16px; }
+    .void-table-btn:hover { background: rgba(255,255,255,0.03); color: var(--deep-red); border-color: rgba(255,255,255,0.06); }
+    .void-all-btn { display: none; }
     .total-row { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 15px; border-top: 2px solid #333; }
     .total-price { font-size: 1.6rem; font-weight: bold; color: white; }
     .bill-btn { background: var(--success); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; font-size: 1rem; }
@@ -262,10 +269,14 @@
                     const card = document.createElement('div');
                     card.className = "table-card";
                     card.innerHTML = `
-    <button class="void-all-btn" onclick="voidWholeTable('${tableId}', ${JSON.stringify(data.docIds).replace(/"/g, '&quot;')})"></button>
     
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>${tableId} ${badgeHtml}</h2> 
+        <h2 style="display:flex; align-items:center; gap:8px;">
+            ${tableId} ${badgeHtml}
+            <button class="void-table-btn" onclick="voidWholeTable('${tableId}', ${JSON.stringify(data.docIds).replace(/"/g, '&quot;')})" title="Void Table">
+                <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 3v1H4v2h16V4h-5V3H9zm1 5v10h2V8H10zm4 0v10h2V8h-2zM7 8v10h2V8H7z"/></svg>
+            </button>
+        </h2>
         <span class="status-badge" style="background:${data.allServed ? 'var(--success)' : '#444'}">
             ${data.allServed ? ' Ready' : '⌛ Cooking'}
         </span>
@@ -277,12 +288,16 @@
         const displayName = parts[0];
         const addonText = parts[1] ? '(' + parts[1] : '';
 
-        return `
+                    return `
             <div class="item-row" style="align-items: flex-start;">
-                <span style="flex: 1;">
-                    <button class="cancel-btn" onclick="cancelSingleItem('${item.docId}', ${item.index}, '${item.name}')"></button>
-                    <b style="font-size: 1rem;">${item.qty}x ${displayName}</b>
-                    <div style="font-size: 0.75rem; color: var(--gold); margin-left: 30px;">${addonText}</div>
+                <span style="flex: 1; display:flex; gap:8px; align-items:flex-start;">
+                    <button class="cancel-btn" aria-label="Void item" onclick="cancelSingleItem('${item.docId}', ${item.index}, '${item.name}')">
+                        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 3v1H4v2h16V4h-5V3H9zm1 5v10h2V8H10zm4 0v10h2V8h-2zM7 8v10h2V8H7z"/></svg>
+                    </button>
+                    <div>
+                      <b style="font-size: 1rem;">${item.qty}x ${displayName}</b>
+                      <div style="font-size: 0.75rem; color: var(--gold); margin-left: 0;">${addonText}</div>
+                    </div>
                 </span>
                 <span style="font-weight: bold;">₱${(item.qty * item.price).toLocaleString()}</span>
             </div>
@@ -428,7 +443,7 @@ async function executeCancelItem() {
     // 1. Fix the ID to match your HTML: 'cancel-item-pin'
     const pin = document.getElementById('cancel-item-pin').value;
     
-    if (pin !== "080910") {
+    if (pin !== "1122") {
         alert("Invalid PIN");
         return;
     }
@@ -850,7 +865,7 @@ function voidWholeTable(tableId, docIds) {
 
 async function executeVoid() {
     const pin = document.getElementById('void-pin').value;
-    if (pin !== "080910") {
+    if (pin !== "1122") {
         alert("Invalid PIN");
         return;
     }
