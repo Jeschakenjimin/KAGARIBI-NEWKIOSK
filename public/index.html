@@ -1104,16 +1104,16 @@
                 options: [{ name: "1-Bottle", price: 1400, cost: 899.84 },{ name: "100ML", price: 180, cost: 100.73 }]
              },
             { id: 216, jname: "サントリー角ハイボール", name: "HIGHBALL", price: 200, cat: "Drinks/Dessert", img: "images/SUNTORY KAKU HIGH BALL.png", desc: "SUNTORY KAKU HIGHBALL.", isBestSeller: false,
-                options: [{ name: "1 PUMP", price: 340.00, cost: 75.00 },{ name: "2 PUMP", price: 440.00, cost: 36.34 },{ name: "3 PUMP", price: 540.00, cost: 36.34 }]
+                options: [{ name: "1 PUMP", price: 200.00, cost: 75.00 },{ name: "2 PUMP", price: 300.00, cost: 36.34 },{ name: "3 PUMP", price: 400.00, cost: 36.34 }]
              },
              { id: 510, jname: "サントリー 角", name: "SUNTORY KAKU", price: 220, cat: "Drinks/Dessert", img: "images/SUNTORY KAKU.png", desc: "SUNTORY KAKU.", isBestSeller: false,
-                options: [{ name: "1 PUMP", price: 320.00, cost: 75.00 },{ name: "2 PUMP", price: 420.00, cost: 36.34 },{ name: "3 PUMP", price: 520.00, cost: 36.34 }]
+                options: [{ name: "1 PUMP", price: 220.00, cost: 75.00 },{ name: "2 PUMP", price: 320.00, cost: 36.34 },{ name: "3 PUMP", price: 420.00, cost: 36.34 }]
              },
-            { id: 511, jname: "サントリー角コーラ", name: "SUNTORY KAKU COLA", price: 240, cat: "Drinks/Dessert", img: "images/SUNTORY KAKU COLA.png", desc: "SUNTORY KAKU COLA.", isBestSeller: false,
-                options: [{ name: "1 PUMP", price: 340.00, cost: 75.00 },{ name: "2 PUMP", price: 440.00, cost: 36.34 },{ name: "3 PUMP", price: 540.00, cost: 36.34 }]
+            { id: 511, jname: "サントリー角コーラ", name: "SUNTORY KAKU COLA", price: 240, cat: "Drinks/Dessert",img: "images/SUNTORY KAKU COLA.png", desc: "SUNTORY KAKU COLA.", isBestSeller: false,
+                options: [{ name: "1 PUMP", price: 240.00, cost: 75.00 },{ name: "2 PUMP", price: 340.00, cost: 36.34 },{ name: "3 PUMP", price: 440.00, cost: 36.34 }]
              },
             { id: 301, jname: "サントリー角ジンジャー", name: "SUNTORY KAKU GINGER", price: 240, cat: "Drinks/Dessert", img: "images/SUNTORY KAKU GINGER.png", desc: "SUNTORY KAKU GINGER.", isBestSeller: false,
-                options: [{ name: "1 PUMP", price: 340.00, cost: 75.00 },{ name: "2 PUMP", price: 440.00, cost: 36.34 },{ name: "3 PUMP", price: 540.00, cost: 36.34 }]
+                options: [{ name: "1 PUMP", price: 240.00, cost: 75.00 },{ name: "2 PUMP", price: 340.00, cost: 36.34 },{ name: "3 PUMP", price: 440.00, cost: 36.34 }]
              },
              
             { id: 217, jname: "赤ワインと白ワイン", name: "RED AND WHITE WINE", price: 200,cost: 55.99, cat: "Drinks/Dessert", img: "images/RED AND WHITE WINE.png", desc: "RED AND WHITE WINE.", isBestSeller: false,
@@ -1759,10 +1759,6 @@
                     <button type="button" class="qty-btn${tempQty === q ? ' active' : ''}" data-qty="${q}" onclick="manualQtyUpdate(${q})">${q}</button>
                 `).join('')}
             </div>
-        </div>
-        <div style="margin-top: 20px;">
-            <button class="pay-btn${isUnavailable ? ' add-disabled' : ''}" onclick="${isUnavailable ? 'void(0)' : 'addToCartFinal()'}">${isUnavailable ? 'Unavailable' : 'ADD TO CART'}</button>
-            <button class="pay-btn" onclick="closeModals()" style="background:gray; border:1px solid #444; color:white;">CANCEL</button>
         </div>`;
         
     document.getElementById('item-modal').style.display = 'flex';
