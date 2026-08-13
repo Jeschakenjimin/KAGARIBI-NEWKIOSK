@@ -40,6 +40,7 @@
             /* background: rgba(0,0,0,0.9); */
             z-index: 2000; justify-content: center; align-items: center; 
             backdrop-filter: blur(8px);
+            pointer-events: none;
         }
 
         .modal-box { 
@@ -77,10 +78,17 @@
         #splash, #dining { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            z-index: 500; text-align: center;
+            z-index: 500; text-align: center; pointer-events: auto;
         }
         #splash { background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url("photo_2026-01-25_02-48-26.jpg") center/cover; }
         #dining { display: none; background: #1a1a1a; gap: 20px; }
+        
+        #splash button, #dining button {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            -webkit-user-select: none;
+            user-select: none;
+        }
 
         .choice-btn { width: 80%; padding: 40px 20px; border: 2px solid #444; border-radius: 20px; background: var(--card-bg); }
 
@@ -480,20 +488,20 @@
 </head>
 <body>
     
-    <div id="splash" onclick="showDining()">
+    <div id="splash" style="cursor: pointer; pointer-events: auto;">
         <div style="font-size: 5rem;"></div>
         <h2 style="letter-spacing: 2px;">KAGARIBI</h2>
-        <div style="background: var(--gold); color: black; padding: 12px 25px; border-radius: 30px; font-weight: bold; margin-top: 20px; box-shadow: 0 4px 10px rgba(255,193,7,0.3);">TOUCH TO START</div>
-        <div onclick="window.location.href='reservation.html'" style="background: var(--gold); color: black; padding: 12px 38px; border-radius: 30px; font-weight: bold; margin-top: 20px; box-shadow: 0 4px 10px rgba(255,193,7,0.3);">
+        <button id="start-btn" type="button" onclick="document.getElementById('splash').style.display='none'; document.getElementById('dining').style.display='flex'; return false;" style="background: var(--gold); color: black; padding: 15px 35px; border-radius: 30px; font-weight: bold; margin-top: 20px; box-shadow: 0 4px 10px rgba(255,193,7,0.3); cursor: pointer; border: none; font-size: 1.1rem; pointer-events: auto; touch-action: manipulation;">START</button>
+        <button id="reservation-btn" type="button" onclick="window.location.href='reservations.html'; return false;" style="background: var(--gold); color: black; padding: 15px 35px; border-radius: 30px; font-weight: bold; margin-top: 20px; box-shadow: 0 4px 10px rgba(255,193,7,0.3); cursor: pointer; border: none; font-size: 1.1rem; pointer-events: auto; touch-action: manipulation;">
             RESERVATION
-        </div>      
+        </button>
     </div>
     
 
     <div id="dining">
         <h2 style="color: var(--gold); font-family: 'Fredoka';">Order Type</h2>
-        <div class="choice-btn" onclick="startApp('Dine In')"><span style="font-size:3rem;"></span><br><h3>DINE IN</h3></div>
-        <div class="choice-btn" onclick="startApp('Take Out')"><span style="font-size:3rem;"></span><br><h3>TAKE OUT</h3></div>
+        <div id="dine-in-btn" class="choice-btn"><span style="font-size:3rem;"></span><br><h3>DINE IN</h3></div>
+        <div id="take-out-btn" class="choice-btn"><span style="font-size:3rem;"></span><br><h3>TAKE OUT</h3></div>
     </div>
 
     <div id="table-entry" class="modal-overlay">
@@ -1407,8 +1415,6 @@
     }
 };
 
-        function showDining() { document.getElementById('splash').style.display='none'; document.getElementById('dining').style.display='flex'; }
-    
         function startApp(type) { 
     orderType = type;
     
@@ -1440,6 +1446,19 @@
         modal.style.display = 'flex'; // Show the manual entry modal
     }
 }
+
+        const dineInBtn = document.getElementById('dine-in-btn');
+        const takeOutBtn = document.getElementById('take-out-btn');
+        if (dineInBtn) {
+            dineInBtn.addEventListener('click', function () {
+                startApp('Dine In');
+            });
+        }
+        if (takeOutBtn) {
+            takeOutBtn.addEventListener('click', function () {
+                startApp('Take Out');
+            });
+        }
 
         function saveTableAndStart() { 
     const t = document.getElementById('table-input').value.trim(); 
@@ -2594,34 +2613,9 @@ async function placeOrder() {
     renderCartUI([]); 
     alert("Order Sent!");
 }
-function renderCartUI() {
-    const container = document.getElementById('cart-list'); // Use your real ID
-    if (!container) return;
-    
-    // If yourLocalCartArray is empty, the screen clears!
-    container.innerHTML = yourLocalCartArray.map(item => `<div>${item.name}</div>`).join('');
-}
-(async () => {
-    console.log("Starting patch...");
-    const snapshot = await db.collection("archived_sales").get();
-    
-    snapshot.forEach(async (doc) => {
-        const data = doc.data();
-        if (data.items && data.foodCost === undefined) {
-            let totalCost = 0;
-            data.items.forEach(item => {
-                if(item.name === "KATSU-DON") totalCost += (80 * (item.qty || 1));
-            });
-            
-            await db.collection("archived_sales").doc(doc.id).update({
-                foodCost: totalCost,
-                grossProfit: (data.total - totalCost)
-            });
-            console.log(`Patched order: ${doc.id}`);
-        }
-    });
-    console.log("Patch finished!");
-})();
+
+// FIXED: Removed buggy renderCartUI and patching code
+// The actual updateCartUI() function is already defined and working properly
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
@@ -2742,10 +2736,8 @@ function onBottomSearchClick() {
     // if already visible, keep focus so typing starts immediately
     bottomSearchInput.focus();
 }
+</script>
 
-    <!-- Order Slip Print Container -->
-    <div id="print-order-slip" style="display:none;"></div>
-
-    </script>
+<div id="print-order-slip" style="display:none;"></div>
 </body>
 </html>
