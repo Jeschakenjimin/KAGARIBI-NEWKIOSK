@@ -119,14 +119,14 @@
             flex-direction: column;
             align-items: flex-start;
             justify-content: center;
-            gap: 6px;
-            padding: 14px 16px;
+            gap: 4px;
+            padding: 12px 14px;
             border-radius: 10px; 
             background: transparent !important; 
             border: 1px solid transparent; 
             color: black; 
-            font-size: 1.05rem;
-            line-height: 1.2;
+            font-size: 0.95rem;
+            line-height: 1.15;
             width: 100%;
             box-sizing: border-box;
             position: relative;
@@ -135,8 +135,8 @@
         }
 
         .cat-btn.active { color: var(--gold); font-weight: bold; }
-        .cat-btn .cat-main { font-size: 1.18rem; font-weight: 800; }
-        .cat-btn .cat-sub { font-size: 0.95rem; opacity: 0.85; margin-top: 4px; }
+        .cat-btn .cat-main { font-size: 0.98rem; font-weight: 700; }
+        .cat-btn .cat-sub { font-size: 0.82rem; opacity: 0.8; margin-top: 2px; }
 
         @keyframes slideUpFade {
             from { opacity: 0; transform: translateY(15px); }
@@ -527,7 +527,12 @@
 
         <div class="bottom-search-bar" style="position: fixed; inset: auto 0 0 0; z-index: 999; background: rgba(255,255,255,0.95); box-shadow: 0 -8px 20px rgba(0,0,0,0.08); padding: 12px 16px; display: flex; gap: 10px; align-items: center; justify-content: flex-end; backdrop-filter: blur(10px);">
             <input type="text" id="bottom-search-input" placeholder="Search food items..." oninput="triggerBottomSearch()" style="flex: 1; min-width: 0; padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 28px; font-size: 0.95rem; outline: none; box-sizing: border-box; background: #fff; color: #1a1a1a; display: none;">
-            <button id="bottom-search-button" onclick="onBottomSearchClick()" style="background: #fbbf24; color: #1f2937; border: none; border-radius: 999px; padding: 14px 16px; font-size: 1.35rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.08);"></button>
+            <button id="bottom-search-button" aria-label="Search" onclick="onBottomSearchClick()" style="background: #fbbf24; color: #1f2937; border: none; border-radius: 999px; padding: 12px; width:48px; height:48px; display:flex; align-items:center; justify-content:center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.08); z-index:1002; position: relative;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block; pointer-events:none;">
+                    <path d="M21 21l-4.35-4.35" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="11" cy="11" r="6" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
         </div>
     </div>
 
