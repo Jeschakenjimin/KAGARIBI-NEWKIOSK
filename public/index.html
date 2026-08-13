@@ -439,13 +439,43 @@
         }
 
         @keyframes fillBar { to { width: 100%; } }
-        /* Add this to your style block */
 
+        /* ORDER SLIP - Thermal Printer Styles */
+        #print-order-slip {
+            display: none !important;
+            position: absolute;
+            left: -9999px;
+        }
 
-/* This class will be added once the image is loaded */
-.card-img img.loaded {
-    opacity: 1;
-}
+        @media print {
+            @page {
+                size: 80mm auto;
+                margin: 0;
+            }
+
+            body * {
+                visibility: hidden;
+            }
+
+            #print-order-slip, #print-order-slip * {
+                visibility: visible;
+            }
+
+            #print-order-slip {
+                display: block !important;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 80mm;
+                padding: 0;
+                margin: 0;
+            }
+        }
+
+        /* This class will be added once the image is loaded */
+        .card-img img.loaded {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -1981,6 +2011,93 @@
         function openMethodSelection() { document.getElementById('method-modal').style.display = 'flex'; }
         function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
 
+        function printOrderSlip(orderId, tableNumber, method, orderItems) {
+            if (!orderId || !tableNumber || !orderItems || orderItems.length === 0) return;
+
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            const orderNum = orderId.slice(-4).toUpperCase();
+
+            // Build order items HTML
+            const itemsHtml = orderItems.map(item => {
+                const qty = Number(item.qty) || 1;
+                const itemName = item.name || 'Unknown Item';
+                const notes = item.notes ? `<div style="font-size: 10px; margin-top: 2px; color: #333;">${item.notes}</div>` : '';
+                
+                return `
+                    <div style="margin-bottom: 6px; border-bottom: 1px solid #ddd; padding-bottom: 4px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: bold;">
+                            <span>${qty}x</span>
+                            <span style="flex: 1; margin-left: 10px; text-align: left;">${itemName}</span>
+                        </div>
+                        ${notes}
+                    </div>
+                `;
+            }).join('');
+
+            const slipHtml = `
+                <div style="font-family: 'Courier New', monospace; font-size: 11px; color: black; line-height: 1.3; width: 72mm; margin: 0 auto; padding: 8mm; box-sizing: border-box; background: white;">
+                    <!-- HEADER -->
+                    <div style="text-align: center; margin-bottom: 10px; border-bottom: 2px solid black; padding-bottom: 8px;">
+                        <div style="font-size: 16px; font-weight: bold; letter-spacing: 2px;">ORDER SLIP</div>
+                    </div>
+
+                    <!-- ORDER INFO -->
+                    <div style="margin-bottom: 10px; text-align: center; font-size: 11px;">
+                        <div style="font-weight: bold;">ORDER #${orderNum}</div>
+                        <div style="margin: 4px 0; border-bottom: 1px dashed #333; padding-bottom: 4px;">
+                            <div style="font-weight: bold;">TABLE: ${tableNumber}</div>
+                        </div>
+                        <div style="margin-top: 4px; font-size: 10px;">
+                            <div>${dateStr} ${timeStr}</div>
+                            <div style="margin-top: 2px;">${method === 'Dine-In' ? 'DINE-IN' : 'TAKE-OUT'}</div>
+                        </div>
+                    </div>
+
+                    <!-- ITEMS HEADER -->
+                    <div style="font-weight: bold; border-bottom: 1px solid black; padding-bottom: 6px; margin-bottom: 8px; font-size: 11px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>QTY</span>
+                            <span style="flex: 1; margin-left: 10px;">ORDER ITEM</span>
+                        </div>
+                    </div>
+
+                    <!-- ORDER ITEMS -->
+                    <div style="margin-bottom: 10px; min-height: 30px;">
+                        ${itemsHtml}
+                    </div>
+
+                    <!-- FOOTER -->
+                    <div style="text-align: center; border-top: 2px solid black; padding-top: 8px; margin-top: 10px; font-size: 10px;">
+                        <div style="font-weight: bold; margin-bottom: 4px;">FOR KITCHEN PREPARATION</div>
+                        <div style="font-size: 9px; color: #666;">Please prepare the items listed above</div>
+                    </div>
+                </div>
+            `;
+
+            const printArea = document.getElementById('print-order-slip');
+            if (printArea) {
+                printArea.innerHTML = slipHtml;
+                printArea.style.display = 'block';
+                
+                // Trigger print after a short delay to ensure rendering
+                setTimeout(() => {
+                    try {
+                        window.print();
+                    } catch (e) {
+                        console.error('Print error:', e);
+                    }
+                    
+                    // Clean up after print
+                    setTimeout(() => {
+                        printArea.innerHTML = '';
+                        printArea.style.display = 'none';
+                    }, 500);
+                }, 100);
+            }
+        }
+
         function makeOrderItem(item) {
             return {
                 ...item,
@@ -2016,6 +2133,11 @@
         sessionStorage.setItem('currentOrderId', currentOrderId);
         findActiveOrderForTable(tableNumber);
         console.log('[KIOSK] Order created:', currentOrderId);
+
+        // PRINT ORDER SLIP
+        // Send the order slip to the printer for kitchen preparation
+        const cartForSlip = cart.slice(); // Make a copy of cart before clearing
+        printOrderSlip(currentOrderId, tableNumber, method, cartForSlip);
 
         // 2. THE VANISHING SIGNAL
         // We DELETE the session document. 
@@ -2620,6 +2742,9 @@ function onBottomSearchClick() {
     // if already visible, keep focus so typing starts immediately
     bottomSearchInput.focus();
 }
+
+    <!-- Order Slip Print Container -->
+    <div id="print-order-slip" style="display:none;"></div>
 
     </script>
 </body>
