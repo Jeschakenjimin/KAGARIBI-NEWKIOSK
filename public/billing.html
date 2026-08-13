@@ -750,20 +750,35 @@ async function finishCheckout() {
         }
     };
     
+    // Print two identical copies: invoke the print dialog twice, then run post-print actions
+    const printTwiceThen = (callback) => {
+        try {
+            window.print();
+        } catch (e) {
+            // ignore
+        }
+        // Small delay to let the first print job start before calling print again
+        setTimeout(() => {
+            try {
+                window.print();
+            } catch (e) {
+                // ignore
+            }
+            if (typeof callback === 'function') callback();
+        }, 600);
+    };
+
     if (qrImg) {
-        qrImg.onload = () => { 
-            window.print(); 
-            executePrintAction(); 
+        qrImg.onload = () => {
+            printTwiceThen(executePrintAction);
         };
-        setTimeout(() => { 
-            if (!qrImg.complete) { 
-                window.print(); 
-                executePrintAction(); 
-            } 
+        setTimeout(() => {
+            if (!qrImg.complete) {
+                printTwiceThen(executePrintAction);
+            }
         }, 2000);
     } else {
-        window.print();
-        executePrintAction();
+        printTwiceThen(executePrintAction);
     }
 }
 
