@@ -345,7 +345,10 @@
             <span>Amount Due</span>
             <span class="total-price" id="total-display-${tableId}">₱${data.total.toLocaleString()}</span>
         </div>
-        <button class="bill-btn" onclick="checkout('${tableId}', ${safeData})">PRINT & BILL OUT</button>
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button class="bill-btn" style="flex: 1;" onclick="checkoutPrintOnly('${tableId}', ${safeData})">PRINT RECEIPT</button>
+            <button class="bill-btn" style="flex: 1; background: var(--gold); color: #000;" onclick="doneOrder('${tableId}', ${JSON.stringify(data.docIds).replace(/"/g, '&quot;')})">DONE ORDER</button>
+        </div>
         
     </div>
 `;
@@ -470,6 +473,64 @@ async function executeCancelItem() {
         let currentInput = "0";
 // A global variable to hold the final math for the receipt and database
 let activeCheckoutData = null;
+
+// Print receipt only (does not mark order as done, no validation required)
+async function checkoutPrintOnly(tableId, group) {
+    // 1. Find the table card where we stored the math results
+    const displayElement = document.getElementById(`total-display-${tableId}`);
+    if (!displayElement) {
+        alert("Error: Total display not found.");
+        return;
+    }
+    const card = displayElement.closest('.table-card');
+
+    // 2. Grab the values from the dataset (saved by calculatePHDiscount)
+    const finalTotal = parseFloat(card.dataset.finalTotal) || group.total;
+    const seniorPortion = parseFloat(card.dataset.seniorFood) || 0;
+    const regularPortion = parseFloat(card.dataset.regularFood) || 0;
+    const beerPortion = parseFloat(card.dataset.beerPortion) || 0;
+    
+    const corkagePortion = parseFloat(card.dataset.corkagePortion) || 0;
+    const vatable = parseFloat(card.dataset.vatable) || (group.total / 1.12);
+    const vat = parseFloat(card.dataset.vat) || (vatable * 0.12);
+    
+    const discount = parseFloat(card.dataset.discount) || 0;
+    const sc = parseFloat(card.dataset.sc) || (group.total * 0.05);
+    const vatExempt = parseFloat(card.dataset.vatExempt) || 0;
+
+    // 2b. Grab discount ID and senior pax info (no validation, just capture)
+    const seniorPaxInput = document.getElementById(`senior-pax-${tableId}`);
+    const seniorPax = seniorPaxInput ? parseInt(seniorPaxInput.value) : 0;
+    const discountIdInput = document.getElementById(`discount-id-${tableId}`);
+    const rawIds = discountIdInput ? discountIdInput.value.trim() : "";
+    const discountIdsArray = rawIds.split(',').map(id => id.trim()).filter(id => id.length > 0);
+
+    // 3. Prepare the data for the receipt
+    activeCheckoutData = {
+        tableId, 
+        group, 
+        method: (group.method || "CASH").toUpperCase(),
+        seniorPax: seniorPax,
+        discountIdsArray: discountIdsArray,
+        
+        seniorPortion: seniorPortion,
+        regularPortion: regularPortion,
+        beerPortion: beerPortion,
+        corkagePortion: corkagePortion,
+        vatable: vatable,
+        vat: vat,
+        
+        grossTotal: group.total,
+        vatExempt: vatExempt,
+        discount: discount,
+        sc: sc,
+        finalTotal: round2(finalTotal),
+        isDiscounted: discount > 0 
+    };
+
+    // 4. Print directly without updating database (no validation needed)
+    finishCheckoutPrintOnly(); 
+}
 
 // UPDATED TO HANDLE MULTIPLE IDs PROPERLY
 async function checkout(tableId, group) {
@@ -787,6 +848,242 @@ async function finishCheckout() {
         setTimeout(() => { if (!qrImg.complete) printTwoCopies(); }, 2000);
     } else {
         printTwoCopies();
+    }
+}
+
+// Print receipt only without updating database
+async function finishCheckoutPrintOnly() {
+    const { tableId, group, method, finalTotal, seniorPortion, regularPortion, beerPortion, corkagePortion, vatable, vat, discount, sc, vatExempt } = activeCheckoutData;
+
+    if (!window.printTracker[tableId]) {
+        window.printTracker[tableId] = {
+            invoiceNo: Math.floor(1000 + Math.random() * 9000),
+        };
+    }
+
+    const invoiceNo = window.printTracker[tableId].invoiceNo;
+    const orderId = Math.floor(Math.random() * 99999).toString().padStart(5, '0').toUpperCase();
+
+    // Consolidate duplicate items
+    const consolidatedItems = [];
+    group.items.forEach(item => {
+        const existingItem = consolidatedItems.find(i => i.name === item.name && i.price === item.price);
+        if (existingItem) {
+            existingItem.qty = Number(existingItem.qty) + Number(item.qty);
+        } else {
+            consolidatedItems.push({ ...item }); 
+        }
+    });
+
+    // 3. Prepare Receipt HTML
+    const printArea = document.getElementById('print-receipt');
+    printArea.innerHTML = ""; 
+
+    let qrHtml = "";
+    if (method === "GCASH") {
+        qrHtml = `
+            <center style="margin: 10px 0;">
+                <img id="qr-code-print" src="images/gcash.png?v=1" style="width:55mm;">
+                <div style="font-size: 14px; font-weight: bold; margin-top: 5px;">${method} PAYMENT</div>
+            </center>
+        `;
+    }
+
+    printArea.innerHTML = `
+        <div style="font-family: 'Courier New', monospace; font-size: 12px; color: black; line-height: 1.2; width: 72mm; margin: 0 auto; padding: 0; box-sizing: border-box;">
+            <center>
+                <b style="font-size: 18px;">KAGARIBI</b><br>
+                JAPANESE RESTAURANT<br>Paseo De Carmona, Carmona, Philippines, 4117 <br> +63 917-184-0423<br>TIN: 662-927-364-00000
+            </center>
+            
+            <div style="display: flex; justify-content: space-between; margin-top: 5px; border-top: 1px dashed #000; padding-top: 5px;">
+                <span>Invoice: ${invoiceNo}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 5px; border-top: 1px dashed #000; padding-top: 5px;">
+                <span>Date: ${new Date().toLocaleDateString()}</span><span>${new Date().toLocaleTimeString()}</span>
+            </div>
+            
+            <p style="margin: 5px 0; text-align: center;">Table: ${tableId}<br>Mode: ${method}</p>
+            
+            ${activeCheckoutData.seniorPax > 0 ? `
+            <div style="width: 100%; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 5px 0; text-align: center; font-size: 11px; font-weight: bold;">
+                <div>SENIOR/PWD: ${activeCheckoutData.seniorPax} PAX</div>
+                <div style="font-size: 10px; color: #000;">ID: ${activeCheckoutData.discountIdsArray.join(', ')}</div>
+            </div>` : ''}
+            
+            <div style="width: 100%; border-top: 1px dashed #000; padding-top: 5px;">
+                ${consolidatedItems.map(i => `
+                    <div style="margin-bottom: 8px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>${i.qty} x ${i.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                            <span>${(i.qty * i.price).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                        </div>
+                        <div style="margin-left: 10px; text-transform: uppercase; font-weight: bold;">${i.name}</div>
+                    </div>
+                `).join('')}
+            </div>
+
+            <div style="width: 100%; border-top: 1px dashed #000; padding-top: 5px; font-size: 12px;">
+                ${activeCheckoutData.seniorPortion > 0 ? `
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Senior Food (inc. SC):</span>
+                    <span>${activeCheckoutData.seniorPortion.toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>` : ''}
+                
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Regular Food (inc. SC):</span>
+                    <span>${activeCheckoutData.regularPortion.toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>
+
+                ${activeCheckoutData.beerPortion > 0 ? `
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Alcohol/Beer (inc. SC):</span>
+                    <span>${activeCheckoutData.beerPortion.toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>` : ''}
+
+                ${activeCheckoutData.corkagePortion > 0 ? `
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Corkage Fee (inc. SC):</span>
+                    <span>${activeCheckoutData.corkagePortion.toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>` : ''}
+            </div>
+
+            <div style="width: 100%; font-size: 15px; border-top: 1px dashed #000; border-bottom: 1px dashed #000; font-weight: bold; margin-top: 5px;">
+                <div style="display: flex; justify-content: space-between; margin-top: 5px; padding-top: 5px;">
+                    <span>TOTAL AMT DUE</span>
+                    <span>${activeCheckoutData.finalTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                </div>
+            </div>
+
+            <div style="width: 100%; font-size: 12px; color: #000; padding-top: 5px">
+                <div style="display: flex; justify-content: space-between;"><span>Vatable Sales:</span><span>${vatable.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                <div style="display: flex; justify-content: space-between;"><span>VAT EXEMPT:</span><span>${vatExempt.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                <div style="display: flex; justify-content: space-between;"><span>VAT Amount:</span><span>${vat.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                <div style="display: flex; justify-content: space-between; margin-top: 3px;"><span>Service Charge (5%):</span><span>${sc.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                ${activeCheckoutData.isDiscounted ? `
+                <div style="display: flex; justify-content: space-between; color: #444;"><span>Discount (20%):</span><span>-${discount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>` : ''}
+            </div>
+            
+            ${qrHtml}
+            <center><p style="margin-top:15px; font-weight:bold; font-size: 14px; padding-bottom: 15px">THANK YOU, COME AGAIN!</p></center>
+        </div>
+    `;
+
+    // Print the receipt
+    printArea.style.display = 'block';
+    const qrImg = document.getElementById('qr-code-print');
+    
+    const executePrintAction = () => {
+        setTimeout(() => {
+            document.getElementById('print-receipt').style.display = 'none';
+            document.getElementById('print-receipt').innerHTML = "";
+        }, 1000);
+    };
+    
+    // Print twice
+    const printTwoCopies = () => {
+        try { window.print(); } catch (e) {}
+        try { executePrintAction(); } catch (e) {}
+
+        setTimeout(() => {
+            try { window.print(); } catch (e) {}
+            try { executePrintAction(); } catch (e) {}
+        }, 600);
+    };
+
+    if (qrImg) {
+        qrImg.onload = () => { printTwoCopies(); };
+        setTimeout(() => { if (!qrImg.complete) printTwoCopies(); }, 2000);
+    } else {
+        printTwoCopies();
+    }
+}
+
+// Mark order as done (complete, save to daily sales, and remove from dashboard)
+async function doneOrder(tableId, docIds) {
+    if (!docIds || docIds.length === 0) {
+        alert("Error: No orders found for this table.");
+        return;
+    }
+
+    try {
+        // 1. Find the table card to get discount and pricing info
+        const displayElement = document.getElementById(`total-display-${tableId}`);
+        const card = displayElement ? displayElement.closest('.table-card') : null;
+
+        // 2. Grab the values
+        const finalTotal = card ? parseFloat(card.dataset.finalTotal) : 0;
+        const seniorPortion = card ? parseFloat(card.dataset.seniorFood) : 0;
+        const regularPortion = card ? parseFloat(card.dataset.regularFood) : 0;
+        const beerPortion = card ? parseFloat(card.dataset.beerPortion) : 0;
+        const corkagePortion = card ? parseFloat(card.dataset.corkagePortion) : 0;
+        const vatable = card ? parseFloat(card.dataset.vatable) : 0;
+        const vat = card ? parseFloat(card.dataset.vat) : 0;
+        const discount = card ? parseFloat(card.dataset.discount) : 0;
+        const sc = card ? parseFloat(card.dataset.sc) : 0;
+        const vatExempt = card ? parseFloat(card.dataset.vatExempt) : 0;
+
+        // 3. Get discount ID and senior pax info
+        const seniorPaxInput = document.getElementById(`senior-pax-${tableId}`);
+        const seniorPax = seniorPaxInput ? parseInt(seniorPaxInput.value) : 0;
+        const discountIdInput = document.getElementById(`discount-id-${tableId}`);
+        const rawIds = discountIdInput ? discountIdInput.value.trim() : "";
+        const discountIdsArray = rawIds.split(',').map(id => id.trim()).filter(id => id.length > 0);
+
+        // 4. Get the group data to extract method and items
+        const groupDataAttr = card ? card.innerHTML : '';
+        const methodMatch = groupDataAttr.match(/Mode: (\w+)/);
+        const method = methodMatch ? methodMatch[1] : 'CASH';
+
+        // Get items from the group - we need to extract from the order docs
+        let allItems = [];
+        for (const docId of docIds) {
+            const docSnap = await db.collection("orders").doc(docId).get();
+            if (docSnap.exists) {
+                allItems = allItems.concat(docSnap.data().items || []);
+            }
+        }
+
+        // 5. Generate invoice number and order ID
+        const invoiceNo = Math.floor(1000 + Math.random() * 9000);
+        const orderId = Math.floor(Math.random() * 99999).toString().padStart(5, '0').toUpperCase();
+
+        // 6. Save to archived_sales (daily sales)
+        await db.collection("archived_sales").add({
+            invoiceNo: invoiceNo,
+            table: tableId,
+            total: finalTotal,
+            cashPaid: finalTotal,
+            change: 0,
+            method: method,
+            serviceFee: sc,
+            vat: vat,
+            discount: discount,
+            vatable: vatable,
+            vatExempt: vatExempt,
+            
+            seniorFood: seniorPortion,
+            regularFood: regularPortion,
+            alcoholSales: beerPortion,
+            corkageFee: corkagePortion,
+            seniorPax: seniorPax,
+            discountIds: discountIdsArray || [],
+            
+            items: allItems,
+            completedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // 7. Delete order from orders collection (completely remove, don't keep status)
+        const batch = db.batch();
+        docIds.forEach(id => {
+            batch.delete(db.collection("orders").doc(id));
+        });
+        await batch.commit();
+
+        showBillingNotification(`Order marked as done. Added to daily sales and removed from dashboard.`, 'success');
+    } catch (err) {
+        console.error('Error marking order as done:', err);
+        showBillingNotification('Failed to mark order as done. See console for details.', 'error');
     }
 }
 
