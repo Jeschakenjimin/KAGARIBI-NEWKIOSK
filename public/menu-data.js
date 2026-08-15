@@ -137,7 +137,7 @@ const MENU_DATABASE = [
             { id: 70, jname: "鯖 (さば)", name: "GRILLED SABA", price: 420 ,cost: 129.95, cat: "Grilled Fish", img: "images/SABA.png", desc: "Grilled mackerel, savory and flavorful.", isBestSeller: true },
             { id: 71, jname: "サーモン", name: "GRILLED SALMON", price: 280,cost: 104.98, cat: "Grilled Fish", img: "images/SALMON.png", desc: "Grilled salmon, tender and rich in taste.", isBestSeller: true },
             { id: 73, jname: "秋刀魚 (さんま)", name: "GRILLED SANMA", price: 300,cost: 194.95, cat: "Grilled Fish", img: "images/SANMA.png", desc: "Grilled Pacific saury, lightly salted.", isBestSeller: false },
-            { id: 74, jname: "サーモンカマ", name: "GRILLED SALMON-KAMA", price: 390,cost: 77.19, cat: "Grilled Fish", img: "images/SAMON-KAMA.png", desc: "Grilled salmon collar, juicy and flavorful.", isBestSeller: false },
+            { id: 74, jname: "サーモンカマ", name: "GRILLED SALMON-", price: 390,cost: 77.19, cat: "Grilled Fish", img: "images/SAMON-.png", desc: "Grilled salmon collar, juicy and flavorful.", isBestSeller: false },
             { id: 75, jname: "サーモンハラス", name: "GRILLED SALMON-HARASU", price: 220,cost: 97.22, cat: "Grilled Fish", img: "images/SALMON HARASU.png", desc: "Grilled salmon belly, rich and fatty cut.", isBestSeller: true },
             { id: 76, jname: "ししゃも", name: "GRILLED SHISHAMO", price: 280,cost: 157.04, cat: "Grilled Fish", img: "images/SHISHAMO.png", desc: "Grilled smelt fish, often served whole with roe.", isBestSeller: true },
             { id: 77, jname: "ホッケ", name: "GRILLED HOKKE", price: 310,cost: 121.50, cat: "Grilled Fish", img: "images/HOKKE.png", desc: "Grilled Atka mackerel, soft and savory.", isBestSeller: false },
