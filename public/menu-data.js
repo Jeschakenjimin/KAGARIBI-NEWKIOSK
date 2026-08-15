@@ -104,7 +104,13 @@ const MENU_DATABASE = [
             { name: "CHASYU", price: 100},{ name: "TAMAGO", price: 50},{ name: "PIRIKARA-NEGI", price: 50},{ name: "OMORI", price: 50}
             ]
              },
-            { id: 48, jname: "冷やし中華", name: "HIYASHI-CHUKA", price: 390,cost: 100.49, cat: "Ramen", img: "images/HIYASITYUKA.png", desc: "Cold ramen noodles with assorted toppings and dressing.", isBestSeller: false,
+            { id: 504, jname: "冷やし中華", name: "HIYASHI CHUKA", price: 390, cost: 32.26, cat: "Ippin-Ryouri", img: "images/HIYASHI CHUKA.png", desc: "Hiyashi Chuka is a refreshing Japanese cold noodle dish served with a tangy dressing.", isBestSeller: false,
+                addons: [
+            { name: "GYOZA", price: 120},{ name: "HAN-CHAHAN", price: 120},{ name: "YASAI-ITAME", price: 120},
+            { name: "CHASYU", price: 100},{ name: "TAMAGO", price: 50},{ name: "PIRIKARA-NEGI", price: 50},{ name: "OMORI", price: 50}
+            ]
+             },
+            { id: 49, jname: "叉焼麺", name: "CHASHUMEN", price: 480,cost: 115.29, cat: "Ramen", img: "images/CHASHUMEN.png", desc: "A ramen bowl stacked with extra tender braised pork (chashu). Meat lovers' paradise!", isBestSeller: false,
                 addons: [
             { name: "GYOZA", price: 120},{ name: "HAN-CHAHAN", price: 120},{ name: "YASAI-ITAME", price: 120},
             { name: "CHASYU", price: 100},{ name: "TAMAGO", price: 50},{ name: "PIRIKARA-NEGI", price: 50},{ name: "OMORI", price: 50}
@@ -118,7 +124,7 @@ const MENU_DATABASE = [
             { id: 56, jname: "サラスパ", name: "SARA-SUPA", price: 280,cost: 75.61, cat: "Salad", img: "images/SARA-SUPA 120.png", desc: "House special mixed salad (small serving).", isBestSeller: false },
             { id: 57, jname: "きゅうりとわかめ", name: "KYURI TO WAKAME", price: 220,cost: 43.98, cat: "Salad", img: "images/KYURI TO WAKAME.png", desc: "Cucumber and seaweed salad with light dressing.", isBestSeller: true },
             { id: 58, jname: "たこ酢の物", name: "TAKO-SUNOMONO", price: 280,cost: 68.98, cat: "Salad", img: "images/TAKO-SUNOMONO.png", desc: "Octopus with vinegared cucumber.", isBestSeller: false },
-            { id: 59, jname: "酢の物盛り合わせ", name: "SUNOMONO-MORIAWASE", price: 310,cost: 113.18, cat: "Salad", img: "images/SUNOMONO-MORIAWASE.png", desc: "Assorted Japanese vinegared seafood and vegetables.", isBestSeller: false },
+            { id: 59, jname: "酢の物盛り合わせ", name: "SUNOMONO-MORIAWASE", price: 310,cost: 113.18, cat: "Salad", img: "images/SUNOMONO MORIAWASE.jpg", desc: "Assorted Japanese vinegared seafood and vegetables.", isBestSeller: false },
             { id: 60, jname: "かけそば-うどん", name: "KAKE-SOBA-UDON", price: 250,cost: 72.10, cat: "Soba-Udon", img: "images/KAKE-SOBA_UDON.png", desc: "Hot plain noodle soup served in light savory broth.", isBestSeller: false },
             { id: 61, jname: "たぬきそば-うどん", name: "TANUKI-SOBA-UDON", price: 290,cost: 73.93, cat: "Soba-Udon", img: "images/TANUKI-SOBA_UDON.png", desc: "Noodles in broth topped with crispy tempura bits.", isBestSeller: false },
             { id: 62, jname: "きつねそば-うどん", name: "KITSUNE-SOBA-UDON", price: 290,cost: 90.35, cat: "Soba-Udon", img: "images/KITUNE-SOBA_UDON.png", desc: "Noodles in broth topped with sweet fried tofu.", isBestSeller: true },
@@ -128,12 +134,12 @@ const MENU_DATABASE = [
             { id: 66, jname: "カレーそば-うどん", name: "KARE-SOBA-UDON", price: 430,cost: 90.62, cat: "Soba-Udon", img: "images/KARE-SOBA_UDON.png", desc: "Noodles in rich Japanese curry sauce.", isBestSeller: true },
             { id: 67, jname: "ざるそば-うどん", name: "ZARU-SOBA-UDON", price: 310,cost: 75.07, cat: "Soba-Udon", img: "images/ZARU-SOBA_UDON.png", desc: "Cold noodles served with dipping sauce.", isBestSeller: false },
             { id: 68, jname: "天ざるそば-うどん", name: "TENZARU-SOBA-UDON", price: 490,cost: 94.03, cat: "Soba-Udon", img: "images/TENZARU-SOBA_UDON.png", desc: "Cold noodles with assorted tempura and dipping sauce.", isBestSeller: false },
-            { id: 70, jname: "鯖 (さば)", name: "GRILLED SABA", price: "Market Price",cost: 129.95, cat: "Grilled Fish", img: "images/SABA.png", desc: "Grilled mackerel, savory and flavorful.", isBestSeller: true },
+            { id: 70, jname: "鯖 (さば)", name: "GRILLED SABA", price: 420 ,cost: 129.95, cat: "Grilled Fish", img: "images/SABA.png", desc: "Grilled mackerel, savory and flavorful.", isBestSeller: true },
             { id: 71, jname: "サーモン", name: "GRILLED SALMON", price: 280,cost: 104.98, cat: "Grilled Fish", img: "images/SALMON.png", desc: "Grilled salmon, tender and rich in taste.", isBestSeller: true },
             { id: 73, jname: "秋刀魚 (さんま)", name: "GRILLED SANMA", price: 300,cost: 194.95, cat: "Grilled Fish", img: "images/SANMA.png", desc: "Grilled Pacific saury, lightly salted.", isBestSeller: false },
             { id: 74, jname: "サーモンカマ", name: "GRILLED SALMON-KAMA", price: 390,cost: 77.19, cat: "Grilled Fish", img: "images/SAMON-KAMA.png", desc: "Grilled salmon collar, juicy and flavorful.", isBestSeller: false },
             { id: 75, jname: "サーモンハラス", name: "GRILLED SALMON-HARASU", price: 220,cost: 97.22, cat: "Grilled Fish", img: "images/SALMON HARASU.png", desc: "Grilled salmon belly, rich and fatty cut.", isBestSeller: true },
-            { id: 76, jname: "ししゃも", name: "GRILLED SHISHAMO", price: 280,cost: 157.04, cat: "Grilled Fish", img: "images/SISYAMO.png", desc: "Grilled smelt fish, often served whole with roe.", isBestSeller: true },
+            { id: 76, jname: "ししゃも", name: "GRILLED SHISHAMO", price: 280,cost: 157.04, cat: "Grilled Fish", img: "images/SHISHAMO.png", desc: "Grilled smelt fish, often served whole with roe.", isBestSeller: true },
             { id: 77, jname: "ホッケ", name: "GRILLED HOKKE", price: 310,cost: 121.50, cat: "Grilled Fish", img: "images/HOKKE.png", desc: "Grilled Atka mackerel, soft and savory.", isBestSeller: false },
             { id: 78, jname: "イカ焼き", name: "GRILLED IKA-YAKI", price: 350,cost: 203.92, cat: "Grilled Fish", img: "images/IKA-YAKI.png", desc: "Grilled squid with savory glaze.", isBestSeller: true },
             { id: 354, jname: "味焼き", name: "GRILLED AJI-YAKI", price: 350,cost: 203.92, cat: "Grilled Fish", img: "images/AJI-YAKI.png", desc: "Grilled horse mackerel with a savory, smoky flavor.", isBestSeller: true },
@@ -142,7 +148,7 @@ const MENU_DATABASE = [
             { id: 81, jname: "たくあん巻き", name: "TAKUAN-MAKI", price: 150,cost: 22.69, cat: "Makimono", img: "images/TAKUAN-MAKI.png", desc: "Pickled radish sushi roll with crunchy texture.", isBestSeller: false },
             { id: 82, jname: "納豆巻き", name: "NATTO-MAKI", price: 160,cost: 42.40, cat: "Makimono", img: "images/NATTO-MAKI.png", desc: "Fermented soybean sushi roll with strong flavor.", isBestSeller: false },
             { id: 83, jname: "鉄火巻き", name: "TEKKA-MAKI", price: 250,cost: 48.02, cat: "Makimono", img: "images/TEKKA-MAKI.png", desc: "Tuna sushi roll with fresh flavor.", isBestSeller: false },
-            { id: 84, jname: "ネギトロ", name: "NEGITORO", price: 250,cost: 59.82, cat: "Makimono", img: "images/NEGITORO.png", desc: "Tuna belly and green onion sushi roll, soft and rich.", isBestSeller: false },
+            { id: 84, jname: "ネギトロ", name: "NEGITORO-MAKI", price: 250,cost: 59.82, cat: "Makimono", img: "images/NEGITORO.png", desc: "Tuna belly and green onion sushi roll, soft and rich.", isBestSeller: false },
             { id: 85, jname: "サーモン巻き", name: "SALMON-MAKI", price: 360,cost: 87.15, cat: "Makimono", img: "images/SALMON-MAKI.png", desc: "Fresh salmon sushi roll.", isBestSeller: false },
             { id: 86, jname: "スパイシーサーモン巻き", name: "SPICY-SALMON-MAKI", price: 380,cost: 65.92, cat: "Makimono", img: "images/SPICY SALMON MAKI.png", desc: "Salmon roll with spicy mayo sauce.", isBestSeller: false },
             { id: 87, jname: "サーモンマヨ巻き", name: "SALMON-MAYO-MAKI", price: 380,cost: 61.44, cat: "Makimono", img: "images/SALMON MAYO MAKI.png", desc: "Salmon roll with creamy mayonnaise.", isBestSeller: false },
