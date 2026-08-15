@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kagaribi-menu-v71'; // Update this version number to invalidate old caches
+const CACHE_NAME = 'kagaribi-menu-v72'; // Update this version number to invalidate old caches
 
 // 1. Install the Service Worker
 self.addEventListener('install', (event) => {
