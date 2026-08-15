@@ -110,6 +110,12 @@ const MENU_DATABASE = [
             { name: "CHASYU", price: 100},{ name: "TAMAGO", price: 50},{ name: "PIRIKARA-NEGI", price: 50},{ name: "OMORI", price: 50}
             ]
              },
+            { id: 49, jname: "叉焼麺", name: "CHASHUMEN", price: 480,cost: 115.29, cat: "Ramen", img: "images/CHASHUMEN.png", desc: "A ramen bowl stacked with extra tender braised pork (chashu). Meat lovers' paradise!", isBestSeller: false,
+                addons: [
+            { name: "GYOZA", price: 120},{ name: "HAN-CHAHAN", price: 120},{ name: "YASAI-ITAME", price: 120},
+            { name: "CHASYU", price: 100},{ name: "TAMAGO", price: 50},{ name: "PIRIKARA-NEGI", price: 50},{ name: "OMORI", price: 50}
+            ]
+             },
             { id: 151, jname: "シーザーサラダ", name: "CAESAR SALAD", price: 310,cost: 39.56, cat: "Salad", img: "images/CEASAR SALAD.png", desc: "Fresh greens with creamy Caesar dressing.", isBestSeller: false },
             { id: 52, jname: "カニサラダ", name: "KANI-SARADA", price: 240,cost: 72.38, cat: "Salad", img: "images/KANI-SARADA.png", desc: "Crab stick salad with fresh vegetables.", isBestSeller: true },
             { id: 53, jname: "わかめサラダ", name: "WAKAME-SARADA", price: 240,cost: 45.85, cat: "Salad", img: "images/WAKAME-SARADA.png", desc: "Seaweed salad with light sesame dressing.", isBestSeller: false },
