@@ -433,11 +433,14 @@
                         });
 
                         if (updated) {
-                            const anyCooking = updatedItems.some(item => item.status === 'Cooking' && item.isDone !== true);
+                            const wasPreparing = order.data.processStep === 'Preparing';
+                            const hasUnfinishedItems = updatedItems.some(item => item.isDone !== true && (Number(item.completedQty) || 0) < (Number(item.qty) || 1));
+                            const anyCooking = updatedItems.some(item => item.isDone !== true && (item.status === 'Cooking' || (Number(item.completedQty) || 0) > 0));
                             const allServed = updatedItems.every(item => item.isDone === true || (Number(item.completedQty) || 0) >= (Number(item.qty) || 1));
+                            const stayPreparing = wasPreparing && hasUnfinishedItems && !allServed;
                             const payload = {
                                 items: updatedItems,
-                                processStep: anyCooking ? 'Preparing' : (allServed ? 'Served' : 'Pending')
+                                processStep: stayPreparing || anyCooking ? 'Preparing' : (allServed ? 'Served' : 'Pending')
                             };
                             if (allServed) {
                                 payload.status = "Served";
