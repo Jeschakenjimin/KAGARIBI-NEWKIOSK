@@ -137,7 +137,7 @@ const MENU_DATABASE = [
             { id: 70, jname: "鯖 (さば)", name: "GRILLED SABA", price: 420 ,cost: 129.95, cat: "Grilled Fish", img: "images/SABA.png", desc: "Grilled mackerel, savory and flavorful.", isBestSeller: true },
             { id: 71, jname: "サーモン", name: "GRILLED SALMON", price: 280,cost: 104.98, cat: "Grilled Fish", img: "images/SALMON.png", desc: "Grilled salmon, tender and rich in taste.", isBestSeller: true },
             { id: 73, jname: "秋刀魚 (さんま)", name: "GRILLED SANMA", price: 300,cost: 194.95, cat: "Grilled Fish", img: "images/SANMA.png", desc: "Grilled Pacific saury, lightly salted.", isBestSeller: false },
-            { id: 74, jname: "サーモンカマ", name: "GRILLED SALMON-", price: 390,cost: 77.19, cat: "Grilled Fish", img: "images/SAMON-.png", desc: "Grilled salmon collar, juicy and flavorful.", isBestSeller: false },
+            { id: 74, jname: "サーモンカマ", name: "GRILLED SALMON-KAMA", price: 390,cost: 77.19, cat: "Grilled Fish", img: "images/SAMON-KAMA.png", desc: "Grilled salmon collar, juicy and flavorful.", isBestSeller: false },
             { id: 75, jname: "サーモンハラス", name: "GRILLED SALMON-HARASU", price: 220,cost: 97.22, cat: "Grilled Fish", img: "images/SALMON HARASU.png", desc: "Grilled salmon belly, rich and fatty cut.", isBestSeller: true },
             { id: 76, jname: "ししゃも", name: "GRILLED SHISHAMO", price: 280,cost: 157.04, cat: "Grilled Fish", img: "images/SHISHAMO.png", desc: "Grilled smelt fish, often served whole with roe.", isBestSeller: true },
             { id: 77, jname: "ホッケ", name: "GRILLED HOKKE", price: 310,cost: 121.50, cat: "Grilled Fish", img: "images/HOKKE.png", desc: "Grilled Atka mackerel, soft and savory.", isBestSeller: false },
@@ -227,7 +227,7 @@ const MENU_DATABASE = [
             { id: 353, jname: "長井もバイニクア", name: "NAGAIMO NO BAINIKUAE", price: 200,cost: 32.26, cat: "Ippin-Ryouri", img: "images/NAGAIMO NO BAINIKUAE.png", desc: "Japanese mountain yam mixed with tangy plum sauce.", isBestSeller: false },
             { id: 515, jname: "セロリ明太子マヨネーズ", name: "CELERY MENTAIKO MAYO", price: 280,cost: 32.26, cat: "Ippin-Ryouri", img: "images/CELERY MENTAIKO MAYO.png", desc: "CELERY MENTAIKO MAYO", isBestSeller: false },
             { id: 554, jname: "もつ煮込み", name: "MOTSUNIKOMI", price: 380,cost: 32.26, cat: "Ippin-Ryouri", img: "images/MOTSUNIKOMI.png", desc: "Beef or pork offal simmered in rich miso broth.", isBestSeller: false },
-            { id: 584, jname: "味噌モツ煮込みうどん", name: "MISO MOTSUNIKOMI UDON", price: 420,cost: 32.26, cat: "Ippin-Ryouri", img: "images/MISO MOTSUNIKOMI UDON.png", desc: "Thick udon noodles and tender simmered offal (motsu) in a rich, savory miso broth.", isBestSeller: false },
+            { id: 584, jname: "味噌モツ煮込みうどん", name: "MISO MOTSUNIKOMI UDON", price: 420,cost: 32.26, cat: "Ippin-Ryouri", img: "images/MOTSUNIKOMI.png", desc: "Thick udon noodles and tender simmered offal (motsu) in a rich, savory miso broth.", isBestSeller: false },
             { id: 585, jname: "鍋焼きうどん", name: "NABE YAKI UDON", price: 480,cost: 32.26, cat: "Ippin-Ryouri", img: "images/NABE YAKI DON .png", desc: "Piping hot udon noodles served in a light dashi broth with tempura, egg, and toppings.", isBestSeller: false },
             { id: 503, jname: "広島風お好み焼き", name: "HIROSHIMA OKONOMIYAKI", price: 470, cost: 32.26, cat: "Ippin-Ryouri", img: "images/HIROSHIMA YAKI.png", desc: "Hiroshima-style savory pancake with various toppings.", isBestSeller: false },
             { id: 501, jname: "ご飯と味噌汁", name: "RICE & MISO-SOUP", price: 130,cost: 32.26, cat: "Ippin-Ryouri",isOptionHeader: true, img: "images/RICE-MISO.png",isOptionHeader: true, desc: "Rice and Miso-Soup", isBestSeller: false },
@@ -262,6 +262,7 @@ const MENU_DATABASE = [
             { id: 361, jname: "かつおのタタキ", name: "KATSUO TATAKI", price: 450,cost: 157.56, cat: "Sashimi", img: "images/KATSUO TATAKI.png", desc: "Lightly seared bonito with a savory, smoky flavor.", isBestSeller: false },
             { id: 555, jname: "5点盛り", name: "5 TEN MORI", price: 880,cost: 157.56, cat: "Sashimi", img: "images/5 TEN MORI.png", desc: "Assorted platter of five fresh raw fish pieces.", isBestSeller: false },
             { id: 556, jname: "3点盛り", name: "3 TEN MORI", price: 550,cost: 157.56, cat: "Sashimi", img: "images/3 TEN MORI.png", desc: "Assorted platter of three fresh raw fish pieces.", isBestSeller: false },
+            { id: 586, jname: "7点盛り", name: "7 TEN MORI", price: 1320,cost: 157.56, cat: "Sashimi", img: "images/10 TEN MORI 8.png", desc: "Assorted platter of seven fresh raw fish pieces.", isBestSeller: false },
             { id: 157, jname: "さきいか", name: "SAKI IKA", price: 150,cost: 74.15, cat: "Snacks", img: "images/SAKI IKA.png", desc: "Dried shredded squid, savory and chewy.", isBestSeller: false },
             { id: 161, jname: "ソースカツ", name: "SOSU KATSU", price: 250,cost: 88.27, cat: "Snacks", img: "images/SOSU KATSU.png", desc: "Breaded pork cutlet with rich sauce.", isBestSeller: false },
             { id: 162, jname: "サクサク胡麻いわし", name: "SAKUSAKUGOMAIWASHI", price: 250,cost: 103.00, cat: "Snacks", img: "images/SAKU SAKU GOMAIWASHI.png", desc: "Crispy sardines coated with sesame.", isBestSeller: false },
@@ -352,19 +353,19 @@ const MENU_DATABASE = [
              },
              { id: 557, jname: "キリン一番搾り", name: "KIRIN ICHIBAN", price: 120, cat: "Drinks/Dessert", img: "images/KIRIN ICHIBAN.png", desc: "Kirin Ichiba", isBestSeller: false},
             { id: 227, jname: "てば", name: "CHICKEN WINGS", price: 95, cat: "Yakitori", img: "images/TEBASAKI.png", desc: "Chicken Wings.", isBestSeller:false,
-                options: [{ name: "5PCS STICKS", price: 390.00, cost: 75.00, name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
+                options: [{ name: "5PCS STICKS", price: 390.00, cost: 75.00 }, { name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
              },
             { id: 228, jname: "ねぎま", name: "CHICKEN WITH SCALLIONS", price: 85, cat: "Yakitori", img: "images/NEGIMA.png", desc: "Chicken w/ Scallions.", isBestSeller:false,
-                options: [{ name: "5PCS STICKS", price: 390.00, cost: 75.00, name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
+                options: [{ name: "5PCS STICKS", price: 390.00, cost: 75.00 }, { name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
              },
             { id: 229, jname: "ブタバラ", name: "PORK BELLY", price: 85, cat: "Yakitori", img: "images/BUTABARA.png", desc: "Pork Belly.", isBestSeller:false,
-                options: [{ name: "5PCS STICKS", price: 390.00, cost: 75.00, name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
+                options: [{ name: "5PCS STICKS", price: 390.00, cost: 75.00 }, { name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
              },
             { id: 230, jname: "かわ", name: "CHICKEN SKIN", price: 80, cat: "Yakitori", img: "images/TORI KAWA.png", desc: "Chicken Skin.", isBestSeller:false,
-                options: [{ name: "5PCS STICKS", price: 390.00, cost: 75.00, name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
+                options: [{ name: "5PCS STICKS", price: 390.00, cost: 75.00 }, { name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
              },
             { id: 231, jname: "すなぎも", name: "GIZZARD", price: 80, cat: "Yakitori", img: "images/TSUNAGIMO.png", desc: "Gizzard.", isBestSeller:false,
-                options: [{ name: "5PCS STICKS", price: 390.00, cost: 75.00, name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
+                options: [{ name: "5PCS STICKS", price: 390.00, cost: 75.00 }, { name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
              },
             { id: 232, jname: "ハツ", name: "CHICKEN HEART", price: 70, cat: "Yakitori", img: "images/TORI HATSU.png", desc: "Chicken Heart.", isBestSeller:false,
                 options: [{ name: "10PCS STICKS", price: 750.00, cost: 75.00 }]
