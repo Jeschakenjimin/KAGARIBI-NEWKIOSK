@@ -174,15 +174,16 @@
         /* The Image Box */
 .card-img {
     width: 100%;
-    aspect-ratio: 16 / 11; /* Standard "Landscape" food photography ratio */
+    aspect-ratio: 1 / 1; /* Menu photos are square; show them edge-to-edge */
     overflow: hidden;
     position: relative;
+    background: #f7f7f7;
 }
 
 .card-img img {
     width: 100%;
     height: 100%;
-    object-fit: cover; /* This is what prevents the 'shrinking' look */
+    object-fit: contain; /* Keep the complete square food photo visible */
     display: block;
 }
 
@@ -831,7 +832,7 @@
             { name: "CHASYU", price: 100},{ name: "TAMAGO", price: 50},{ name: "PIRIKARA-NEGI", price: 50},{ name: "OMORI", price: 50}
             ]
              },
-            { id: 49, jname: "叉焼麺", name: "CHASHUMEN", price: 480,cost: 115.29, cat: "Ramen", img: "images/CHASHUMEN .png", desc: "A ramen bowl stacked with extra tender braised pork (chashu). Meat lovers' paradise!", isBestSeller: false,
+            { id: 49, jname: "叉焼麺", name: "CHASHUMEN", price: 480,cost: 115.29, cat: "Ramen", img: "images/CHASHUMEN.png", desc: "A ramen bowl stacked with extra tender braised pork (chashu). Meat lovers' paradise!", isBestSeller: false,
                 addons: [
             { name: "GYOZA", price: 120},{ name: "HAN-CHAHAN", price: 120},{ name: "YASAI-ITAME", price: 120},
             { name: "CHASYU", price: 100},{ name: "TAMAGO", price: 50},{ name: "PIRIKARA-NEGI", price: 50},{ name: "OMORI", price: 50}
@@ -2513,7 +2514,7 @@ async function placeOrder() {
 
     // --- NEW SEARCH FUNCTIONALITY (WITH ADD TO ORDER BUTTON RESTORED) ---
 function handleSearch(query) {
-    const cleanQuery = query.toLowerCase().trim();
+    const cleanQuery = query.toLowerCase().trim().replace(/[\s-]+/g, ' ');
     const clearBtn = document.getElementById('clear-search-btn');
     const bestSellerHeader = document.getElementById('best-seller-section');
     const bestSellerText = document.getElementById('best-seller-text');
@@ -2534,9 +2535,9 @@ function handleSearch(query) {
     }
 
     const searchResults = MENU.filter(item => 
-        (item.name && item.name.toLowerCase().includes(cleanQuery)) ||
-        (item.jname && item.jname.toLowerCase().includes(cleanQuery)) ||
-        (item.desc && item.desc.toLowerCase().includes(cleanQuery))
+        (item.name && item.name.toLowerCase().replace(/[\s-]+/g, ' ').includes(cleanQuery)) ||
+        (item.jname && item.jname.toLowerCase().replace(/[\s-]+/g, ' ').includes(cleanQuery)) ||
+        (item.desc && item.desc.toLowerCase().replace(/[\s-]+/g, ' ').includes(cleanQuery))
     );
 
     const gridContainer = document.getElementById('grid');
