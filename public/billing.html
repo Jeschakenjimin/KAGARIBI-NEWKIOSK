@@ -65,7 +65,7 @@
     .calc-btn.clear { background: var(--deep-red); }
 
     /* Ensure the receipt is hidden from the main view entirely */
-    #print-receipt { display: none !important; position: absolute; left: -9999px; /* Push it off-screen when not printing */ }
+    #print-receipt { display: none !important; position: absolute; left: -9999px; }
 
     .notification-banner {
         display: none;
@@ -84,40 +84,47 @@
     /* --- THERMAL PRINTER SPECIFIC CSS --- */
 
 @media print {
-    /* 1. Set the page size to 58mm and remove all browser margins */
     @page {
-        size: 58mm auto; 
-        margin: 0;      
-    }
-
-    /* 2. Hide everything on the screen by default */
-    body * {
-        visibility: hidden;
-    }
-
-    /* 3. Show ONLY the print receipt and its contents */
-    #print-receipt, #print-receipt * {
-        visibility: visible;
-    }
-
-    /* 4. Position the print area perfectly at the top-left of the paper */
-    #print-receipt {
-        display: block !important; /* Overrides the display:none!important from earlier */
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 58mm; 
+        size: 58mm auto;
         margin: 0;
-        padding: 0;
-        background: white; 
-        color: black;
     }
 
-    /* 5. Hide scrollbars during print mode */
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+        overflow: visible !important;
+    }
+
+    body > :not(#print-receipt) {
+        display: none !important;
+    }
+
+    #print-receipt, #print-receipt * {
+        visibility: visible !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    #print-receipt {
+        display: block !important;
+        position: static !important;
+        left: auto !important;
+        top: auto !important;
+        width: 58mm !important;
+        max-width: 58mm !important;
+        min-height: 0 !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+        color: black !important;
+        overflow: hidden !important;
+    }
+
     ::-webkit-scrollbar {
         display: none;
     }
-
 }
 </style>
 </head>
@@ -671,6 +678,19 @@ function round2(num) {
 
 if (!window.printTracker) window.printTracker = {};
 
+function cleanupReceiptAfterPrint() {
+    const receipt = document.getElementById('print-receipt');
+    if (receipt) {
+        receipt.style.display = 'none';
+        receipt.innerHTML = "";
+    }
+}
+
+if (!window.__receiptPrintHooked) {
+    window.addEventListener('afterprint', cleanupReceiptAfterPrint);
+    window.__receiptPrintHooked = true;
+}
+
 async function finishCheckout() {
     // 1. Destructure the pre-calculated values
     const { 
@@ -819,35 +839,18 @@ async function finishCheckout() {
     })();
     const qrImg = document.getElementById('qr-code');
     
-    const executePrintAction = () => {
-        // Do not block UI waiting for database; DB tasks were started async above.
-        setTimeout(() => {
-            document.getElementById('print-receipt').style.display = 'none';
-            document.getElementById('print-receipt').innerHTML = "";
-        }, 1000);
-        // free the print tracker immediately so UI can re-use the table id
-        try { delete window.printTracker[tableId]; } catch (e) { /* ignore */ }
-    };
-    
-    // Print two identical copies: call print then immediately invoke the print handler,
-    // wait a short delay, then print again and invoke the handler a second time.
-    const printTwoCopies = () => {
-        try { window.print(); } catch (e) {}
-        // After first print, run the print handler to mark printedOnce
-        try { executePrintAction(); } catch (e) {}
-
-        setTimeout(() => {
-            try { window.print(); } catch (e) {}
-            // After second print, run the handler to finalize DB tasks
-            try { executePrintAction(); } catch (e) {}
-        }, 600);
+    const printSingleCopy = () => {
+        try {
+            window.print();
+        } catch (e) {}
+        try { delete window.printTracker[tableId]; } catch (e) {}
     };
 
     if (qrImg) {
-        qrImg.onload = () => { printTwoCopies(); };
-        setTimeout(() => { if (!qrImg.complete) printTwoCopies(); }, 2000);
+        qrImg.onload = () => { printSingleCopy(); };
+        setTimeout(() => { if (!qrImg.complete) printSingleCopy(); }, 2000);
     } else {
-        printTwoCopies();
+        printSingleCopy();
     }
 }
 
@@ -969,33 +972,19 @@ async function finishCheckoutPrintOnly() {
         </div>
     `;
 
-    // Print the receipt
+    // Print the receipt once and hide it as soon as the print dialog finishes.
     printArea.style.display = 'block';
     const qrImg = document.getElementById('qr-code-print');
-    
-    const executePrintAction = () => {
-        setTimeout(() => {
-            document.getElementById('print-receipt').style.display = 'none';
-            document.getElementById('print-receipt').innerHTML = "";
-        }, 1000);
-    };
-    
-    // Print twice
-    const printTwoCopies = () => {
-        try { window.print(); } catch (e) {}
-        try { executePrintAction(); } catch (e) {}
 
-        setTimeout(() => {
-            try { window.print(); } catch (e) {}
-            try { executePrintAction(); } catch (e) {}
-        }, 600);
+    const printSingleCopy = () => {
+        try { window.print(); } catch (e) {}
     };
 
     if (qrImg) {
-        qrImg.onload = () => { printTwoCopies(); };
-        setTimeout(() => { if (!qrImg.complete) printTwoCopies(); }, 2000);
+        qrImg.onload = () => { printSingleCopy(); };
+        setTimeout(() => { if (!qrImg.complete) printSingleCopy(); }, 2000);
     } else {
-        printTwoCopies();
+        printSingleCopy();
     }
 }
 
