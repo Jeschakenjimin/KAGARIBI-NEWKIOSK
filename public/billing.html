@@ -67,6 +67,12 @@
     /* Ensure the receipt is hidden from the main view entirely */
     #print-receipt { display: none !important; position: absolute; left: -9999px; /* Push it off-screen when not printing */ }
 
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+    }
+
     .notification-banner {
         display: none;
         width: 100%;
@@ -84,10 +90,10 @@
     /* --- THERMAL PRINTER SPECIFIC CSS --- */
 
 @media print {
-    /* 1. Set the page size to 80mm and remove all browser margins */
+    /* 1. Keep the browser page as a receipt-sized page and suppress default browser margins */
     @page {
-        size: 80mm auto; 
-        margin: 0;      
+        size: 80mm auto;
+        margin: 0;
     }
 
     /* 2. Hide everything on the screen by default */
@@ -100,17 +106,27 @@
         visibility: visible;
     }
 
-    /* 4. Position the print area perfectly at the top-left of the paper */
+    /* 4. Position the print area to the top-left with a fixed thermal width and no extra page height */
     #print-receipt {
-        display: block !important; /* Overrides the display:none!important from earlier */
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 72mm; 
+        display: block !important;
+        position: static !important;
+        left: auto;
+        top: auto;
+        width: 72mm;
+        max-width: 72mm;
+        min-height: 0;
+        height: auto;
         margin: 0;
         padding: 0;
-        background: white; 
+        overflow: visible;
+        background: white;
         color: black;
+    }
+
+    body {
+        margin: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
     }
 
     /* 5. Hide scrollbars during print mode */
@@ -819,28 +835,33 @@ async function finishCheckout() {
     })();
     const qrImg = document.getElementById('qr-code');
     
+    const clearPrintedReceipt = () => {
+        const receipt = document.getElementById('print-receipt');
+        if (!receipt) return;
+        receipt.style.display = 'none';
+        receipt.innerHTML = "";
+    };
+
     const executePrintAction = () => {
-        // Do not block UI waiting for database; DB tasks were started async above.
+        // Keep the receipt visible long enough for the browser/thermal printer to finish the paper feed.
+        // Do not delete the tracker here so the same order can be printed unlimited times until DONE ORDER.
         setTimeout(() => {
-            document.getElementById('print-receipt').style.display = 'none';
-            document.getElementById('print-receipt').innerHTML = "";
-        }, 1000);
-        // free the print tracker immediately so UI can re-use the table id
-        try { delete window.printTracker[tableId]; } catch (e) { /* ignore */ }
+            clearPrintedReceipt();
+        }, 10000);
     };
     
-    // Print two identical copies: call print then immediately invoke the print handler,
-    // wait a short delay, then print again and invoke the handler a second time.
+    // Keep the current unlimited-print behavior but avoid overlapping print requests.
     const printTwoCopies = () => {
-        try { window.print(); } catch (e) {}
-        // After first print, run the print handler to mark printedOnce
-        try { executePrintAction(); } catch (e) {}
+        requestAnimationFrame(() => {
+            try { window.print(); } catch (e) {}
+            try { executePrintAction(); } catch (e) {}
+        });
 
         setTimeout(() => {
-            try { window.print(); } catch (e) {}
-            // After second print, run the handler to finalize DB tasks
-            try { executePrintAction(); } catch (e) {}
-        }, 600);
+            requestAnimationFrame(() => {
+                try { window.print(); } catch (e) {}
+            });
+        }, 2000);
     };
 
     if (qrImg) {
@@ -973,22 +994,32 @@ async function finishCheckoutPrintOnly() {
     printArea.style.display = 'block';
     const qrImg = document.getElementById('qr-code-print');
     
+    const clearPrintedReceipt = () => {
+        const receipt = document.getElementById('print-receipt');
+        if (!receipt) return;
+        receipt.style.display = 'none';
+        receipt.innerHTML = "";
+    };
+
     const executePrintAction = () => {
+        // Keep the receipt visible long enough for the browser/thermal printer to finish the paper feed.
         setTimeout(() => {
-            document.getElementById('print-receipt').style.display = 'none';
-            document.getElementById('print-receipt').innerHTML = "";
-        }, 1000);
+            clearPrintedReceipt();
+        }, 10000);
     };
     
-    // Print twice
+    // Keep the current unlimited-print behavior but avoid overlapping print requests.
     const printTwoCopies = () => {
-        try { window.print(); } catch (e) {}
-        try { executePrintAction(); } catch (e) {}
-
-        setTimeout(() => {
+        requestAnimationFrame(() => {
             try { window.print(); } catch (e) {}
             try { executePrintAction(); } catch (e) {}
-        }, 600);
+        });
+
+        setTimeout(() => {
+            requestAnimationFrame(() => {
+                try { window.print(); } catch (e) {}
+            });
+        }, 2000);
     };
 
     if (qrImg) {
@@ -1137,9 +1168,12 @@ async function finishDatabaseTasks(tableId, group, paid, change, method, finalTo
     }
     
     setTimeout(() => {
-        document.getElementById('print-receipt').style.display = 'none';
-        document.getElementById('print-receipt').innerHTML = "";
-    }, 1000);
+        const receipt = document.getElementById('print-receipt');
+        if (receipt) {
+            receipt.style.display = 'none';
+            receipt.innerHTML = "";
+        }
+    }, 10000);
 }
 
 
