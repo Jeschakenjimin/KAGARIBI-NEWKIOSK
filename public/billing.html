@@ -65,7 +65,13 @@
     .calc-btn.clear { background: var(--deep-red); }
 
     /* Ensure the receipt is hidden from the main view entirely */
-    #print-receipt { display: none !important; position: absolute; left: -9999px; }
+    #print-receipt { display: none !important; position: absolute; left: -9999px; /* Push it off-screen when not printing */ }
+
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+    }
 
     .notification-banner {
         display: none;
@@ -84,54 +90,50 @@
     /* --- THERMAL PRINTER SPECIFIC CSS --- */
 
 @media print {
+    /* 1. Keep the browser page as a receipt-sized page and suppress default browser margins */
     @page {
-        size: 58mm 100mm;
+        size: 80mm auto;
         margin: 0;
     }
 
-    html, body {
-        margin: 0 !important;
-        padding: 0 !important;
-        background: white !important;
-        overflow: visible !important;
-        height: auto !important;
+    /* 2. Hide everything on the screen by default */
+    body * {
+        visibility: hidden;
     }
 
-    body > :not(#print-receipt) {
-        display: none !important;
-    }
-
+    /* 3. Show ONLY the print receipt and its contents */
     #print-receipt, #print-receipt * {
-        visibility: visible !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
+        visibility: visible;
     }
 
+    /* 4. Position the print area to the top-left with a fixed thermal width and no extra page height */
     #print-receipt {
         display: block !important;
         position: static !important;
-        left: auto !important;
-        top: auto !important;
-        width: 58mm !important;
-        max-width: 58mm !important;
-        min-height: 0 !important;
-        height: auto !important;
+        left: auto;
+        top: auto;
+        width: 72mm;
+        max-width: 72mm;
+        min-height: 0;
+        height: auto;
+        margin: 0;
+        padding: 0;
+        overflow: visible;
+        background: white;
+        color: black;
+    }
+
+    body {
         margin: 0 !important;
         padding: 0 !important;
-        background: white !important;
-        color: black !important;
-        overflow: visible !important;
+        height: auto !important;
     }
 
-    #print-receipt > div {
-        width: 58mm !important;
-        max-width: 58mm !important;
-        box-sizing: border-box;
-    }
-
+    /* 5. Hide scrollbars during print mode */
     ::-webkit-scrollbar {
         display: none;
     }
+
 }
 </style>
 </head>
@@ -685,19 +687,6 @@ function round2(num) {
 
 if (!window.printTracker) window.printTracker = {};
 
-function cleanupReceiptAfterPrint() {
-    const receipt = document.getElementById('print-receipt');
-    if (receipt) {
-        receipt.style.display = 'none';
-        receipt.innerHTML = "";
-    }
-}
-
-if (!window.__receiptPrintHooked) {
-    window.addEventListener('afterprint', cleanupReceiptAfterPrint);
-    window.__receiptPrintHooked = true;
-}
-
 async function finishCheckout() {
     // 1. Destructure the pre-calculated values
     const { 
@@ -757,7 +746,7 @@ async function finishCheckout() {
     }
 
     printArea.innerHTML = `
-        <div style="font-family: 'Courier New', monospace; font-size: 12px; color: black; line-height: 1.2; width: 58mm; margin: 0 auto; padding: 0; box-sizing: border-box;">
+        <div style="font-family: 'Courier New', monospace; font-size: 12px; color: black; line-height: 1.2; width: 72mm; margin: 0 auto; padding: 0; box-sizing: border-box;">
             <center>
                 <b style="font-size: 18px;">KAGARIBI</b><br>
                 JAPANESE RESTAURANT<br>Paseo De Carmona, Carmona, Philippines, 4117 <br> +63 917-184-0423<br>TIN: 662-927-364-00000
@@ -844,22 +833,201 @@ async function finishCheckout() {
             showBillingNotification('Background save failed. See console for details.', 'error');
         }
     })();
-
-    const printSingleCopy = () => {
-        const lockKey = `receipt:${tableId}`;
-        window.__receiptPrintLocks = window.__receiptPrintLocks || {};
-        if (window.__receiptPrintLocks[lockKey]) {
-            return;
-        }
-
-        window.__receiptPrintLocks[lockKey] = true;
-        try {
-            window.print();
-        } catch (e) {}
-        setTimeout(() => { delete window.__receiptPrintLocks[lockKey]; }, 4000);
+    const qrImg = document.getElementById('qr-code');
+    
+    const clearPrintedReceipt = () => {
+        const receipt = document.getElementById('print-receipt');
+        if (!receipt) return;
+        receipt.style.display = 'none';
+        receipt.innerHTML = "";
     };
 
-    setTimeout(printSingleCopy, 200);
+    const executePrintAction = () => {
+        // Keep the receipt visible long enough for the browser/thermal printer to finish the paper feed.
+        // Do not delete the tracker here so the same order can be printed unlimited times until DONE ORDER.
+        setTimeout(() => {
+            clearPrintedReceipt();
+        }, 10000);
+    };
+    
+    // Keep the current unlimited-print behavior but avoid overlapping print requests.
+    const printTwoCopies = () => {
+        requestAnimationFrame(() => {
+            try { window.print(); } catch (e) {}
+            try { executePrintAction(); } catch (e) {}
+        });
+
+        setTimeout(() => {
+            requestAnimationFrame(() => {
+                try { window.print(); } catch (e) {}
+            });
+        }, 2000);
+    };
+
+    if (qrImg) {
+        qrImg.onload = () => { printTwoCopies(); };
+        setTimeout(() => { if (!qrImg.complete) printTwoCopies(); }, 2000);
+    } else {
+        printTwoCopies();
+    }
+}
+
+// Print receipt only without updating database
+async function finishCheckoutPrintOnly() {
+    const { tableId, group, method, finalTotal, seniorPortion, regularPortion, beerPortion, corkagePortion, vatable, vat, discount, sc, vatExempt } = activeCheckoutData;
+
+    if (!window.printTracker[tableId]) {
+        window.printTracker[tableId] = {
+            invoiceNo: Math.floor(1000 + Math.random() * 9000),
+        };
+    }
+
+    const invoiceNo = window.printTracker[tableId].invoiceNo;
+    const orderId = Math.floor(Math.random() * 99999).toString().padStart(5, '0').toUpperCase();
+
+    // Consolidate duplicate items
+    const consolidatedItems = [];
+    group.items.forEach(item => {
+        const existingItem = consolidatedItems.find(i => i.name === item.name && i.price === item.price);
+        if (existingItem) {
+            existingItem.qty = Number(existingItem.qty) + Number(item.qty);
+        } else {
+            consolidatedItems.push({ ...item }); 
+        }
+    });
+
+    // 3. Prepare Receipt HTML
+    const printArea = document.getElementById('print-receipt');
+    printArea.innerHTML = ""; 
+
+    let qrHtml = "";
+    if (method === "GCASH") {
+        qrHtml = `
+            <center style="margin: 10px 0;">
+                <img id="qr-code-print" src="images/gcash.png?v=1" style="width:55mm;">
+                <div style="font-size: 14px; font-weight: bold; margin-top: 5px;">${method} PAYMENT</div>
+            </center>
+        `;
+    }
+
+    printArea.innerHTML = `
+        <div style="font-family: 'Courier New', monospace; font-size: 12px; color: black; line-height: 1.2; width: 72mm; margin: 0 auto; padding: 0; box-sizing: border-box;">
+            <center>
+                <b style="font-size: 18px;">KAGARIBI</b><br>
+                JAPANESE RESTAURANT<br>Paseo De Carmona, Carmona, Philippines, 4117 <br> +63 917-184-0423<br>TIN: 662-927-364-00000
+            </center>
+            
+            <div style="display: flex; justify-content: space-between; margin-top: 5px; border-top: 1px dashed #000; padding-top: 5px;">
+                <span>Invoice: ${invoiceNo}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 5px; border-top: 1px dashed #000; padding-top: 5px;">
+                <span>Date: ${new Date().toLocaleDateString()}</span><span>${new Date().toLocaleTimeString()}</span>
+            </div>
+            
+            <p style="margin: 5px 0; text-align: center;">Table: ${tableId}<br>Mode: ${method}</p>
+            
+            ${activeCheckoutData.seniorPax > 0 ? `
+            <div style="width: 100%; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 5px 0; text-align: center; font-size: 11px; font-weight: bold;">
+                <div>SENIOR/PWD: ${activeCheckoutData.seniorPax} PAX</div>
+                <div style="font-size: 10px; color: #000;">ID: ${activeCheckoutData.discountIdsArray.join(', ')}</div>
+            </div>` : ''}
+            
+            <div style="width: 100%; border-top: 1px dashed #000; padding-top: 5px;">
+                ${consolidatedItems.map(i => `
+                    <div style="margin-bottom: 8px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>${i.qty} x ${i.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                            <span>${(i.qty * i.price).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                        </div>
+                        <div style="margin-left: 10px; text-transform: uppercase; font-weight: bold;">${i.name}</div>
+                    </div>
+                `).join('')}
+            </div>
+
+            <div style="width: 100%; border-top: 1px dashed #000; padding-top: 5px; font-size: 12px;">
+                ${activeCheckoutData.seniorPortion > 0 ? `
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Senior Food (inc. SC):</span>
+                    <span>${activeCheckoutData.seniorPortion.toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>` : ''}
+                
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Regular Food (inc. SC):</span>
+                    <span>${activeCheckoutData.regularPortion.toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>
+
+                ${activeCheckoutData.beerPortion > 0 ? `
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Alcohol/Beer (inc. SC):</span>
+                    <span>${activeCheckoutData.beerPortion.toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>` : ''}
+
+                ${activeCheckoutData.corkagePortion > 0 ? `
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Corkage Fee (inc. SC):</span>
+                    <span>${activeCheckoutData.corkagePortion.toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                </div>` : ''}
+            </div>
+
+            <div style="width: 100%; font-size: 15px; border-top: 1px dashed #000; border-bottom: 1px dashed #000; font-weight: bold; margin-top: 5px;">
+                <div style="display: flex; justify-content: space-between; margin-top: 5px; padding-top: 5px;">
+                    <span>TOTAL AMT DUE</span>
+                    <span>${activeCheckoutData.finalTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                </div>
+            </div>
+
+            <div style="width: 100%; font-size: 12px; color: #000; padding-top: 5px">
+                <div style="display: flex; justify-content: space-between;"><span>Vatable Sales:</span><span>${vatable.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                <div style="display: flex; justify-content: space-between;"><span>VAT EXEMPT:</span><span>${vatExempt.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                <div style="display: flex; justify-content: space-between;"><span>VAT Amount:</span><span>${vat.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                <div style="display: flex; justify-content: space-between; margin-top: 3px;"><span>Service Charge (5%):</span><span>${sc.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                ${activeCheckoutData.isDiscounted ? `
+                <div style="display: flex; justify-content: space-between; color: #444;"><span>Discount (20%):</span><span>-${discount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>` : ''}
+            </div>
+            
+            ${qrHtml}
+            <center><p style="margin-top:15px; font-weight:bold; font-size: 14px; padding-bottom: 15px">THANK YOU, COME AGAIN!</p></center>
+        </div>
+    `;
+
+    // Print the receipt
+    printArea.style.display = 'block';
+    const qrImg = document.getElementById('qr-code-print');
+    
+    const clearPrintedReceipt = () => {
+        const receipt = document.getElementById('print-receipt');
+        if (!receipt) return;
+        receipt.style.display = 'none';
+        receipt.innerHTML = "";
+    };
+
+    const executePrintAction = () => {
+        // Keep the receipt visible long enough for the browser/thermal printer to finish the paper feed.
+        setTimeout(() => {
+            clearPrintedReceipt();
+        }, 10000);
+    };
+    
+    // Keep the current unlimited-print behavior but avoid overlapping print requests.
+    const printTwoCopies = () => {
+        requestAnimationFrame(() => {
+            try { window.print(); } catch (e) {}
+            try { executePrintAction(); } catch (e) {}
+        });
+
+        setTimeout(() => {
+            requestAnimationFrame(() => {
+                try { window.print(); } catch (e) {}
+            });
+        }, 2000);
+    };
+
+    if (qrImg) {
+        qrImg.onload = () => { printTwoCopies(); };
+        setTimeout(() => { if (!qrImg.complete) printTwoCopies(); }, 2000);
+    } else {
+        printTwoCopies();
+    }
 }
 
 // Mark order as done (complete, save to daily sales, and remove from dashboard)
@@ -1000,9 +1168,12 @@ async function finishDatabaseTasks(tableId, group, paid, change, method, finalTo
     }
     
     setTimeout(() => {
-        document.getElementById('print-receipt').style.display = 'none';
-        document.getElementById('print-receipt').innerHTML = "";
-    }, 1000);
+        const receipt = document.getElementById('print-receipt');
+        if (receipt) {
+            receipt.style.display = 'none';
+            receipt.innerHTML = "";
+        }
+    }, 10000);
 }
 
 
