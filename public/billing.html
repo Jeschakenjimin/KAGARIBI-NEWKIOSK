@@ -96,31 +96,36 @@
         margin: 0;
     }
 
-    /* 2. Hide everything on the screen by default */
+    /* 2. Hide everything except the receipt */
     body * {
-        visibility: hidden;
+        display: none !important;
     }
 
     /* 3. Show ONLY the print receipt and its contents */
-    #print-receipt, #print-receipt * {
-        visibility: visible;
+    #print-receipt {
+        display: block !important;
+    }
+
+    #print-receipt * {
+        display: inherit !important;
+        visibility: visible !important;
     }
 
     /* 4. Position the print area to the top-left with a fixed thermal width and no extra page height */
     #print-receipt {
-        display: block !important;
         position: static !important;
         left: auto;
         top: auto;
         width: 72mm;
         max-width: 72mm;
-        min-height: 0;
+        min-height: auto;
         height: auto;
-        margin: 0;
-        padding: 0;
+        margin: 0 !important;
+        padding: 0 !important;
         overflow: visible;
         background: white;
         color: black;
+        page-break-after: avoid;
     }
 
     body {
