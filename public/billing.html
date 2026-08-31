@@ -850,25 +850,19 @@ async function finishCheckout() {
         }, 10000);
     };
     
-    // Keep the current unlimited-print behavior but avoid overlapping print requests.
-    const printTwoCopies = () => {
+    // Print single receipt per user action. Keep unlimited-print behavior until DONE ORDER.
+    const printSingleReceipt = () => {
         requestAnimationFrame(() => {
             try { window.print(); } catch (e) {}
             try { executePrintAction(); } catch (e) {}
         });
-
-        setTimeout(() => {
-            requestAnimationFrame(() => {
-                try { window.print(); } catch (e) {}
-            });
-        }, 2000);
     };
 
     if (qrImg) {
-        qrImg.onload = () => { printTwoCopies(); };
-        setTimeout(() => { if (!qrImg.complete) printTwoCopies(); }, 2000);
+        qrImg.onload = () => { printSingleReceipt(); };
+        setTimeout(() => { if (!qrImg.complete) printSingleReceipt(); }, 2000);
     } else {
-        printTwoCopies();
+        printSingleReceipt();
     }
 }
 
@@ -1008,25 +1002,19 @@ async function finishCheckoutPrintOnly() {
         }, 10000);
     };
     
-    // Keep the current unlimited-print behavior but avoid overlapping print requests.
-    const printTwoCopies = () => {
+    // Print single receipt per user action. Keep unlimited-print behavior until DONE ORDER.
+    const printSingleReceipt = () => {
         requestAnimationFrame(() => {
             try { window.print(); } catch (e) {}
             try { executePrintAction(); } catch (e) {}
         });
-
-        setTimeout(() => {
-            requestAnimationFrame(() => {
-                try { window.print(); } catch (e) {}
-            });
-        }, 2000);
     };
 
     if (qrImg) {
-        qrImg.onload = () => { printTwoCopies(); };
-        setTimeout(() => { if (!qrImg.complete) printTwoCopies(); }, 2000);
+        qrImg.onload = () => { printSingleReceipt(); };
+        setTimeout(() => { if (!qrImg.complete) printSingleReceipt(); }, 2000);
     } else {
-        printTwoCopies();
+        printSingleReceipt();
     }
 }
 
