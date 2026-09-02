@@ -354,10 +354,10 @@ const MENU_DATABASE = [
              { id: 557, jname: "キリン一番搾り", name: "KIRIN ICHIBAN", price: 120, cat: "Drinks/Dessert", img: "images/KIRIN ICHIBAN.png", desc: "Kirin Ichiba", isBestSeller: false},
             { id: 562, jname: "ピッチャー", name: "PITCHER", price: 400, cost: 150.00, cat: "Drinks/Dessert", img: "images/PITCHER.png", desc: "Refreshing drinks served in a pitcher.", isBestSeller: false,
                 options: [
-                    { name: "PINEAPPLE JUICE (Pitcher)", price: 400, cost: 150.00 },
-                    { name: "4 SEASONS (Pitcher)", price: 450, cost: 180.00 },
-                    { name: "LEMON ICED TEA (Pitcher)", price: 400, cost: 150.00 },
-                    { name: "BLUE LEMONADE (Pitcher)", price: 450, cost: 180.00 }
+                    { name: "PINEAPPLE JUICE (1 Pitcher)", price: 400, cost: 150.00 },
+                    { name: "4 SEASONS (1 Pitcher)", price: 450, cost: 180.00 },
+                    { name: "LEMON ICED TEA (1 Pitcher)", price: 400, cost: 150.00 },
+                    { name: "BLUE LEMONADE (1 Pitcher)", price: 450, cost: 180.00 }
                 ]
              },
             { id: 227, jname: "てば", name: "CHICKEN WINGS", price: 95, cat: "Yakitori", img: "images/TEBASAKI.png", desc: "Chicken Wings.", isBestSeller:false,
