@@ -1828,6 +1828,16 @@
             refreshQtyButtons();
         }
 
+        function escapeHtml(value) {
+            return String(value ?? "").replace(/[&<>"']/g, character => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            })[character]);
+        }
+
         function addToCartFinal() {
             const notesInput = document.getElementById('special-notes');
             const notes = notesInput ? notesInput.value.trim() : "";
@@ -1940,7 +1950,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:12px;">
                 <div style="flex:1">
                     <div style="font-weight:bold; font-size:1rem; color:#333;">${item.name}</div>
-                    ${item.notes ? `<div style="font-size:0.75rem; color:#888;">"${item.notes}"</div>` : ''}
+                    ${item.notes ? `<div style="font-size:0.75rem; color:#888;">"${escapeHtml(item.notes)}"</div>` : ''}
                     <div style="color:var(--deep-red); font-weight:bold;">₱${itemSubtotal.toLocaleString()}</div>
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
