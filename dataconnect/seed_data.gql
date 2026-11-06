@@ -1,0 +1,31 @@
+mutation SeedDatabase @transaction {
+  admin_insertMany(data: [
+    { email: "admin1@example.com", role: "SUPER_ADMIN" },
+    { email: "admin2@example.com", role: "EDITOR" },
+    { email: "admin3@example.com", role: "VIEWER" }
+  ])
+  
+  category_insertMany(data: [
+    { id: "00000000-0000-0000-0000-000000000001", name: "Electronics", description: "Gadgets and devices" },
+    { id: "00000000-0000-0000-0000-000000000002", name: "Books", description: "Fiction and non-fiction" },
+    { id: "00000000-0000-0000-0000-000000000003", name: "Office", description: "Supplies for work" }
+  ])
+  
+  item_insertMany(data: [
+    { id: "11111111-1111-1111-1111-111111111111", name: "Laptop", price: 999.99, isAvailable: true, categoryId: "00000000-0000-0000-0000-000000000001" },
+    { id: "11111111-1111-1111-1111-111111111112", name: "Notebook", price: 5.50, isAvailable: true, categoryId: "00000000-0000-0000-0000-000000000002" },
+    { id: "11111111-1111-1111-1111-111111111113", name: "Pen", price: 1.25, isAvailable: true, categoryId: "00000000-0000-0000-0000-000000000003" }
+  ])
+  
+  order_insertMany(data: [
+    { id: "22222222-2222-2222-2222-222222222221", totalAmount: 1005.49, status: "COMPLETED", customerName: "Alice" },
+    { id: "22222222-2222-2222-2222-222222222222", totalAmount: 5.50, status: "PENDING", customerName: "Bob" },
+    { id: "22222222-2222-2222-2222-222222222223", totalAmount: 1.25, status: "SHIPPED", customerName: "Charlie" }
+  ])
+  
+  orderItem_insertMany(data: [
+    { quantity: 1, priceAtPurchase: 999.99, orderId: "22222222-2222-2222-2222-222222222221", itemId: "11111111-1111-1111-1111-111111111111" },
+    { quantity: 1, priceAtPurchase: 5.50, orderId: "22222222-2222-2222-2222-222222222222", itemId: "11111111-1111-1111-1111-111111111112" },
+    { quantity: 1, priceAtPurchase: 1.25, orderId: "22222222-2222-2222-2222-222222222223", itemId: "11111111-1111-1111-1111-111111111113" }
+  ])
+}

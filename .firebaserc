@@ -1,6 +1,7 @@
 {
   "projects": {
-    "defualt": "kagaribi-kiosk-web-f8314"
+    "defualt": "kagaribi-kiosk-web-f8314",
+    "default": "kagaribi-kiosk-web-f8314"
   },
   "targets": {},
   "etags": {}

@@ -1,0 +1,79 @@
+mutation CreateCategoryData @auth(level: USER) {
+  category_insert(data: { name: "Electronics", description: "Gadgets and devices" })
+}
+
+mutation CreateItemData @auth(level: USER) {
+  item_insert(data: { name: "Smartphone", price: 699.99, isAvailable: true })
+}
+
+mutation CreateOrderData @auth(level: USER) {
+  order_insert(data: { totalAmount: 699.99, status: "Pending", customerName: "John Doe" })
+}
+
+mutation CreateOrderItemData @auth(level: USER) {
+  orderItem_insert(data: { quantity: 1, priceAtPurchase: 699.99, order: { id: "00000000-0000-0000-0000-000000000000" }, item: { id: "00000000-0000-0000-0000-000000000000" } })
+}
+
+mutation UpdateCategory($id: UUID!, $desc: String) @auth(level: USER) {
+  category_update(id: $id, data: { description: $desc })
+}
+
+mutation UpdateItem($id: UUID!, $price: Float) @auth(level: USER) {
+  item_update(id: $id, data: { price: $price })
+}
+
+mutation UpdateOrder($id: UUID!, $status: String) @auth(level: USER) {
+  order_update(id: $id, data: { status: $status })
+}
+
+mutation UpdateOrderItem($id: UUID!, $qty: Int) @auth(level: USER) {
+  orderItem_update(id: $id, data: { quantity: $qty })
+}
+
+mutation DeleteCategory($id: UUID!) @auth(level: USER) {
+  category_delete(id: $id)
+}
+
+mutation DeleteItem($id: UUID!) @auth(level: USER) {
+  item_delete(id: $id)
+}
+
+mutation DeleteOrder($id: UUID!) @auth(level: USER) {
+  order_delete(id: $id)
+}
+
+mutation DeleteOrderItem($id: UUID!) @auth(level: USER) {
+  orderItem_delete(id: $id)
+}
+
+query GetCategory($id: UUID!) @auth(level: PUBLIC, insecureReason: "Publicly accessible product categories") {
+  category(id: $id) { name description iconUrl }
+}
+
+query GetItem($id: UUID!) @auth(level: PUBLIC, insecureReason: "Publicly accessible item details") {
+  item(id: $id) { name price isAvailable }
+}
+
+query GetOrder($id: UUID!) @auth(level: USER) {
+  order(id: $id) { totalAmount status customerName }
+}
+
+query GetOrderItem($id: UUID!) @auth(level: USER) {
+  orderItem(id: $id) { quantity priceAtPurchase customInstructions }
+}
+
+query ListCategories @auth(level: PUBLIC, insecureReason: "Publicly accessible catalog") {
+  categories { name description }
+}
+
+query ListItems @auth(level: PUBLIC, insecureReason: "Publicly accessible shop inventory") {
+  items { name price }
+}
+
+query ListOrders @auth(level: USER) {
+  orders { totalAmount status createdAt }
+}
+
+query ListOrderItems @auth(level: USER) {
+  orderItems { quantity priceAtPurchase }
+}

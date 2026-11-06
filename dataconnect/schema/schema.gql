@@ -1,0 +1,35 @@
+type Category @table {
+  name: String!
+  description: String
+  iconUrl: String
+}
+
+type Item @table {
+  name: String!
+  price: Float!
+  isAvailable: Boolean!
+  description: String
+  imageUrl: String
+  category: Category
+}
+
+type Order @table {
+  totalAmount: Float!
+  status: String!
+  customerName: String
+  createdAt: Timestamp
+}
+
+type OrderItem @table {
+  quantity: Int!
+  priceAtPurchase: Float!
+  customInstructions: String
+  order: Order!
+  item: Item!
+}
+
+type Admin @table {
+  email: String!
+  role: String!
+  lastLoginAt: Timestamp
+}
