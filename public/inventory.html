@@ -84,8 +84,12 @@
         .stat-card .amount { font-size: 1.5rem; font-weight: 800; margin-top: 5px; word-wrap: break-word; overflow-wrap: break-word; }
 
         /* Form Styling */
-        .add-form { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr auto; gap: 10px; margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px dashed #e4e6ef; }
+        .add-form { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr auto; gap: 10px; margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e4e6ef; }
         .add-form input, .add-form select { padding: 10px; border-radius: 6px; border: 1px solid #e4e6ef; outline: none; font-family: inherit; min-width: 0; width: 100%; box-sizing: border-box; }
+        .add-form-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+        .field-label { display: block; margin-bottom: 6px; color: #7e8299; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
+        .add-section-title { margin: 0 0 12px; color: #181c32; font-size: 0.95rem; }
+        .add-submit-wrap { display: flex; align-items: flex-end; }
         .add-form select:hover, .add-form input:hover { border-color: #f55047; cursor: pointer; }
         .btn-add { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
@@ -96,7 +100,26 @@
         table { width: 100%; border-collapse: separate; border-spacing: 0; }
         th { background: #f8f9fa; color: #a1a5b7; text-align: left; padding: 15px; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; border-bottom: 1px dashed #e4e6ef; }
         td { border-bottom: 1px dashed #e4e6ef; padding: 15px; font-size: 0.9rem; }
+        th:nth-child(1), td:nth-child(1) { width: 105px; }
+        th:nth-child(2), td:nth-child(2) { width: 140px; }
+        th:nth-child(3), td:nth-child(3) { width: 105px; }
+        th:nth-child(4), td:nth-child(4) { width: 105px; }
+        th:nth-child(5), td:nth-child(5) { width: 150px; }
+        th:nth-child(6), td:nth-child(6) { width: 105px; }
+        th:nth-child(7), td:nth-child(7) { width: 100px; }
+        th:nth-child(8), td:nth-child(8) { width: 126px; }
+        .action-stack { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: center; }
+        .action-stack button { min-height: 34px; margin: 0 !important; white-space: nowrap; }
+        .action-stack .edit-action { grid-column: 1 / -1; width: 100%; }
         .low-stock-row { background: rgba(211, 15, 15, 0.05); color: var(--primary); font-weight: 600; }
+        .stock-status { display: inline-block; min-width: 78px; text-align: center; padding: 5px 8px; border-radius: 999px; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; }
+        .stock-status.ok { background: #eaf8ef; color: #16843b; }
+        .stock-status.low { background: #fdecec; color: #c51d1d; }
+        .stock-status.in-use-low { background: #fff4d6; color: #9a6800; }
+        .stock-status.out { background: #d10f0f; color: #fff; }
+        .stock-status.sealed { background: #eef1f5; color: #687083; }
+        .stock-status.amber { background: #fff4d6; color: #9a6800; }
+        .closed-row { background: transparent; color: inherit; }
 
         /* Progress Bar for Active Volume */
         .vol-track { width: 100%; height: 6px; background: #eee; border-radius: 3px; margin-top: 5px; overflow: hidden; }
@@ -115,6 +138,10 @@
         .btn-history:hover { background: gold; }
         @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.02); box-shadow: 0 0 15px rgba(211, 15, 15, 0.4); } 100% { transform: scale(1); } }
         .critical-animate { animation: pulse-red 1.5s infinite; }
+        .modal-popover { width: 360px; }
+        .unit-input-wrap { display: flex; align-items: center; }
+        .unit-input-wrap input { border-radius: 6px 0 0 6px; }
+        .unit-input-wrap span { align-self: stretch; display: flex; align-items: center; padding: 0 10px; border: 1px solid #e4e6ef; border-left: 0; border-radius: 0 6px 6px 0; background: #eef1f5; color: #687083; font-size: 0.78rem; font-weight: 700; }
         
         .pin-container { position: relative; width: 100%; }
         .toggle-password { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; background: none; border: none; font-size: 1.2rem; }
@@ -124,6 +151,26 @@
         /* New Button Style */
         .btn-lock { background: var(--sidebar-bg); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
         .btn-lock:hover { background: var(--primary); }
+        .table-wrap { width: 100%; overflow-x: auto; }
+
+        @media (max-width: 1100px) {
+            .inventory-grid { grid-template-columns: 1fr; }
+            .side-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; }
+            .side-panels .panel { grid-column: 1 / -1; }
+            .add-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .controls { flex-wrap: wrap; }
+        }
+
+        @media (max-width: 700px) {
+            .sidebar { display: none; }
+            .main-content { padding: 20px 15px; }
+            .header-top h1 { font-size: 1.35rem; }
+            .add-form-grid { grid-template-columns: 1fr; }
+            .side-panels { grid-template-columns: 1fr; }
+            .controls { align-items: stretch; }
+            .search-input { flex-basis: 100%; }
+            table { min-width: 980px; }
+        }
     </style>
 </head>
 <body>
@@ -193,39 +240,73 @@
 
         <div class="inventory-grid">
             <div class="panel">
-                <div class="add-form">
-                    <input type="text" id="newName" placeholder="Item Name">
-                    <select id="newCat">
-                        <option value="Meat">Meat</option>
-                        <option value="Seafood">Seafood</option>
-                        <option value="Produce">Produce</option>
-                        <option value="Liquor">Liquor</option>
-                        <option value="Dry Goods">Dry Goods</option>
-                        <option value="Frozen Items">Frozen Items</option>
-                        <option value="Vegetables">Vegetables</option>
-                        <option value="Fruits">Fruits</option>
-                        <option value="Sauce & Seasonings">Sauce & Seasonings</option>
-                        <option value="Non-Food Supplies">Non-Food Supplies</option>
-                        <option value="Dairy and Alternatives">Dairy and Alternatives</option>
-                        <option value="Beverages">Beverages</option>
-                    </select>
-                    
-                    
-                    <input type="number" id="newCap" placeholder="Unit Capacity (e.g. 700)">
-                    <select id="newActiveUnit">
-                        <option value="grams">grams</option>
-                        <option value="ml">ml</option>
-                        <option value="pcs">pcs</option>
-                    </select>
-                    <input type="number" id="newPrice" placeholder="Price">
-                    <input type="number" id="newQty" placeholder="Qty">
-                    <select id="newBulkUnit">
-                        <option value="kg">kg</option>
-                        <option value="L">Liters</option>
-                        <option value="box">box</option>
-                        <option value="pcs">pcs</option>
-                    </select>
-                    <button class="btn-add" onclick="addNewItem()">+ ADD</button>
+                <div id="newStockForm" class="add-form" style="display:none;">
+                    <h3 class="add-section-title" style="grid-column:1/-1;">Add New Ingredient</h3>
+                    <div class="add-form-grid" style="grid-column: 1 / -1;">
+                        <div>
+                            <label class="field-label" for="newName">Ingredient name</label>
+                            <input type="text" id="newName" placeholder="e.g. Chicken">
+                        </div>
+                        <div>
+                            <label class="field-label" for="newCat">Category</label>
+                            <select id="newCat">
+                                <option value="Meat">Meat</option>
+                                <option value="Seafood">Seafood</option>
+                                <option value="Produce">Produce</option>
+                                <option value="Liquor">Liquor</option>
+                                <option value="Dry Goods">Dry Goods</option>
+                                <option value="Frozen Items">Frozen Items</option>
+                                <option value="Vegetables">Vegetables</option>
+                                <option value="Fruits">Fruits</option>
+                                <option value="Sauce & Seasonings">Sauce & Seasonings</option>
+                                <option value="Non-Food Supplies">Non-Food Supplies</option>
+                                <option value="Dairy and Alternatives">Dairy and Alternatives</option>
+                                <option value="Beverages">Beverages</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="field-label" for="newQty">Unopened stock on hand</label>
+                            <input type="number" id="newQty" placeholder="Quantity" min="0" step="0.01">
+                        </div>
+                        <div>
+                            <label class="field-label" for="newBulkUnit">Stock unit</label>
+                            <select id="newBulkUnit">
+                                <option value="kg">Kilograms (kg)</option>
+                                <option value="L">Liters (L)</option>
+                                <option value="box">Boxes</option>
+                                <option value="pcs">Pieces (pcs)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="field-label" for="newPrice">Purchase price</label>
+                            <input type="number" id="newPrice" placeholder="₱ per unit" min="0" step="0.01">
+                        </div>
+                        <div>
+                            <label class="field-label" for="newCap">Size of one opened container</label>
+                            <input type="number" id="newCap" placeholder="e.g. 1000" min="0" step="0.01">
+                        </div>
+                        <div>
+                            <label class="field-label" for="newActiveUnit">Measure use in</label>
+                            <select id="newActiveUnit">
+                                <option value="grams">grams</option>
+                                <option value="ml">ml</option>
+                                <option value="pcs">pcs</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="field-label" for="newLowStockLimit">Low-stock alert at</label>
+                            <div class="unit-input-wrap">
+                                <input type="number" id="newLowStockLimit" value="1" min="0" step="0.01">
+                                <span id="newLowStockUnit">kg</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="newStockPreview" style="grid-column:1/-1; color:#687083; font-size:0.78rem; background:#eef1f5; padding:10px 12px; border-radius:6px;">
+                        Preview will appear here.
+                    </div>
+                    <div class="add-submit-wrap" style="grid-column: 1 / -1;">
+                        <button class="btn-add" onclick="addNewItem()" style="width:100%; min-height:42px;">+ Add Inventory Item</button>
+                    </div>
                 </div>
 
                 <div class="controls">
@@ -248,23 +329,28 @@
                     <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 5px; color: var(--text-muted);">
                         <input type="checkbox" id="criticalToggle"> Critical
                     </label>
+                    <button type="button" class="btn-add" onclick="toggleNewStockForm()">+ New Ingredient</button>
                     <button class="btn-excel" onclick="exportInventoryToExcel()"> Export Stock</button>
                     <button class="btn-history" onclick="window.location.href='recordInventory.html'">View Records</button>
                 </div>
 
+                <div class="table-wrap">
                 <table>
                     <thead>
                         <tr>
                             <th>Category</th>
                             <th>Ingredient</th>
-                            <th>Price</th>
-                            <th>Qty/Stock</th>
-                            <th>In-Use Stock</th>
+                            <th>Purchase Price</th>
+                            <th>Stock on Hand</th>
+                            <th>Currently Open</th>
+                            <th>Stock Value</th>
+                            <th>Status</th>
                             <th style="text-align:right;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="inventoryBody"></tbody>
                 </table>
+                </div>
             </div>
 
             <div class="side-panels">
@@ -330,15 +416,15 @@
                     </select>
                 </div>
                 <div>
-                    <label style="font-size: 0.75rem;">Stock (Qty)</label>
+                    <label style="font-size: 0.75rem;">Unopened Stock</label>
                     <input type="number" id="editQty" style="width:100%; padding:10px; border:1px solid #e4e6ef; border-radius:6px;">
                 </div>
                 <div>
-                    <label style="font-size: 0.75rem;">Active Volume (In-Use)</label>
+                    <label style="font-size: 0.75rem;">Amount Left in Open Container</label>
                     <input type="number" id="editActiveVol" style="width:100%; padding:10px; border:1px solid #e4e6ef; border-radius:6px;">
                 </div>
                 <div>
-                    <label style="font-size: 0.75rem;">Capacity (ml/g)</label>
+                    <label style="font-size: 0.75rem;">Size of One Container</label>
                     <input type="number" id="editCap" style="width:100%; padding:10px; border:1px solid #e4e6ef; border-radius:6px;">
                 </div>
                 <div>
@@ -355,18 +441,65 @@
                     </select>
                 </div>
                 <div>
-                    <label style="font-size: 0.75rem;">In-Use Unit</label>
+                    <label style="font-size: 0.75rem;">Measure Use In</label>
                     <select id="editActiveUnit" style="width:100%; padding:10px; border:1px solid #e4e6ef; border-radius:6px;">
                         <option value="grams">grams</option>
                         <option value="ml">ml</option>
                         <option value="pcs">pcs</option>
                     </select>
                 </div>
+                <div>
+                    <label style="font-size: 0.75rem;">Low-Stock Alert At</label>
+                    <input type="number" id="editLowStockLimit" min="0" step="0.01" style="width:100%; padding:10px; border:1px solid #e4e6ef; border-radius:6px;">
+                </div>
             </div>
 
             <div style="display:flex; gap:10px; margin-top:25px;">
                 <button onclick="closeEditModal()" style="flex:1; padding:12px; border:none; border-radius:8px; cursor:pointer; background:#eee;">Cancel</button>
                 <button onclick="saveEdit()" style="flex:1; padding:12px; border:none; border-radius:8px; cursor:pointer; background:var(--primary); color:white; font-weight:bold;">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="restockModal" class="modal-overlay">
+        <div class="modal-card modal-popover">
+            <h3 style="margin:0;">Add Delivery</h3>
+            <p id="restockItemDesc" style="color:var(--text-muted); font-size:0.85rem; margin:8px 0 20px;"></p>
+            <input type="hidden" id="restockId">
+            <label class="field-label" for="restockAmount">Amount received</label>
+            <input type="number" id="restockAmount" min="0.01" step="0.01"
+                   style="width:100%; padding:15px; font-size:1.5rem; text-align:center; border:1px solid #e4e6ef; border-radius:8px; box-sizing:border-box;"
+                   placeholder="0">
+            <label class="field-label" for="restockPrice" style="margin-top:14px;">New purchase price (optional)</label>
+            <input type="number" id="restockPrice" min="0" step="0.01"
+                   style="width:100%; padding:10px; border:1px solid #e4e6ef; border-radius:8px; box-sizing:border-box;"
+                   placeholder="Leave blank to keep current price">
+            <div id="restockPreview" style="margin-top:12px; min-height:38px; padding:10px; border-radius:8px; background:#f8f9fa; color:#666; font-size:0.78rem;">
+                Enter the delivered amount.
+            </div>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button style="flex:1; padding:12px; border:none; border-radius:8px; cursor:pointer; background:#eee;" onclick="closeRestockModal()">Cancel</button>
+                <button style="flex:1; padding:12px; border:none; border-radius:8px; cursor:pointer; background:#27ae60; color:white; font-weight:bold;" onclick="confirmRestock()">Add to Stock</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deductModal" class="modal-overlay">
+        <div class="modal-card" style="width: 360px;">
+            <h3 style="margin:0;">Deduct Used Stock</h3>
+            <p id="deductItemDesc" style="color: var(--text-muted); font-size: 0.85rem; margin: 8px 0 20px;"></p>
+            <input type="hidden" id="deductId">
+            <label class="field-label" for="deductAmount">Amount used</label>
+            <input type="number" id="deductAmount" min="0.01" step="0.01"
+                   style="width:100%; padding:15px; font-size:1.5rem; text-align:center; border:1px solid #e4e6ef; border-radius:8px; box-sizing:border-box;"
+                   placeholder="0">
+            <div id="deductPreview"
+                 style="margin-top:12px; min-height:38px; padding:10px; border-radius:8px; background:#f8f9fa; color:#666; font-size:0.78rem; text-align:left;">
+                Enter the amount used.
+            </div>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button style="flex:1; padding:12px; border:none; border-radius:8px; cursor:pointer; background:#eee;" onclick="closeDeductModal()">Cancel</button>
+                <button style="flex:1; padding:12px; border:none; border-radius:8px; cursor:pointer; background:var(--primary); color:white; font-weight:bold;" onclick="confirmDeduction()">Apply Deduction</button>
             </div>
         </div>
     </div>
@@ -378,6 +511,71 @@
         let allItems = [];
         let pendingTask = null;
         let oldQty = 0;
+
+        function formatDisplayNumber(value) {
+            const number = Number(value) || 0;
+            return number.toLocaleString(undefined, {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function toggleNewStockForm() {
+            const form = document.getElementById('newStockForm');
+            form.style.display = form.style.display === 'none' ? 'grid' : 'none';
+        }
+
+        function updateNewStockDefaults() {
+            const stockUnit = document.getElementById('newBulkUnit').value;
+            const activeUnit = document.getElementById('newActiveUnit');
+            const capacity = document.getElementById('newCap');
+            const lowStockUnit = document.getElementById('newLowStockUnit');
+            const lowStockLimit = document.getElementById('newLowStockLimit');
+
+            if (stockUnit === 'kg') {
+                activeUnit.value = 'grams';
+                if (!capacity.value || Number(capacity.value) === 1) capacity.value = '1000';
+                lowStockUnit.textContent = 'kg';
+            } else if (stockUnit === 'L') {
+                activeUnit.value = 'ml';
+                if (!capacity.value || Number(capacity.value) === 1) capacity.value = '1000';
+                lowStockUnit.textContent = 'L';
+            } else {
+                activeUnit.value = 'pcs';
+                if (!capacity.value || Number(capacity.value) === 1) capacity.value = '1';
+                lowStockUnit.textContent = stockUnit === 'box' ? 'boxes' : 'pcs';
+            }
+
+            if (!lowStockLimit.value || Number(lowStockLimit.value) === 5) {
+                lowStockLimit.value = '1';
+            }
+            updateNewStockPreview();
+        }
+
+        function updateNewStockPreview() {
+            const stockUnit = document.getElementById('newBulkUnit').value;
+            const activeUnit = document.getElementById('newActiveUnit').value;
+            const capacity = parseFloat(document.getElementById('newCap').value) || 0;
+            const price = parseFloat(document.getElementById('newPrice').value) || 0;
+            const alertAt = parseFloat(document.getElementById('newLowStockLimit').value) || 1;
+            const preview = document.getElementById('newStockPreview');
+
+            let conversion = '';
+            let costPerUse = '';
+            if (stockUnit === 'kg' && activeUnit === 'grams') {
+                conversion = '1 kg = 1,000 grams';
+                costPerUse = capacity > 0 ? `Cost: ₱${(price / 1000).toFixed(2)} / gram` : '';
+            } else if (stockUnit === 'L' && activeUnit === 'ml') {
+                conversion = '1 L = 1,000 ml';
+                costPerUse = capacity > 0 ? `Cost: ₱${(price / 1000).toFixed(2)} / ml` : '';
+            } else {
+                conversion = `One container = ${formatDisplayNumber(capacity)} ${activeUnit}`;
+            }
+
+            const unitLabel = stockUnit === 'kg' ? 'kg' : stockUnit === 'L' ? 'L' : stockUnit === 'box' ? 'boxes' : 'pcs';
+            preview.innerHTML =
+                `Preview: ${conversion}${costPerUse ? ' · ' + costPerUse : ''} · Alert below ${formatDisplayNumber(alertAt)} ${unitLabel}`;
+        }
 
         // Helper function to convert any date object safely into a Philippine Time String
         function getPSTTimeString(date) {
@@ -459,7 +657,10 @@
                     const data = doc.data();
                     allItems.push({ id: doc.id, ...data });
                     totalVal += (data.quantity * (data.price || 0));
-                    if(data.quantity <= 5) criticalCount++;
+                        const lowStockLimit = data.lowStockLimit ?? 1;
+                        const quantity = Number(data.quantity) || 0;
+                        const active = Number(data.activeVol) || 0;
+                        if ((quantity === 0 && active === 0) || quantity < lowStockLimit) criticalCount++;
                 });
 
                 document.getElementById('totalValue').innerText = `₱${totalVal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
@@ -500,29 +701,56 @@
             allItems.filter(item => {
                 const matchS = item.id.toLowerCase().includes(term);
                 const matchC = cat === "All" || item.category === cat;
-                const matchCrit = !onlyCritical || item.quantity <= 5;
+                const lowStockLimit = item.lowStockLimit ?? 1;
+                const matchCrit = !onlyCritical || item.quantity <= lowStockLimit;
                 return matchS && matchC && matchCrit;
             }).forEach(item => {
-                const isLow = item.quantity <= 5;
+                const lowStockLimit = item.lowStockLimit ?? 1;
+                const quantity = Number(item.quantity) || 0;
+                const active = Number(item.activeVol) || 0;
                 const cap = item.capacity || 1;
-                const active = item.activeVol || 0;
-                const percent = (active / cap) * 100;
+                const percent = Math.max(0, Math.min(100, (active / cap) * 100));
+                const stockValue = quantity * (item.price || 0);
+                let statusClass = 'ok';
+                let statusText = 'In Stock';
+
+                if (quantity === 0 && active === 0) {
+                    statusClass = 'out';
+                    statusText = 'Out of Stock';
+                } else if (quantity < lowStockLimit) {
+                    statusClass = 'amber';
+                    statusText = 'Low Stock';
+                }
+
+                const openContainerLabel = active > 0
+                    ? `<div style="font-weight:600; font-size:0.8rem;">${formatDisplayNumber(active)} ${item.activeUnit || 'grams'} left</div>
+                       <div style="font-size:0.68rem; color:var(--text-muted);">${percent.toFixed(0)}% of one container</div>
+                       <div class="vol-track"><div class="vol-fill" style="width:${percent}%"></div></div>`
+                    : quantity > 0
+                        ? `<span class="stock-status sealed">Sealed</span>`
+                        : `<span class="stock-status out">No Open Pack</span>`;
 
                 body.innerHTML += `
-                    <tr class="${isLow ? 'low-stock-row' : ''}">
+                    <tr class="${statusClass === 'ok' ? 'closed-row' : ''}">
                         <td style="color:var(--text-muted); font-size:0.75rem;">${item.category || '-'}</td>
-                        <td><b style="color:#181c32;">${item.id}</b> ${isLow ? '' : ''}</td>
+                        <td><b style="color:#181c32;">${item.id}</b></td>
                         <td style="font-family:monospace; color:#27ae60; font-weight:600;">₱${(item.price || 0).toFixed(2)}</td>
-                        <td style="font-weight:700;">${item.quantity} <small>${item.bulkUnit || 'kg'}</small></td>
-                        <td>
-                            <div style="font-weight:600; font-size: 0.8rem;">${active} / ${cap} ${item.activeUnit || 'g'}</div>
-                            <div class="vol-track"><div class="vol-fill" style="width:${percent}%"></div></div>
-                        </td>
+                        <td style="font-weight:700;">${formatDisplayNumber(quantity)} <small>${item.bulkUnit || 'kg'}</small></td>
+                        <td>${openContainerLabel}</td>
+                        <td style="font-weight:700;">₱${stockValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td><span class="stock-status ${statusClass}">${statusText}</span></td>
                         <td style="text-align:right;">
-                            <button onclick="openEditModal('${item.id}')" 
+                            <div class="action-stack">
+                            <button onclick="openRestockModal('${item.id}')"
+                                    style="background:#eaf8ef; border:1px solid #bde5ca; color:#16843b; padding:6px 10px; border-radius:4px; cursor:pointer; font-size:0.75rem; font-weight:700;">+ RESTOCK</button>
+                            <button onclick="openDeductModal('${item.id}')"
+                                    style="background:#fff1ed; border:1px solid #ffd1c7; color:#c51d1d; padding:6px 10px; border-radius:4px; cursor:pointer; font-size:0.75rem; font-weight:700;">- DEDUCT</button>
+                            <button onclick="openEditModal('${item.id}')"
+                                    class="edit-action"
                                     style="background:rgba(0,0,0,0.05); border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:0.75rem; font-weight:700;">EDIT</button>
                             <button onclick="openAuth('${item.id}', 'delete')" 
-                                    style="background:none; border:none; cursor:pointer; margin-left:10px;"></button>
+                                    style="display:none;"></button>
+                            </div>
                         </td>
                     </tr>`;
             });
@@ -538,6 +766,7 @@
             const name = document.getElementById('newName').value.trim();
             const cap = parseFloat(document.getElementById('newCap').value) || 0;
             const qty = parseFloat(document.getElementById('newQty').value) || 0;
+            const lowStockLimit = parseFloat(document.getElementById('newLowStockLimit').value) || 0;
             if(!name) return alert("Name is required");
             
             await db.collection('inventory').doc(name).set({ 
@@ -547,7 +776,8 @@
                 price: parseFloat(document.getElementById('newPrice').value) || 0, 
                 quantity: qty,
                 capacity: cap,
-                activeVol: cap 
+                activeVol: cap,
+                lowStockLimit: lowStockLimit
             });
             logActivity('Add Item', `New ingredient: ${name} (${qty} units)`);
             
@@ -555,6 +785,7 @@
             document.getElementById('newPrice').value = '';
             document.getElementById('newQty').value = '';
             document.getElementById('newCap').value = '';
+            document.getElementById('newLowStockLimit').value = '1';
         }
 
         function openEditModal(id) {
@@ -569,10 +800,169 @@
             document.getElementById('editQty').value = item.quantity || 0;
             document.getElementById('editActiveVol').value = item.activeVol || 0;
             document.getElementById('editCap').value = item.capacity || 0;
+            document.getElementById('editLowStockLimit').value = item.lowStockLimit ?? 1;
             document.getElementById('editModal').style.display = 'flex';
         }
 
         function closeEditModal() { document.getElementById('editModal').style.display = 'none'; }
+
+        function openRestockModal(id) {
+            const item = allItems.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('restockId').value = id;
+            document.getElementById('restockAmount').value = '';
+            document.getElementById('restockPrice').value = '';
+            document.getElementById('restockItemDesc').innerText =
+                `${id}: currently ${formatDisplayNumber(item.quantity || 0)} ${item.bulkUnit || 'kg'} on hand`;
+            document.getElementById('restockPreview').innerHTML = 'Enter the delivered amount.';
+            document.getElementById('restockModal').style.display = 'flex';
+            document.getElementById('restockAmount').focus();
+        }
+
+        function closeRestockModal() {
+            document.getElementById('restockModal').style.display = 'none';
+            document.getElementById('restockAmount').value = '';
+            document.getElementById('restockPrice').value = '';
+        }
+
+        document.getElementById('restockAmount').addEventListener('input', updateRestockPreview);
+        document.getElementById('restockPrice').addEventListener('input', updateRestockPreview);
+
+        function updateRestockPreview() {
+            const id = document.getElementById('restockId').value;
+            const item = allItems.find(i => i.id === id);
+            const amount = parseFloat(document.getElementById('restockAmount').value) || 0;
+            if (!item) return;
+
+            if (amount <= 0) {
+                document.getElementById('restockPreview').innerHTML = 'Enter the delivered amount.';
+                return;
+            }
+
+            const newQuantity = (Number(item.quantity) || 0) + amount;
+            const enteredPrice = document.getElementById('restockPrice').value;
+            const price = enteredPrice !== '' ? (parseFloat(enteredPrice) || 0) : (Number(item.price) || 0);
+            document.getElementById('restockPreview').innerHTML =
+                `New stock: <b>${formatDisplayNumber(newQuantity)} ${item.bulkUnit || 'kg'}</b>` +
+                `<br>${enteredPrice !== '' ? 'Updated' : 'Current'} purchase price: <b>₱${price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</b>`;
+        }
+
+        async function confirmRestock() {
+            const id = document.getElementById('restockId').value;
+            const item = allItems.find(i => i.id === id);
+            const amount = parseFloat(document.getElementById('restockAmount').value) || 0;
+            if (!item) return;
+            if (amount <= 0) return alert('Please enter a valid restock amount.');
+
+            const newQuantity = (Number(item.quantity) || 0) + amount;
+            const enteredPrice = document.getElementById('restockPrice').value;
+            const updates = { quantity: newQuantity };
+            if (enteredPrice !== '') updates.price = parseFloat(enteredPrice) || 0;
+
+            await db.collection('inventory').doc(id).update(updates);
+            await logActivity(
+                'Restock',
+                `${id}: +${amount} ${item.bulkUnit || 'kg'}`
+            );
+            closeRestockModal();
+        }
+
+        function openDeductModal(id) {
+            const item = allItems.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('deductId').value = id;
+            document.getElementById('deductAmount').value = '';
+            document.getElementById('deductItemDesc').innerText =
+                `${id}: ${item.activeVol || 0} ${item.activeUnit || 'grams'} left in the open container; ${item.quantity || 0} ${item.bulkUnit || 'kg'} unopened`;
+            document.getElementById('deductPreview').innerHTML = 'Enter the amount used.';
+            document.getElementById('deductModal').style.display = 'flex';
+            document.getElementById('deductAmount').focus();
+        }
+
+        function closeDeductModal() {
+            document.getElementById('deductModal').style.display = 'none';
+            document.getElementById('deductAmount').value = '';
+        }
+
+        function calculateAutomaticDeduction(item, amountUsed) {
+            let active = Number(item.activeVol) || 0;
+            let quantity = Number(item.quantity) || 0;
+            const capacity = Number(item.capacity) || 0;
+            let remainingAmount = amountUsed;
+            let openedContainersUsed = 0;
+
+            while (remainingAmount > 0) {
+                if (active > 0) {
+                    const usedFromActive = Math.min(active, remainingAmount);
+                    active -= usedFromActive;
+                    remainingAmount -= usedFromActive;
+                }
+
+                if (remainingAmount > 0) {
+                    if (quantity <= 0) {
+                        return { insufficient: true, active, quantity };
+                    }
+
+                    quantity -= 1;
+                    openedContainersUsed += 1;
+                    active = capacity;
+                }
+            }
+
+            return { insufficient: false, active, quantity, openedContainersUsed };
+        }
+
+        document.getElementById('deductAmount').addEventListener('input', () => {
+            const id = document.getElementById('deductId').value;
+            const item = allItems.find(i => i.id === id);
+            const amountUsed = parseFloat(document.getElementById('deductAmount').value) || 0;
+            const preview = document.getElementById('deductPreview');
+            if (!item || amountUsed <= 0) {
+                preview.innerHTML = 'Enter the amount used.';
+                return;
+            }
+
+            const result = calculateAutomaticDeduction(item, amountUsed);
+            if (result.insufficient) {
+                preview.innerHTML = `<b style="color:#c51d1d;">Insufficient stock.</b>`;
+                return;
+            }
+
+            preview.innerHTML =
+                `Left in open container: <b>${result.active.toLocaleString()} ${item.activeUnit || 'grams'}</b>` +
+                `<br>Unopened stock: <b>${result.quantity.toLocaleString()} ${item.bulkUnit || 'kg'}</b>` +
+                (result.openedContainersUsed > 0
+                    ? `<br><span style="color:#c51d1d;">${result.openedContainersUsed} purchased ${result.openedContainersUsed === 1 ? 'container' : 'containers'} opened.</span>`
+                    : '');
+        });
+
+        async function confirmDeduction() {
+            const id = document.getElementById('deductId').value;
+            const item = allItems.find(i => i.id === id);
+            const amountUsed = parseFloat(document.getElementById('deductAmount').value) || 0;
+
+            if (!item) return;
+            if (amountUsed <= 0) return alert('Please enter a valid amount to deduct.');
+
+            const result = calculateAutomaticDeduction(item, amountUsed);
+            if (result.insufficient) {
+                alert('Not enough stock is available for this deduction.');
+                return;
+            }
+
+            await db.collection('inventory').doc(id).update({
+                activeVol: result.active,
+                quantity: result.quantity
+            });
+
+            await logActivity(
+                'Deduct Stock',
+                `${id}: -${amountUsed} ${item.activeUnit || 'grams'}`
+            );
+            closeDeductModal();
+        }
 
         async function saveEdit() {
             const id = document.getElementById('editId').value;
@@ -595,7 +985,8 @@
                 price: parseFloat(document.getElementById('editPrice').value) || 0,
                 quantity: newQty,
                 activeVol: active,
-                capacity: cap
+                capacity: cap,
+                lowStockLimit: parseFloat(document.getElementById('editLowStockLimit').value) || 0
             });
 
             // Remove the "if (newQty != oldQty)" filter so it logs EVERY edit
@@ -628,12 +1019,18 @@
         document.getElementById('catFilter').addEventListener('change', render);
         document.getElementById('criticalToggle').addEventListener('change', render);
 
+        document.getElementById('newBulkUnit').addEventListener('change', updateNewStockDefaults);
+        document.getElementById('newActiveUnit').addEventListener('change', updateNewStockPreview);
+        document.getElementById('newCap').addEventListener('input', updateNewStockPreview);
+        document.getElementById('newPrice').addEventListener('input', updateNewStockPreview);
+        document.getElementById('newLowStockLimit').addEventListener('input', updateNewStockPreview);
+
         function exportInventoryToExcel() {
             if (allItems.length === 0) return alert("No data to export.");
-            let csvContent = "Category,Ingredient,Price,Bulk Stock,Bulk Unit,Active Volume,In-Use Unit,Capacity,Total Value\n";
+            let csvContent = "Category,Ingredient,Purchase Price,Unopened Stock,Stock Unit,Left in Open Container,Measure Unit,One Container Size,Low-Stock Alert,Stock Value\n";
             allItems.forEach(item => {
                 const totalValue = (item.price * item.quantity).toFixed(2);
-                csvContent += `${item.category},${item.id},${item.price},${item.quantity},${item.bulkUnit || 'kg'},${item.activeVol},${item.activeUnit || 'g'},${item.capacity},${totalValue}\n`;
+                csvContent += `${item.category},${item.id},${item.price},${item.quantity},${item.bulkUnit || 'kg'},${item.activeVol},${item.activeUnit || 'grams'},${item.capacity},${item.lowStockLimit ?? 1},${totalValue}\n`;
             });
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
