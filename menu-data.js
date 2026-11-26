@@ -394,5 +394,16 @@ const MENU_DATABASE = [
             { id: 313, jname: "レモンのスライス", name: "LEMON SLICE", price: 100.00, cat: "Add-ons", img: "images/LEMON SLICE.png", desc: "LEMON SLICE", isBestSeller:false},
             { id: 314, jname: "カラマンシーのスライス", name: "CALAMANSI SLICE", price: 50.00, cat: "Add-ons", img: "images/CALAMANSI SLICE.png", desc: "CALAMANSI SLICE", isBestSeller:false},
             { id: 315, jname: "コーヒーゼリー", name: "COFFEE JELLY", price: 100.00, cat: "Add-ons", img: "images/COFFEE JELLY.png", desc: "COFFEE JELLY", isBestSeller:false},
-            { id: 316, jname: "日本のプリン", name: "JAPANESE PUDDING", price: 100.00, cat: "Add-ons", img: "images/JAPANESE PUDDING.png", desc: "JAPANESE PUDDING", isBestSeller:false}
+            { id: 316, jname: "日本のプリン", name: "JAPANESE PUDDING", price: 100.00, cat: "Add-ons", img: "images/JAPANESE PUDDING.png", desc: "JAPANESE PUDDING", isBestSeller:false},
+            { id: 507, jname: "釜飯", name: "KAMAMESHI", price: 520, cat: "Chahan-Kare Rice ETC", img: "kamameshi.png", desc: "Traditional Japanese rice cooked with meat, seafood, and vegetables.", isBestSeller: false },
+            { id: 600, jname: "もつ焼き", name: "MOTSUYAKI", price: 350, cat: "Ippin-Ryouri", img: "MOTSUYAKI.png", desc: "Grilled Japanese offal seasoned and served hot.", isBestSeller: false },
+            { id: 601, jname: "銀杏串焼き", name: "GINNAN KUSHI YAKI", price: 80, cat: "Yakitori", img: "ginnan kushi yaki.png", desc: "Grilled ginkgo nuts served on a skewer.", isBestSeller: false },
+            { id: 602, jname: "海鮮丼 スペシャル", name: "KAISENDON SPECIAL", price: 690, cat: "Donburi", img: "kaisendon special.png", desc: "Special seafood rice bowl topped with assorted fresh seafood.", isBestSeller: false },
+            { id: 603, jname: "カキフライ", name: "KAKI FRY", price: 460, cat: "Agemono", img: "categories/KAKI FRY.png", desc: "Crispy breaded deep-fried oysters.", isBestSeller: false },
+            { id: 604, jname: "黒豚とんかつ", name: "KUROBUTA TONKATSU", price: 550, cat: "Agemono", img: "kurobuta tonkatsu.png", desc: "Premium black pork cutlet, deep-fried until crisp.", isBestSeller: false },
+            { id: 605, jname: "銀ダラ西京焼き", name: "GINDARA SAIKYOYAKI", price: 580, cat: "Grilled Fish", img: "gindara saikyoyakitonkatsu.png", desc: "Cod marinated in sweet saikyo miso and grilled.", isBestSeller: false },
+            { id: 606, jname: "肉豆腐", name: "NIKU TOFU", price: 390, cat: "Ippin-Ryouri", img: "niku tofu.png", desc: "Tender meat and tofu simmered in savory broth.", isBestSeller: false },
+            { id: 607, jname: "あさり 酒蒸し", name: "ASARI SAKAMUSHI", price: 320, cat: "Ippin-Ryouri", img: "asari sakamushi.png", desc: "Clams steamed with sake for a fragrant, savory flavor.", isBestSeller: false },
+            { id: 608, jname: "あさりの時雨煮", name: "ASARI SHIGURE-NI", price: 320, cat: "Ippin-Ryouri", img: "asari shigure-ni.png", desc: "Clams simmered in a sweet and savory shigure sauce.", isBestSeller: false },
+            { id: 609, jname: "あさりバター焼き", name: "ASARI BUTTER YAKI", price: 320, cat: "Ippin-Ryouri", img: "asari butter yaki.png", desc: "Grilled clams finished with rich butter.", isBestSeller: false }
             ];
